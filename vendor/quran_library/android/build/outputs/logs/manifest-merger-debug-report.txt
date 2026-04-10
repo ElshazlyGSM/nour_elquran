@@ -1,0 +1,79 @@
+-- Merging decision tree log ---
+manifest
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:1:1-41:12
+INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:1:1-41:12
+	package
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:3:5-41
+		INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml
+	xmlns:tools
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:2:5-51
+	xmlns:android
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:1:11-69
+uses-permission#android.permission.WAKE_LOCK
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:5:5-67
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:5:22-65
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:6:5-76
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:6:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:7:5-91
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:7:22-89
+application
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:9:5-40:19
+activity#com.ryanheise.audioservice.AudioServiceActivity
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:10:9-18:20
+	android:launchMode
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:13:13-43
+	android:hardwareAccelerated
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:16:13-47
+	android:windowSoftInputMode
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:17:13-55
+	android:exported
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:12:13-36
+	android:configChanges
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:15:13-163
+	android:taskAffinity
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:14:13-36
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:11:13-75
+service#com.ryanheise.audioservice.AudioService
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:21:9-29:19
+	android:exported
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:24:13-36
+	tools:ignore
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:25:13-42
+	android:foregroundServiceType
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:23:13-58
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:22:13-67
+intent-filter#action:name:android.media.browse.MediaBrowserService
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:26:13-28:29
+action#android.media.browse.MediaBrowserService
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:27:17-83
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:27:25-80
+receiver#com.ryanheise.audioservice.MediaButtonReceiver
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:31:9-38:20
+	android:exported
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:33:13-36
+	tools:ignore
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:34:13-42
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:32:13-74
+intent-filter#action:name:android.intent.action.MEDIA_BUTTON
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:35:13-37:29
+action#android.intent.action.MEDIA_BUTTON
+ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:36:17-77
+	android:name
+		ADDED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml:36:25-74
+uses-sdk
+INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml
+INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from E:\quran\vendor\quran_library\android\src\main\AndroidManifest.xml

@@ -1,0 +1,2 @@
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/saly,@raw/a2trb,@raw/shoro2" />
