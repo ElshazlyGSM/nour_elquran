@@ -1,38 +1,38 @@
-part of '/quran.dart';
+﻿part of '/quran.dart';
 
-/// خدمة تحميل كسول (lazy) وتسجيل خطوط QCF4 المضغوطة (tajweed).
+/// Ø®Ø¯Ù…Ø© ØªØ­Ù…ÙŠÙ„ ÙƒØ³ÙˆÙ„ (lazy) ÙˆØªØ³Ø¬ÙŠÙ„ Ø®Ø·ÙˆØ· QCF4 Ø§Ù„Ù…Ø¶ØºÙˆØ·Ø© (tajweed).
 ///
-/// الخطوط مخزّنة كملفات `.ttf.gz` في assets. عند الحاجة يتم فك ضغطها
-/// وتسجيلها عبر [loadFontFromList]. تُحفظ النسخ المفكوكة على القرص
-/// (على المنصات غير الويب) لتسريع التشغيلات اللاحقة.
+/// Ø§Ù„Ø®Ø·ÙˆØ· Ù…Ø®Ø²Ù‘Ù†Ø© ÙƒÙ…Ù„ÙØ§Øª `.ttf.gz` ÙÙŠ assets. Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø§Ø¬Ø© ÙŠØªÙ… ÙÙƒ Ø¶ØºØ·Ù‡Ø§
+/// ÙˆØªØ³Ø¬ÙŠÙ„Ù‡Ø§ Ø¹Ø¨Ø± [loadFontFromList]. ØªÙØ­ÙØ¸ Ø§Ù„Ù†Ø³Ø® Ø§Ù„Ù…ÙÙƒÙˆÙƒØ© Ø¹Ù„Ù‰ Ø§Ù„Ù‚Ø±Øµ
+/// (Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù†ØµØ§Øª ØºÙŠØ± Ø§Ù„ÙˆÙŠØ¨) Ù„ØªØ³Ø±ÙŠØ¹ Ø§Ù„ØªØ´ØºÙŠÙ„Ø§Øª Ø§Ù„Ù„Ø§Ø­Ù‚Ø©.
 ///
-/// **التحميل الكسول**: تُحمّل فقط الصفحات القريبة من الصفحة الحالية،
-/// ثم تُكمَل بقية الصفحات في الخلفية تدريجيًا.
+/// **Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙƒØ³ÙˆÙ„**: ØªÙØ­Ù…Ù‘Ù„ ÙÙ‚Ø· Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ù‚Ø±ÙŠØ¨Ø© Ù…Ù† Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©ØŒ
+/// Ø«Ù… ØªÙÙƒÙ…ÙŽÙ„ Ø¨Ù‚ÙŠØ© Ø§Ù„ØµÙØ­Ø§Øª ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ© ØªØ¯Ø±ÙŠØ¬ÙŠÙ‹Ø§.
 class QuranFontsService {
   QuranFontsService._();
 
   static const int _totalPages = 604;
 
-  /// الصفحات المحمّلة في هذا التشغيل (1-based).
+  /// Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ù…Ø­Ù…Ù‘Ù„Ø© ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ØªØ´ØºÙŠÙ„ (1-based).
   static final Set<int> _loadedPages = {};
 
-  /// Futures لمنع تكرار تحميل نفس الصفحة عند الاستدعاء المتزامن.
+  /// Futures Ù„Ù…Ù†Ø¹ ØªÙƒØ±Ø§Ø± ØªØ­Ù…ÙŠÙ„ Ù†ÙØ³ Ø§Ù„ØµÙØ­Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ Ø§Ù„Ù…ØªØ²Ø§Ù…Ù†.
   static final Map<int, Future<void>> _pageLoadFutures = {};
 
-  /// Future واحد لتحميل الخلفية لمنع التكرار.
+  /// Future ÙˆØ§Ø­Ø¯ Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø®Ù„ÙÙŠØ© Ù„Ù…Ù†Ø¹ Ø§Ù„ØªÙƒØ±Ø§Ø±.
   static Future<void>? _backgroundLoadFuture;
 
-  /// كاش مجلد الخطوط المفكوكة (يُهيّأ مرة واحدة).
+  /// ÙƒØ§Ø´ Ù…Ø¬Ù„Ø¯ Ø§Ù„Ø®Ø·ÙˆØ· Ø§Ù„Ù…ÙÙƒÙˆÙƒØ© (ÙŠÙÙ‡ÙŠÙ‘Ø£ Ù…Ø±Ø© ÙˆØ§Ø­Ø¯Ø©).
   static Directory? _cacheDir;
   static bool _cacheDirInitialized = false;
 
-  /// هل الصفحة المحددة جاهزة للعرض؟ (1-based)
+  /// Ù‡Ù„ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ø¬Ø§Ù‡Ø²Ø© Ù„Ù„Ø¹Ø±Ø¶ØŸ (1-based)
   static bool isPageReady(int page) => _loadedPages.contains(page);
 
-  /// عدد الصفحات المحمّلة حتى الآن.
+  /// Ø¹Ø¯Ø¯ Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ù…Ø­Ù…Ù‘Ù„Ø© Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†.
   static int get loadedCount => _loadedPages.length;
 
-  /// هل تم تحميل جميع الصفحات؟
+  /// Ù‡Ù„ ØªÙ… ØªØ­Ù…ÙŠÙ„ Ø¬Ù…ÙŠØ¹ Ø§Ù„ØµÙØ­Ø§ØªØŸ
   static bool get allLoaded => _loadedPages.length >= _totalPages;
 
   /// Reset only in-memory caches so newly downloaded font files are picked up
@@ -43,24 +43,24 @@ class QuranFontsService {
     _backgroundLoadFuture = null;
   }
 
-  /// اسم عائلة الخط للصفحة المحددة (page1 .. page604).
+  /// Ø§Ø³Ù… Ø¹Ø§Ø¦Ù„Ø© Ø§Ù„Ø®Ø· Ù„Ù„ØµÙØ­Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© (page1 .. page604).
   static String getFontFamily(int pageIndex) => 'page${pageIndex + 1}';
 
-  /// اسم عائلة الخط الداكن للصفحة المحددة (page1d .. page604d).
+  /// Ø§Ø³Ù… Ø¹Ø§Ø¦Ù„Ø© Ø§Ù„Ø®Ø· Ø§Ù„Ø¯Ø§ÙƒÙ† Ù„Ù„ØµÙØ­Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© (page1d .. page604d).
   static String getDarkFontFamily(int pageIndex) => 'page${pageIndex + 1}d';
 
-  /// اسم عائلة الخط بدون تجويد فاتح (page1n .. page604n).
+  /// Ø§Ø³Ù… Ø¹Ø§Ø¦Ù„Ø© Ø§Ù„Ø®Ø· Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ ÙØ§ØªØ­ (page1n .. page604n).
   static String getNoTajweedFontFamily(int pageIndex) =>
       'page${pageIndex + 1}n';
 
-  /// اسم عائلة الخط بدون تجويد داكن (page1nd .. page604nd).
+  /// Ø§Ø³Ù… Ø¹Ø§Ø¦Ù„Ø© Ø§Ù„Ø®Ø· Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ Ø¯Ø§ÙƒÙ† (page1nd .. page604nd).
   static String getNoTajweedDarkFontFamily(int pageIndex) =>
       'page${pageIndex + 1}nd';
 
-  /// اسم عائلة الخط الأحمر للخلاف (page1nr .. page604nr).
+  /// Ø§Ø³Ù… Ø¹Ø§Ø¦Ù„Ø© Ø§Ù„Ø®Ø· Ø§Ù„Ø£Ø­Ù…Ø± Ù„Ù„Ø®Ù„Ø§Ù (page1nr .. page604nr).
   static String getRedFontFamily(int pageIndex) => 'page${pageIndex + 1}nr';
 
-  /// مسار الـ asset المضغوط للصفحة (1-based).
+  /// Ù…Ø³Ø§Ø± Ø§Ù„Ù€ asset Ø§Ù„Ù…Ø¶ØºÙˆØ· Ù„Ù„ØµÙØ­Ø© (1-based).
   static String _assetPath(int page) {
     final padded = page.toString().padLeft(3, '0');
     return 'packages/quran_library/assets/fonts/quran_fonts_qfc4/'
@@ -68,7 +68,7 @@ class QuranFontsService {
   }
 
   // ---------------------------------------------------------------------------
-  // تهيئة مجلد الكاش
+  // ØªÙ‡ÙŠØ¦Ø© Ù…Ø¬Ù„Ø¯ Ø§Ù„ÙƒØ§Ø´
   // ---------------------------------------------------------------------------
 
   static Future<Directory?> _ensureCacheDir() async {
@@ -91,13 +91,13 @@ class QuranFontsService {
   }
 
   // ---------------------------------------------------------------------------
-  // التحميل الكسول: تحميل صفحات قريبة فقط
+  // Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙƒØ³ÙˆÙ„: ØªØ­Ù…ÙŠÙ„ ØµÙØ­Ø§Øª Ù‚Ø±ÙŠØ¨Ø© ÙÙ‚Ø·
   // ---------------------------------------------------------------------------
 
-  /// تحميل الصفحات القريبة من [centerPage] (1-based) بنصف قطر [radius].
+  /// ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ù‚Ø±ÙŠØ¨Ø© Ù…Ù† [centerPage] (1-based) Ø¨Ù†ØµÙ Ù‚Ø·Ø± [radius].
   ///
-  /// مثال: `ensurePagesLoaded(100, radius: 10)` يحمّل الصفحات 90–110.
-  /// يتم تخطّي الصفحات المحمّلة مسبقًا. يُنتظر حتى انتهاء التحميل.
+  /// Ù…Ø«Ø§Ù„: `ensurePagesLoaded(100, radius: 10)` ÙŠØ­Ù…Ù‘Ù„ Ø§Ù„ØµÙØ­Ø§Øª 90â€“110.
+  /// ÙŠØªÙ… ØªØ®Ø·Ù‘ÙŠ Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ù…Ø­Ù…Ù‘Ù„Ø© Ù…Ø³Ø¨Ù‚Ù‹Ø§. ÙŠÙÙ†ØªØ¸Ø± Ø­ØªÙ‰ Ø§Ù†ØªÙ‡Ø§Ø¡ Ø§Ù„ØªØ­Ù…ÙŠÙ„.
   static Future<void> ensurePagesLoaded(
     int centerPage, {
     int radius = 10,
@@ -118,10 +118,10 @@ class QuranFontsService {
     }
   }
 
-  /// تحميل بقية الصفحات في الخلفية بترتيب يبدأ من [startNearPage].
+  /// ØªØ­Ù…ÙŠÙ„ Ø¨Ù‚ÙŠØ© Ø§Ù„ØµÙØ­Ø§Øª ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ© Ø¨ØªØ±ØªÙŠØ¨ ÙŠØ¨Ø¯Ø£ Ù…Ù† [startNearPage].
   ///
-  /// تُحدّث [progress] (0.0–1.0) و[ready] عند الانتهاء الكامل.
-  /// لا تُنتظر — تعمل بشكل غير متزامن.
+  /// ØªÙØ­Ø¯Ù‘Ø« [progress] (0.0â€“1.0) Ùˆ[ready] Ø¹Ù†Ø¯ Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡ Ø§Ù„ÙƒØ§Ù…Ù„.
+  /// Ù„Ø§ ØªÙÙ†ØªØ¸Ø± â€” ØªØ¹Ù…Ù„ Ø¨Ø´ÙƒÙ„ ØºÙŠØ± Ù…ØªØ²Ø§Ù…Ù†.
   static Future<void> loadRemainingInBackground({
     required int startNearPage,
     required RxDouble progress,
@@ -132,7 +132,7 @@ class QuranFontsService {
       ready.value = true;
       return Future.value();
     }
-    // منع التكرار
+    // Ù…Ù†Ø¹ Ø§Ù„ØªÙƒØ±Ø§Ø±
     _backgroundLoadFuture ??= _doLoadRemaining(
       startNearPage: startNearPage,
       progress: progress,
@@ -159,9 +159,9 @@ class QuranFontsService {
     ready.value = true;
   }
 
-  /// بناء ترتيب التحميل: يبدأ من [startPage] ويتوسع للخارج.
+  /// Ø¨Ù†Ø§Ø¡ ØªØ±ØªÙŠØ¨ Ø§Ù„ØªØ­Ù…ÙŠÙ„: ÙŠØ¨Ø¯Ø£ Ù…Ù† [startPage] ÙˆÙŠØªÙˆØ³Ø¹ Ù„Ù„Ø®Ø§Ø±Ø¬.
   ///
-  /// مثلاً لو startPage=100: 100، 101، 99، 102، 98، 103، 97 ...
+  /// Ù…Ø«Ù„Ø§Ù‹ Ù„Ùˆ startPage=100: 100ØŒ 101ØŒ 99ØŒ 102ØŒ 98ØŒ 103ØŒ 97 ...
   static List<int> _buildLoadOrder(int startPage) {
     final order = <int>[];
     final start = startPage.clamp(1, _totalPages);
@@ -178,23 +178,23 @@ class QuranFontsService {
   }
 
   // ---------------------------------------------------------------------------
-  // تحميل صفحة واحدة مع كل المتغيرات (4 خطوط)
+  // ØªØ­Ù…ÙŠÙ„ ØµÙØ­Ø© ÙˆØ§Ø­Ø¯Ø© Ù…Ø¹ ÙƒÙ„ Ø§Ù„Ù…ØªØºÙŠØ±Ø§Øª (4 Ø®Ø·ÙˆØ·)
   // ---------------------------------------------------------------------------
 
-  /// تحميل صفحة واحدة (1-based) مع متغيراتها الأربعة.
+  /// ØªØ­Ù…ÙŠÙ„ ØµÙØ­Ø© ÙˆØ§Ø­Ø¯Ø© (1-based) Ù…Ø¹ Ù…ØªØºÙŠØ±Ø§ØªÙ‡Ø§ Ø§Ù„Ø£Ø±Ø¨Ø¹Ø©.
   ///
-  /// - `page{N}` — فاتح مع تجويد
-  /// - `page{N}d` — داكن مع تجويد (CPAL: أسود→أبيض)
-  /// - `page{N}n` — فاتح بدون تجويد (CPAL: كل الألوان→أسود)
-  /// - `page{N}nd` — داكن بدون تجويد (CPAL: كل الألوان→أبيض)
+  /// - `page{N}` â€” ÙØ§ØªØ­ Ù…Ø¹ ØªØ¬ÙˆÙŠØ¯
+  /// - `page{N}d` â€” Ø¯Ø§ÙƒÙ† Ù…Ø¹ ØªØ¬ÙˆÙŠØ¯ (CPAL: Ø£Ø³ÙˆØ¯â†’Ø£Ø¨ÙŠØ¶)
+  /// - `page{N}n` â€” ÙØ§ØªØ­ Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ (CPAL: ÙƒÙ„ Ø§Ù„Ø£Ù„ÙˆØ§Ù†â†’Ø£Ø³ÙˆØ¯)
+  /// - `page{N}nd` â€” Ø¯Ø§ÙƒÙ† Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ (CPAL: ÙƒÙ„ Ø§Ù„Ø£Ù„ÙˆØ§Ù†â†’Ø£Ø¨ÙŠØ¶)
   static Future<void> _loadSinglePage(int page, Directory? cacheDir) {
-    // منع التكرار عند الاستدعاء المتزامن لنفس الصفحة
+    // Ù…Ù†Ø¹ Ø§Ù„ØªÙƒØ±Ø§Ø± Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ Ø§Ù„Ù…ØªØ²Ø§Ù…Ù† Ù„Ù†ÙØ³ Ø§Ù„ØµÙØ­Ø©
     return _pageLoadFutures.putIfAbsent(page, () async {
       try {
         Uint8List fontBytes;
         final familyName = 'page$page';
 
-        // جرّب قراءة الكاش أولاً
+        // Ø¬Ø±Ù‘Ø¨ Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„ÙƒØ§Ø´ Ø£ÙˆÙ„Ø§Ù‹
         if (cacheDir != null) {
           final cachedFile = File('${cacheDir.path}/$familyName.ttf');
           if (cachedFile.existsSync()) {
@@ -212,31 +212,31 @@ class QuranFontsService {
           fontBytes = await _decompressFromAsset(page);
         }
 
-        // 1. خط فاتح أصلي
+        // 1. Ø®Ø· ÙØ§ØªØ­ Ø£ØµÙ„ÙŠ
         await loadFontFromList(fontBytes, fontFamily: familyName);
 
-        // 2. خط داكن: CPAL أسود → أبيض
+        // 2. Ø®Ø· Ø¯Ø§ÙƒÙ†: CPAL Ø£Ø³ÙˆØ¯ â†’ Ø£Ø¨ÙŠØ¶
         final darkBytes = _modifyCpalBaseColor(
           Uint8List.fromList(fontBytes),
           const Color(0xFFFFFFFF),
         );
         await loadFontFromList(darkBytes, fontFamily: '${familyName}d');
 
-        // 3. بدون تجويد فاتح: كل الألوان → أسود
+        // 3. Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ ÙØ§ØªØ­: ÙƒÙ„ Ø§Ù„Ø£Ù„ÙˆØ§Ù† â†’ Ø£Ø³ÙˆØ¯
         final ntBytes = _modifyCpalAllColors(
           Uint8List.fromList(fontBytes),
           const Color(0xFF000000),
         );
         await loadFontFromList(ntBytes, fontFamily: '${familyName}n');
 
-        // 4. بدون تجويد داكن: كل الألوان → أبيض
+        // 4. Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯ Ø¯Ø§ÙƒÙ†: ÙƒÙ„ Ø§Ù„Ø£Ù„ÙˆØ§Ù† â†’ Ø£Ø¨ÙŠØ¶
         final ntdBytes = _modifyCpalAllColors(
           Uint8List.fromList(fontBytes),
           const Color(0xFFFFFFFF),
         );
         await loadFontFromList(ntdBytes, fontFamily: '${familyName}nd');
 
-        // 5. أحمر للخلاف (القراءات العشر): كل الألوان → أحمر
+        // 5. Ø£Ø­Ù…Ø± Ù„Ù„Ø®Ù„Ø§Ù (Ø§Ù„Ù‚Ø±Ø§Ø¡Ø§Øª Ø§Ù„Ø¹Ø´Ø±): ÙƒÙ„ Ø§Ù„Ø£Ù„ÙˆØ§Ù† â†’ Ø£Ø­Ù…Ø±
         final nrBytes = _modifyCpalAllColors(
           Uint8List.fromList(fontBytes),
           const Color(0xFFFF0000),
@@ -247,11 +247,13 @@ class QuranFontsService {
       } catch (e, st) {
         log('QuranFontsService: failed to load font page $page: $e',
             name: 'QuranFontsService', stackTrace: st);
+      } finally {
+        _pageLoadFutures.remove(page);
       }
     });
   }
 
-  /// فك ضغط ملف `.ttf.gz` من الـ assets.
+  /// ÙÙƒ Ø¶ØºØ· Ù…Ù„Ù `.ttf.gz` Ù…Ù† Ø§Ù„Ù€ assets.
   static Future<Uint8List> _decompressFromAsset(int page) async {
     final data = await rootBundle.load(_assetPath(page));
     final gzBytes =
@@ -261,14 +263,14 @@ class QuranFontsService {
   }
 
   // ---------------------------------------------------------------------------
-  // تعديل جدول CPAL في ملف TTF/OTF
+  // ØªØ¹Ø¯ÙŠÙ„ Ø¬Ø¯ÙˆÙ„ CPAL ÙÙŠ Ù…Ù„Ù TTF/OTF
   // ---------------------------------------------------------------------------
 
-  /// يبحث عن جدول `CPAL` في بيانات الخط ويستبدل اللون الأسود الأساسي
-  /// (الطبقة الأساسية لنص القرآن) بـ [newBaseColor].
+  /// ÙŠØ¨Ø­Ø« Ø¹Ù† Ø¬Ø¯ÙˆÙ„ `CPAL` ÙÙŠ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø®Ø· ÙˆÙŠØ³ØªØ¨Ø¯Ù„ Ø§Ù„Ù„ÙˆÙ† Ø§Ù„Ø£Ø³ÙˆØ¯ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ
+  /// (Ø§Ù„Ø·Ø¨Ù‚Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù„Ù†Øµ Ø§Ù„Ù‚Ø±Ø¢Ù†) Ø¨Ù€ [newBaseColor].
   ///
-  /// ألوان التجويد (أحمر، أخضر، أزرق، إلخ) تبقى كما هي تماماً.
-  /// إذا لم يُعثر على جدول CPAL، تُرجع البيانات بدون تعديل.
+  /// Ø£Ù„ÙˆØ§Ù† Ø§Ù„ØªØ¬ÙˆÙŠØ¯ (Ø£Ø­Ù…Ø±ØŒ Ø£Ø®Ø¶Ø±ØŒ Ø£Ø²Ø±Ù‚ØŒ Ø¥Ù„Ø®) ØªØ¨Ù‚Ù‰ ÙƒÙ…Ø§ Ù‡ÙŠ ØªÙ…Ø§Ù…Ø§Ù‹.
+  /// Ø¥Ø°Ø§ Ù„Ù… ÙŠÙØ¹Ø«Ø± Ø¹Ù„Ù‰ Ø¬Ø¯ÙˆÙ„ CPALØŒ ØªÙØ±Ø¬Ø¹ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ø¯ÙˆÙ† ØªØ¹Ø¯ÙŠÙ„.
   static Uint8List _modifyCpalBaseColor(
       Uint8List fontBytes, Color newBaseColor) {
     final bd = ByteData.view(
@@ -314,7 +316,7 @@ class QuranFontsService {
       final r = fontBytes[colorOffset + 2];
       final a = fontBytes[colorOffset + 3];
 
-      // اكتشاف اللون الأسود: RGB ≤ 30 و Alpha ≥ 200
+      // Ø§ÙƒØªØ´Ø§Ù Ø§Ù„Ù„ÙˆÙ† Ø§Ù„Ø£Ø³ÙˆØ¯: RGB â‰¤ 30 Ùˆ Alpha â‰¥ 200
       if (r <= 30 && g <= 30 && b <= 30 && a >= 200) {
         fontBytes[colorOffset] = newB;
         fontBytes[colorOffset + 1] = newG;
@@ -326,9 +328,9 @@ class QuranFontsService {
     return fontBytes;
   }
 
-  /// يستبدل **جميع** ألوان CPAL بلون واحد موحّد.
+  /// ÙŠØ³ØªØ¨Ø¯Ù„ **Ø¬Ù…ÙŠØ¹** Ø£Ù„ÙˆØ§Ù† CPAL Ø¨Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯ Ù…ÙˆØ­Ù‘Ø¯.
   ///
-  /// يُستخدم لإنشاء نسخة "بدون تجويد" حيث يُرسم كل شيء بلون واحد.
+  /// ÙŠÙØ³ØªØ®Ø¯Ù… Ù„Ø¥Ù†Ø´Ø§Ø¡ Ù†Ø³Ø®Ø© "Ø¨Ø¯ÙˆÙ† ØªØ¬ÙˆÙŠØ¯" Ø­ÙŠØ« ÙŠÙØ±Ø³Ù… ÙƒÙ„ Ø´ÙŠØ¡ Ø¨Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯.
   static Uint8List _modifyCpalAllColors(Uint8List fontBytes, Color color) {
     final bd = ByteData.view(
         fontBytes.buffer, fontBytes.offsetInBytes, fontBytes.lengthInBytes);
@@ -375,7 +377,7 @@ class QuranFontsService {
     return fontBytes;
   }
 
-  /// حذف كاش الخطوط من القرص.
+  /// Ø­Ø°Ù ÙƒØ§Ø´ Ø§Ù„Ø®Ø·ÙˆØ· Ù…Ù† Ø§Ù„Ù‚Ø±Øµ.
   static Future<void> clearCache() async {
     if (kIsWeb) return;
     try {
@@ -395,3 +397,5 @@ class QuranFontsService {
     _cacheDirInitialized = false;
   }
 }
+
+

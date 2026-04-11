@@ -18,7 +18,7 @@ class SalawatReminderPage extends StatefulWidget {
 }
 
 class _SalawatReminderPageState extends State<SalawatReminderPage> {
-  static const _intervals = [1, 5, 10, 15, 30, 45, 60, 120];
+  static const _intervals = [5, 10, 15, 30, 45, 60, 120];
   static const _prayerPauseOptions = [15, 20, 30, 45, 60];
 
   late bool _enabled;

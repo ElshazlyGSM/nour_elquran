@@ -93,8 +93,8 @@ class ShamarlyPagesDownloadService {
     if (kIsWeb) {
       throw Exception('Shamarly pages download is not supported on web.');
     }
-    if (ShamarlyPagesDownloadConfig.zipUrl.isEmpty) {
-      throw Exception('Shamarly ZIP URL is not configured.');
+    if (ShamarlyPagesDownloadConfig.zipUrls.isEmpty) {
+      throw Exception('Shamarly ZIP URLs are not configured.');
     }
 
     final zipFile = await _zipFile();
@@ -103,15 +103,67 @@ class ShamarlyPagesDownloadService {
     }
 
     final tempFile = File('${zipFile.path}.part');
-    var existingBytes = 0;
     if (await tempFile.exists()) {
-      existingBytes = await tempFile.length();
+      await tempFile.delete();
     }
+
+    final errors = <String>[];
+    for (var index = 0; index < ShamarlyPagesDownloadConfig.zipUrls.length; index++) {
+      final url = ShamarlyPagesDownloadConfig.zipUrls[index];
+      final sourceLabel = 'المصدر ${index + 1}';
+      try {
+        onProgress(0);
+        onStatus?.call('جارٍ تنزيل ملف الشمرلي من $sourceLabel...');
+        await _downloadZipFromUrl(
+          url: url,
+          zipFile: zipFile,
+          tempFile: tempFile,
+          onProgress: onProgress,
+          shouldCancel: shouldCancel,
+        );
+
+        onStatus?.call('جاري فك الضغط...');
+        await _extractZip(zipFile, shouldCancel: shouldCancel);
+
+        final marker = await _completionMarker();
+        await marker?.writeAsString('ok', flush: true);
+        onProgress(1);
+        onStatus?.call('تم التحميل بنجاح.');
+        return;
+      } catch (error) {
+        errors.add('$url -> $error');
+        if (kDebugMode) {
+          debugPrint('[ShamarlyDownload] Source failed: $url -> $error');
+        }
+        if (shouldCancel != null && shouldCancel()) {
+          return;
+        }
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+        if (await zipFile.exists()) {
+          await zipFile.delete();
+        }
+      }
+    }
+
+    throw Exception('فشل تنزيل مصحف الشمرلي من كل المصادر: ');
+  }
+
+  Future<void> _downloadZipFromUrl({
+    required String url,
+    required File zipFile,
+    required File tempFile,
+    required void Function(double progress) onProgress,
+    bool Function()? shouldCancel,
+  }) async {
     final client = http.Client();
     try {
-      onStatus?.call('جارٍ تنزيل الملف...');
-      final request =
-          http.Request('GET', Uri.parse(ShamarlyPagesDownloadConfig.zipUrl));
+      var existingBytes = 0;
+      if (await tempFile.exists()) {
+        existingBytes = await tempFile.length();
+      }
+      final request = http.Request('GET', Uri.parse(url));
       if (existingBytes > 0) {
         request.headers['Range'] = 'bytes=$existingBytes-';
       }
@@ -130,8 +182,9 @@ class ShamarlyPagesDownloadService {
 
       final totalBytes = response.contentLength ?? 0;
       var received = existingBytes;
-      final sink =
-          tempFile.openWrite(mode: existingBytes > 0 ? FileMode.append : FileMode.write);
+      final sink = tempFile.openWrite(
+        mode: existingBytes > 0 ? FileMode.append : FileMode.write,
+      );
       await for (final chunk in response.stream) {
         if (shouldCancel != null && shouldCancel()) {
           await sink.close();
@@ -154,14 +207,6 @@ class ShamarlyPagesDownloadService {
         await zipFile.delete();
       }
       await tempFile.rename(zipFile.path);
-
-      onStatus?.call('جارٍ فك الضغط...');
-      await _extractZip(zipFile, shouldCancel: shouldCancel);
-
-      final marker = await _completionMarker();
-      await marker?.writeAsString('ok', flush: true);
-      onProgress(1);
-      onStatus?.call('تم التحميل بنجاح.');
     } finally {
       client.close();
     }

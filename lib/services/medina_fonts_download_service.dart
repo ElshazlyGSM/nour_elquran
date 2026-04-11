@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -30,8 +30,9 @@ class MedinaFontsDownloadService {
     if (dir == null) {
       return null;
     }
-    return File('${dir.path}${Platform.pathSeparator}'
-        '${MedinaFontsDownloadConfig.zipFileName}');
+    return File(
+      '${dir.path}${Platform.pathSeparator}${MedinaFontsDownloadConfig.zipFileName}',
+    );
   }
 
   Future<File?> _pageFontFile(int page) async {
@@ -88,15 +89,22 @@ class MedinaFontsDownloadService {
     if (kIsWeb) {
       throw Exception('Medina fonts download is not supported on web.');
     }
-    if (MedinaFontsDownloadConfig.zipUrl.isEmpty) {
-      throw Exception('Medina fonts ZIP URL is not configured.');
+    if (MedinaFontsDownloadConfig.zipUrls.isEmpty) {
+      throw Exception('Medina fonts ZIP URLs are not configured.');
+    }
+    if (await isFullyDownloaded()) {
+      onProgress(1);
+      onStatus?.call('تم تجهيز صفحات مصحف المدينة بالفعل.');
+      return;
     }
     final cacheDir = await _cacheDirectory();
     if (cacheDir == null) {
       throw Exception('Unable to access cache directory.');
     }
     if (kDebugMode) {
-      debugPrint('[MedinaDownload] Starting download from ${MedinaFontsDownloadConfig.zipUrl}');
+      debugPrint(
+        '[MedinaDownload] Starting download from ${MedinaFontsDownloadConfig.zipUrls.join(', ')}',
+      );
       debugPrint('[MedinaDownload] Cache dir: ${cacheDir.path}');
     }
     try {
@@ -116,29 +124,92 @@ class MedinaFontsDownloadService {
       }
     } catch (_) {}
 
+    final zipFile = await _zipFile();
+    if (zipFile == null) {
+      throw Exception('Unable to access storage.');
+    }
+    final tempFile = File('${zipFile.path}$_zipPartSuffix');
+    if (await tempFile.exists()) {
+      await tempFile.delete();
+    }
+
+    final errors = <String>[];
+    for (var index = 0; index < MedinaFontsDownloadConfig.zipUrls.length; index++) {
+      final url = MedinaFontsDownloadConfig.zipUrls[index];
+      try {
+        onProgress(0);
+        onStatus?.call('جاري تنزيل ملف مصحف المدينة...');
+        await _downloadZipFromUrl(
+          url: url,
+          zipFile: zipFile,
+          tempFile: tempFile,
+          onProgress: onProgress,
+          shouldCancel: shouldCancel,
+        );
+
+        onStatus?.call('جاري فك الضغط...');
+        final extracted = await _extractZip(zipFile, shouldCancel: shouldCancel);
+        if (kDebugMode) {
+          debugPrint('[MedinaDownload] Extracted pages: $extracted from $url');
+        }
+        final downloaded = await countDownloadedPages();
+        if (kDebugMode) {
+          debugPrint('[MedinaDownload] Cached pages after extract: $downloaded');
+        }
+        if (downloaded >= MedinaFontsDownloadConfig.totalPages) {
+          final marker = await _completionMarker();
+          await marker?.writeAsString('ok', flush: true);
+          onProgress(1);
+          onStatus?.call('تم تحميل مصحف المدينة بنجاح.');
+          return;
+        }
+        throw Exception('Incomplete extraction: $downloaded pages.');
+      } catch (error) {
+        errors.add('$url -> $error');
+        if (kDebugMode) {
+          debugPrint('[MedinaDownload] Source failed: $url -> $error');
+        }
+        if (shouldCancel != null && shouldCancel()) {
+          return;
+        }
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+        if (await zipFile.exists()) {
+          await zipFile.delete();
+        }
+      }
+    }
+
+    throw Exception('فشل تنزيل مصحف المدينة من كل المصادر: ');
+  }
+
+  Future<void> _downloadZipFromUrl({
+    required String url,
+    required File zipFile,
+    required File tempFile,
+    required void Function(double progress) onProgress,
+    bool Function()? shouldCancel,
+  }) async {
     final client = http.Client();
     try {
-      final zipFile = await _zipFile();
-      if (zipFile == null) {
-        throw Exception('Unable to access storage.');
-      }
-      final tempFile = File('${zipFile.path}$_zipPartSuffix');
       var existingBytes = 0;
       if (await tempFile.exists()) {
         existingBytes = await tempFile.length();
       }
       if (kDebugMode) {
+        debugPrint('[MedinaDownload] Downloading from $url');
         debugPrint('[MedinaDownload] Existing temp bytes: $existingBytes');
       }
-      onStatus?.call('جاري تنزيل ملف مصحف المدينة...');
-      final request =
-          http.Request('GET', Uri.parse(MedinaFontsDownloadConfig.zipUrl));
+      final request = http.Request('GET', Uri.parse(url));
       if (existingBytes > 0) {
         request.headers['Range'] = 'bytes=$existingBytes-';
       }
       final response = await client.send(request);
       if (kDebugMode) {
-        debugPrint('[MedinaDownload] Response status: ${response.statusCode}, length=${response.contentLength}');
+        debugPrint(
+          '[MedinaDownload] Response status: ${response.statusCode}, length=${response.contentLength}',
+        );
       }
       if (response.statusCode != 200 && response.statusCode != 206) {
         throw Exception('Download failed (${response.statusCode}).');
@@ -175,22 +246,6 @@ class MedinaFontsDownloadService {
         await zipFile.delete();
       }
       await tempFile.rename(zipFile.path);
-
-      onStatus?.call('جاري فك الضغط...');
-      final extracted = await _extractZip(zipFile, shouldCancel: shouldCancel);
-      if (kDebugMode) {
-        debugPrint('[MedinaDownload] Extracted pages: $extracted');
-      }
-      final downloaded = await countDownloadedPages();
-      if (kDebugMode) {
-        debugPrint('[MedinaDownload] Cached pages after extract: $downloaded');
-      }
-      if (downloaded >= MedinaFontsDownloadConfig.totalPages) {
-        final marker = await _completionMarker();
-        await marker?.writeAsString('ok', flush: true);
-      } else {
-        throw Exception('Incomplete extraction: $downloaded pages.');
-      }
     } finally {
       client.close();
     }
@@ -249,16 +304,6 @@ class MedinaFontsDownloadService {
       final temp = File('${file.path}.part');
       await temp.writeAsBytes(data, flush: true);
       await _finalizeTempDownload(tempFile: temp, destination: file);
-      if (kDebugMode &&
-          (pageNumber == 1 ||
-              pageNumber == 2 ||
-              pageNumber == MedinaFontsDownloadConfig.totalPages)) {
-        try {
-          debugPrint(
-            '[MedinaDownload] Page $pageNumber size=${file.lengthSync()} bytes',
-          );
-        } catch (_) {}
-      }
       extracted++;
     }
     return extracted;
@@ -289,3 +334,7 @@ class MedinaFontsDownloadService {
     }
   }
 }
+
+
+
+

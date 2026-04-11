@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart';
 
 import '../../core/utils/arabic_numbers.dart';
 import '../../data/adhkar_data.dart';
@@ -17,13 +18,24 @@ class AdhkarPage extends StatefulWidget {
 
 class _AdhkarPageState extends State<AdhkarPage> {
   final Map<String, int> _remainingByKey = <String, int>{};
+  final Map<String, GlobalKey> _tileKeys = <String, GlobalKey>{};
+  final Set<String> _justCompletedKeys = <String>{};
 
   String _itemKey(int sectionIndex, int itemIndex) =>
       '$sectionIndex:$itemIndex';
 
+  GlobalKey _tileKeyFor(int sectionIndex, int itemIndex) {
+    final key = _itemKey(sectionIndex, itemIndex);
+    return _tileKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
   int _remainingFor(int sectionIndex, int itemIndex, DhikrData item) {
     return _remainingByKey[_itemKey(sectionIndex, itemIndex)] ??
         (item.repeat ?? 0);
+  }
+
+  bool _isJustCompleted(int sectionIndex, int itemIndex) {
+    return _justCompletedKeys.contains(_itemKey(sectionIndex, itemIndex));
   }
 
   void _decrementRemaining(int sectionIndex, int itemIndex, DhikrData item) {
@@ -35,8 +47,63 @@ class _AdhkarPageState extends State<AdhkarPage> {
     if (current == 0) {
       return;
     }
+    final nextRemaining = current - 1;
     setState(() {
-      _remainingByKey[key] = current - 1;
+      _remainingByKey[key] = nextRemaining;
+    });
+
+    if (nextRemaining == 0) {
+      _handleItemCompletion(sectionIndex, itemIndex);
+    }
+  }
+
+  Future<void> _handleItemCompletion(int sectionIndex, int itemIndex) async {
+    final key = _itemKey(sectionIndex, itemIndex);
+    final canVibrate = await Vibration.hasVibrator();
+    if (canVibrate == true) {
+      await Vibration.vibrate(duration: 50, amplitude: 90);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _justCompletedKeys.add(key);
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _justCompletedKeys.remove(key);
+    });
+
+    _moveToNextItem(sectionIndex, itemIndex);
+  }
+
+  void _moveToNextItem(int sectionIndex, int itemIndex) {
+    final section = adhkarSections[sectionIndex];
+    final nextItemIndex = itemIndex + 1;
+    if (nextItemIndex >= section.items.length) {
+      return;
+    }
+
+    final nextKey = _tileKeyFor(sectionIndex, nextItemIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final nextContext = nextKey.currentContext;
+      if (nextContext == null || !mounted) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        nextContext,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
     });
   }
 
@@ -77,9 +144,11 @@ class _AdhkarPageState extends State<AdhkarPage> {
                 itemBuilder: (context, itemIndex) {
                   final item = adhkarSections[sectionIndex].items[itemIndex];
                   return _DhikrTile(
+                    key: _tileKeyFor(sectionIndex, itemIndex),
                     item: item,
                     store: widget.store,
                     remaining: _remainingFor(sectionIndex, itemIndex, item),
+                    highlightCompleted: _isJustCompleted(sectionIndex, itemIndex),
                     onTap: () =>
                         _decrementRemaining(sectionIndex, itemIndex, item),
                   );
@@ -146,15 +215,18 @@ class _KhatmQuranDoaTab extends StatelessWidget {
 
 class _DhikrTile extends StatelessWidget {
   const _DhikrTile({
+    super.key,
     required this.item,
     required this.store,
     required this.remaining,
+    required this.highlightCompleted,
     required this.onTap,
   });
 
   final DhikrData item;
   final QuranStore? store;
   final int remaining;
+  final bool highlightCompleted;
   final VoidCallback onTap;
 
   Future<void> _openTargetSurah(BuildContext context) async {
@@ -182,16 +254,17 @@ class _DhikrTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasRepeat = item.repeat != null && item.repeat! > 0;
     final completed = hasRepeat && remaining == 0;
-    final baseCardColor = completed
+    final showCompletionHighlight = completed || highlightCompleted;
+    final baseCardColor = showCompletionHighlight
         ? (isDark ? const Color(0xFF1F352B) : const Color(0xFFE7F3EB))
         : (isDark ? const Color(0xFF152127) : const Color(0xFFF9F6EE));
-    final baseBorderColor = completed
+    final baseBorderColor = showCompletionHighlight
         ? const Color(0xFF4F8E6A)
         : (isDark ? const Color(0xFF26343B) : const Color(0xFFE8DEC7));
-    final dhikrPanelColor = completed
+    final dhikrPanelColor = showCompletionHighlight
         ? (isDark ? const Color(0xFF274637) : const Color(0xFFDFF0E4))
         : (isDark ? const Color(0xFF1E2D34) : const Color(0xFFCDE7DC));
-    final dhikrBorderColor = completed
+    final dhikrBorderColor = showCompletionHighlight
         ? const Color(0xFF70B48C)
         : (isDark ? const Color(0xFF3C5C67) : const Color(0xFFCBE4D3));
     final dhikrTextColor = isDark
@@ -247,7 +320,7 @@ class _DhikrTile extends StatelessWidget {
                 item.text,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                   height: 1.5,
                   fontWeight: FontWeight.w900,
                   color: dhikrTextColor,

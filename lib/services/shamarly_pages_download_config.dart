@@ -3,10 +3,12 @@ class ShamarlyPagesDownloadConfig {
 
   static const bool enableOnDemandDownload = true;
 
-  /// Direct URL to the ZIP file that contains all pages.
-  /// Example: https://github.com/owner/repo/releases/download/v1/shamarly_pages_100.zip
-  static const String zipUrl =
-      'https://github.com/ElshazlyGSM/mushaf-pages/releases/download/v2/shamarly_pages_100.zip';
+  /// Ordered download sources. The app tries the first URL, then falls back
+  /// to the next ones automatically if a source is unavailable.
+  static const List<String> zipUrls = <String>[
+    'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/shamarly_pages_100.zip',
+    'https://github.com/ElshazlyGSM/mushaf-pages/releases/download/v2/shamarly_pages_100.zip',
+  ];
 
   static const int totalPages = 522;
   static const String filePrefix = 'page-';

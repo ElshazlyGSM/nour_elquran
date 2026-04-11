@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:quran_library/quran_library.dart';
@@ -9,6 +9,7 @@ import 'features/notifications/adhan/prayer_notification_service.dart';
 import 'features/notifications/salawat/salawat_notification_service.dart';
 import 'services/daily_quran_reminder_service.dart';
 import 'services/current_quran_text_source.dart';
+import 'services/app_update_service.dart';
 import 'services/quran_store.dart';
 import 'services/salawat_unlock_service.dart';
 
@@ -73,12 +74,12 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                 const Icon(
                   Icons.menu_book_rounded,
                   size: 200,
-                  color: Color(0xFFF8F3E7),
+                  color: Colors.white,
                 ),
                 Text(
                   'نور القرآن',
                   style: TextStyle(
-                    color: const Color(0xFFF8F3E7),
+                    color: Colors.white,
                     fontSize: 50,
                     fontWeight: FontWeight.bold,
                     // letterSpacing: 0.5,
@@ -102,6 +103,9 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
     setState(() => _store = store);
     unawaited(_postBootstrapSetup(store));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(AppUpdateService.instance.checkForUpdatesFromNavigator());
+    });
   }
 
   Future<void> _postBootstrapSetup(QuranStore store) async {
@@ -203,3 +207,4 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
+

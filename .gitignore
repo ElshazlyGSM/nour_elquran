@@ -49,3 +49,44 @@ app.*.map.json
 key.properties
 /android/app/*.jks
 /android/app/*.keystore
+
+# Store signing and local secrets
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.cer
+*.pem
+*.p8
+*.pfx
+android/key.properties
+android/app/upload-keystore.jks
+android/app/release-keystore.jks
+ios/ExportOptions.plist
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+# iOS local/Xcode user files
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+DerivedData/
+
+# Local build caches created on this machine
+.gradle-local/
+android/build/
+android/app/build/
+vendor/quran_library/android/build/
+vendor/quran_library/build/
+vendor/quran_library/pubspec.lock
+
+# Local tooling
+/devtools_options.yaml
+vendor/quran_library/example/**/ephemeral/
+vendor/quran_library/example/**/build/
+vendor/quran_library/example/pubspec.lock

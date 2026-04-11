@@ -850,6 +850,7 @@ extension _ReaderDialogs on _ReaderPageState {
     final isPagedAppearance =
         selected == _ReaderAppearance.medinaPages ||
         selected == _ReaderAppearance.shamarlyPages;
+    final wasMedinaPagesMode = _appearance == _ReaderAppearance.medinaPages;
     if (!isPagedAppearance) {
       _lastContinuousAppearance = selected;
       _lastContinuousFontSize = _fontSize;
@@ -870,7 +871,8 @@ extension _ReaderDialogs on _ReaderPageState {
       _pagedStartPage = targetPage;
       _standardInitialPage = targetPage;
       _appearance = selected;
-      _isSwitchingToPagedMushaf = selected == _ReaderAppearance.medinaPages;
+      _isSwitchingToPagedMushaf =
+          selected == _ReaderAppearance.medinaPages && !wasMedinaPagesMode;
       _showBottomBar = !isPagedAppearance;
       _isInitialStandardPositioning = !isPagedAppearance;
     });
@@ -1024,3 +1026,5 @@ class _TajweedLegendItem {
   final Color color;
   final String label;
 }
+
+

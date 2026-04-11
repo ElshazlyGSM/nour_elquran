@@ -1192,7 +1192,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         progress: _medinaFontsDownloadProgress,
         status: _medinaFontsDownloadStatus,
         error: _medinaFontsDownloadError,
-        isConfigured: MedinaFontsDownloadConfig.zipUrl.isNotEmpty,
+        isConfigured: MedinaFontsDownloadConfig.zipUrls.isNotEmpty,
         onRefresh: _refreshMedinaFontsAvailability,
         onStartDownload: _startMedinaFontsDownload,
         onCancelDownload: _cancelMedinaFontsDownloadRequest,
@@ -1271,7 +1271,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         progress: _shamarlyPagesDownloadProgress,
         status: _shamarlyPagesDownloadStatus,
         error: _shamarlyPagesDownloadError,
-        isConfigured: ShamarlyPagesDownloadConfig.zipUrl.isNotEmpty,
+        isConfigured: ShamarlyPagesDownloadConfig.zipUrls.isNotEmpty,
         onRefresh: _refreshShamarlyPagesAvailability,
         onStartDownload: _startShamarlyPagesDownload,
         onCancelDownload: _cancelShamarlyPagesDownloadRequest,
@@ -1547,3 +1547,8 @@ class _ReaderTopJumpButton extends StatelessWidget {
     );
   }
 }
+
+
+
+
+

@@ -890,3 +890,40 @@ Why isolated:
   - حصلت عدة محاولات لضبط الـ overflow مع حبات السبحة
   - تم تثبيت التوزيع بحيث لا يوجد سكرول وتتحجّم العناصر حسب الشاشة
   - الملف: `lib/features/home/tasbih_page.dart`
+
+## April 2026 Troubleshooting Recap
+- New Windows machine build failure
+  - Symptom: Gradle failed before app startup and Java pointed to JDK 25.
+  - Root cause: this project setup here expects JDK 17.
+  - Fix: install JDK 17, point `JAVA_HOME` to it, then rebuild.
+
+- Online Medina Mushaf first-open spinner after download
+  - Symptom: download completed, files existed on device, but the page stayed on the loading spinner until the surah changed.
+  - Root cause: `quran_library` could keep a stale failed font-page load future from the first attempt.
+  - Final fix: in `vendor/quran_library/lib/src/quran/core/services/quran_fonts_service.dart`, clear `_pageLoadFutures[page]` inside `finally` so the page can retry cleanly.
+  - Result: after a full rebuild/install, downloaded Medina pages open normally.
+
+- Why restart alone was not enough
+  - Symptom: app behavior still looked old after restart.
+  - Cause: some fixes were inside `vendor/quran_library` and package wiring, so hot restart or partial rerun did not always reflect the latest packaged build.
+  - Fix: for vendor/package internals use a full rebuild:
+    - `flutter clean`
+    - `flutter pub get`
+    - `flutter build apk --debug`
+    - reinstall the APK
+
+- Remote update prompt with online JSON
+  - Goal: show what's new before updating with custom actions.
+  - Actions supported now:
+    - Update now
+    - Remind me later
+    - Ignore version
+  - Files:
+    - `lib/services/app_update_service.dart`
+    - `docs/app_update_manifest.example.json`
+    - `lib/main.dart`
+  - Note: put the raw GitHub JSON link in `AppUpdateService.manifestUrl`.
+
+- Tasbih page larger tap zone
+  - Goal: make the lower tasbih section easier to tap.
+  - Fix: wrap the lower button + bead interaction area in a transparent tap target so pressing anywhere there increments the counter.

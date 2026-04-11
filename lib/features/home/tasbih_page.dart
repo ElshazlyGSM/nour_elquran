@@ -107,7 +107,7 @@ class _TasbihPageState extends State<TasbihPage> {
                           child: ActionChip(
                             avatar: const Icon(Icons.edit_rounded, size: 20),
                             label: const Text(
-                              'ذكر مخصص واعدادت الإهتزاز',
+                              'ذكر مخصص وإعدادت الإهتزاز',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -185,16 +185,32 @@ class _TasbihPageState extends State<TasbihPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 18),
-                                Center(
-                                  child: _TasbihPressButton(
-                                    isDark: isDark,
-                                    onTap: _incrementTasbih,
+                                GestureDetector(
+                                  behavior: HitTestBehavior.translucent,
+                                  onTap: _incrementTasbih,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Center(
+                                          child: _TasbihPressButton(
+                                            isDark: isDark,
+                                            onTap: _incrementTasbih,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: _TasbihBeadFlow(
+                                            isDark: isDark,
+                                            onIncrement: _incrementTasbih,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 14),
-                                _TasbihBeadFlow(
-                                  isDark: isDark,
-                                  onIncrement: _incrementTasbih,
                                 ),
                               ],
                             ),

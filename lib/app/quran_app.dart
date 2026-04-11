@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
 import '../features/home/home_shell.dart';
+import '../services/app_update_service.dart';
 import '../services/quran_store.dart';
 
 class QuranApp extends StatelessWidget {
@@ -17,6 +18,7 @@ class QuranApp extends StatelessWidget {
       builder: (context, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorKey: AppUpdateService.navigatorKey,
           title: 'القرآن الكريم',
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,

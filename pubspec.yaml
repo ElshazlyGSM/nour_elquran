@@ -1,4 +1,4 @@
-name: quran_reader_app
+﻿name: quran_reader_app
 description: "Quran reader built with Flutter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -54,6 +54,8 @@ dependencies:
   wakelock_plus: ^1.4.0
   path: ^1.9.0
   path_provider: ^2.1.5
+  package_info_plus: ^9.0.0
+  url_launcher: ^6.3.1
 
 dependency_overrides:
   quran_library:
@@ -109,3 +111,5 @@ flutter_launcher_icons:
   adaptive_icon_background: "#143A2A"
   adaptive_icon_foreground: assets/IMG_4554.png
   remove_alpha_ios: true
+
+

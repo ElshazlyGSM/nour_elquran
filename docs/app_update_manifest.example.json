@@ -1,0 +1,15 @@
+﻿{
+  "latest_version": "2.2.0",
+  "title": "تحديث جديد متاح",
+  "message": "قمنا بإجراء تحسينات هامة على الأداء وإصلاح بعض المشكلات لضمان تجربة قراءة أفضل.",
+  "whats_new": [
+    "تحسين استقرار مصحف المدينة",
+    "تسريع التنقل بين السور والأجزاء",
+    "إصلاحات عامة وتحسين الأداء"
+  ],
+  "force_update": false,
+  "remind_later_enabled": true,
+  "ignore_enabled": true,
+  "remind_after_hours": 24,
+  "store_url": "https://play.google.com/store/apps/details?id=com.elshazly.noorquran.app"
+}

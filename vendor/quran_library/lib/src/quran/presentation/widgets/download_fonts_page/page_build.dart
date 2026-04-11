@@ -1,4 +1,4 @@
-part of '/quran.dart';
+﻿part of '/quran.dart';
 
 class PageBuild extends StatelessWidget {
   const PageBuild({
@@ -61,13 +61,14 @@ class PageBuild extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // التحميل الكسول: تأكد أن خط هذه الصفحة جاهز
+    // Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙƒØ³ÙˆÙ„: ØªØ£ÙƒØ¯ Ø£Ù† Ø®Ø· Ù‡Ø°Ù‡ Ø§Ù„ØµÙØ­Ø© Ø¬Ø§Ù‡Ø²
     final int pageNumber = pageIndex + 1;
     if (!QuranFontsService.isPageReady(pageNumber)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         QuranFontsService.ensurePagesLoaded(pageNumber, radius: 10).then((_) {
           quranCtrl.update();
           quranCtrl.update(['_pageViewBuild']);
+          quranCtrl.update(['qpc_page_$pageIndex']);
         });
       });
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -75,6 +76,9 @@ class PageBuild extends StatelessWidget {
 
     final blocks = quranCtrl.getQpcLayoutBlocksForPageSync(pageNumber);
     if (blocks.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        quranCtrl.update(['qpc_page_$pageIndex']);
+      });
       return const Center(child: CircularProgressIndicator.adaptive());
     }
 
@@ -84,7 +88,7 @@ class PageBuild extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: blocks.map((b) {
-            // عند عرض سورة واحدة: نتجاهل الهيدر/البسملة من الـ layout ونتركها للـ SurahPage.
+            // Ø¹Ù†Ø¯ Ø¹Ø±Ø¶ Ø³ÙˆØ±Ø© ÙˆØ§Ø­Ø¯Ø©: Ù†ØªØ¬Ø§Ù‡Ù„ Ø§Ù„Ù‡ÙŠØ¯Ø±/Ø§Ù„Ø¨Ø³Ù…Ù„Ø© Ù…Ù† Ø§Ù„Ù€ layout ÙˆÙ†ØªØ±ÙƒÙ‡Ø§ Ù„Ù„Ù€ SurahPage.
             if (surahFilterNumber != null &&
                 (b is QpcV4SurahHeaderBlock || b is QpcV4BasmallahBlock)) {
               return const SizedBox.shrink();
@@ -166,3 +170,4 @@ class PageBuild extends StatelessWidget {
     );
   }
 }
+

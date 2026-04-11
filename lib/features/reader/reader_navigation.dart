@@ -1,4 +1,4 @@
-part of 'reader_page.dart';
+﻿part of 'reader_page.dart';
 
 extension _ReaderNavigation on _ReaderPageState {
   static const int _maxInitialStandardPositionAttempts = 8;
@@ -20,7 +20,7 @@ extension _ReaderNavigation on _ReaderPageState {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('تفاصيل العلامة'),
+          title: const Text('ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¹Ù„Ø§Ù…Ø©'),
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -29,7 +29,7 @@ extension _ReaderNavigation on _ReaderPageState {
                   TextField(
                     controller: controller,
                     decoration: const InputDecoration(
-                      labelText: 'ملاحظة (اختياري)',
+                      labelText: 'Ù…Ù„Ø§Ø­Ø¸Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -90,7 +90,7 @@ extension _ReaderNavigation on _ReaderPageState {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('إلغاء'),
+              child: const Text('Ø¥Ù„ØºØ§Ø¡'),
             ),
             FilledButton(
               onPressed: () {
@@ -101,7 +101,7 @@ extension _ReaderNavigation on _ReaderPageState {
                   colorValue: selected.toARGB32(),
                 ));
               },
-              child: const Text('حفظ'),
+              child: const Text('Ø­ÙØ¸'),
             ),
           ],
         );
@@ -155,7 +155,7 @@ extension _ReaderNavigation on _ReaderPageState {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('تم حذف العلامة')));
+      ).showSnackBar(const SnackBar(content: Text('ØªÙ… Ø­Ø°Ù Ø§Ù„Ø¹Ù„Ø§Ù…Ø©')));
       return;
     }
 
@@ -183,7 +183,7 @@ extension _ReaderNavigation on _ReaderPageState {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'تمت إضافة علامة عند ${bookmark.surahName} • الآية ${toArabicNumber(bookmark.verseNumber)}',
+          'ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø¹Ù„Ø§Ù…Ø© Ø¹Ù†Ø¯ ${bookmark.surahName} â€¢ Ø§Ù„Ø¢ÙŠØ© ${toArabicNumber(bookmark.verseNumber)}',
         ),
       ),
     );
@@ -197,7 +197,7 @@ extension _ReaderNavigation on _ReaderPageState {
       _visibleStandardPageNumber = bookmark.pageNumber;
       if (_isMedinaPagesMode) {
         _pagedStartPage = bookmark.pageNumber;
-        _isSwitchingToPagedMushaf = true;
+        _isSwitchingToPagedMushaf = false;
       } else if (_isShamarlyPagesMode) {
         _shamarlyCurrentPage = bookmark.pageNumber;
       } else {
@@ -552,3 +552,4 @@ extension _ReaderNavigation on _ReaderPageState {
     );
   }
 }
+
