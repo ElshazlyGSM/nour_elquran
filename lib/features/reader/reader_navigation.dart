@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderNavigation on _ReaderPageState {
   static const int _maxInitialStandardPositionAttempts = 8;
@@ -20,7 +20,7 @@ extension _ReaderNavigation on _ReaderPageState {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¹Ù„Ø§Ù…Ø©'),
+          title: const Text('تفاصيل العلامة'),
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -29,7 +29,7 @@ extension _ReaderNavigation on _ReaderPageState {
                   TextField(
                     controller: controller,
                     decoration: const InputDecoration(
-                      labelText: 'Ù…Ù„Ø§Ø­Ø¸Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)',
+                      labelText: 'ملاحظة (اختياري)',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -90,7 +90,7 @@ extension _ReaderNavigation on _ReaderPageState {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Ø¥Ù„ØºØ§Ø¡'),
+              child: const Text('إلغاء'),
             ),
             FilledButton(
               onPressed: () {
@@ -101,7 +101,7 @@ extension _ReaderNavigation on _ReaderPageState {
                   colorValue: selected.toARGB32(),
                 ));
               },
-              child: const Text('Ø­ÙØ¸'),
+              child: const Text('حفظ'),
             ),
           ],
         );
@@ -155,7 +155,7 @@ extension _ReaderNavigation on _ReaderPageState {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('ØªÙ… Ø­Ø°Ù Ø§Ù„Ø¹Ù„Ø§Ù…Ø©')));
+      ).showSnackBar(const SnackBar(content: Text('تم حذف العلامة')));
       return;
     }
 
@@ -183,7 +183,7 @@ extension _ReaderNavigation on _ReaderPageState {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø¹Ù„Ø§Ù…Ø© Ø¹Ù†Ø¯ ${bookmark.surahName} â€¢ Ø§Ù„Ø¢ÙŠØ© ${toArabicNumber(bookmark.verseNumber)}',
+          'تمت إضافة علامة عند ${bookmark.surahName} • الآية ${toArabicNumber(bookmark.verseNumber)}',
         ),
       ),
     );

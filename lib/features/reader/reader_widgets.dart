@@ -341,6 +341,22 @@ class _ShamarlyPages extends StatefulWidget {
   @override
   State<_ShamarlyPages> createState() => _ShamarlyPagesState();
 }
+class _GentlePageScrollPhysics extends PageScrollPhysics {
+  const _GentlePageScrollPhysics({super.parent});
+
+  @override
+  _GentlePageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _GentlePageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => const SpringDescription(
+    mass: 1,
+    stiffness: 80,
+    damping: 18,
+  );
+}
+
 
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
   late final PageController _controller;
@@ -369,7 +385,11 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
           return;
         }
         if (_controller.hasClients) {
-          _controller.jumpToPage(target);
+          _controller.animateToPage(
+            target,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+          );
         }
       });
     }
@@ -442,6 +462,7 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
         onTap: widget.onPageTap,
         child: PageView.builder(
           controller: _controller,
+          physics: const _GentlePageScrollPhysics(),
           reverse: false,
           clipBehavior: Clip.hardEdge,
           itemCount: ShamarlyPagesDownloadConfig.totalPages,
@@ -742,7 +763,9 @@ class _SurahMarker extends StatelessWidget {
               color: appearance.initialVerseColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: appearance.dividerColor.withValues(alpha: 0.55),
+                color: appearance.quarterMarkerBorderColor.withValues(
+                          alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.92 : 0.55,
+                        ),
               ),
             ),
             child: Text(
@@ -751,7 +774,7 @@ class _SurahMarker extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontFamily: _headerFontFamily,
                 package: _headerFontPackage,
-                color: appearance.textColor,
+                color: appearance.quarterMarkerTextColor,
                 fontWeight: FontWeight.w700,
                 fontSize: basmalaFontSize,
                 height: 1.55,
@@ -838,7 +861,7 @@ class _VerseWrap extends StatelessWidget {
       fontSize: fontSize,
       //خط المصحف والتباعد بين السطور
       height: 1.60,
-      color: appearance.textColor,
+      color: appearance.quarterMarkerTextColor,
       fontWeight: FontWeight.w500,
       //سماكه خط المصحف
       wordSpacing: effectiveWordSpacing,
@@ -1011,12 +1034,14 @@ class _VerseWrap extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: appearance.initialVerseColor.withValues(
-                        alpha: 0.42,
+                      color: appearance.quarterMarkerFillColor.withValues(
+                        alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.88 : 0.42,
                       ),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: appearance.dividerColor.withValues(alpha: 0.55),
+                        color: appearance.quarterMarkerBorderColor.withValues(
+                          alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.92 : 0.55,
+                        ),
                       ),
                     ),
                     child: Padding(
@@ -1028,7 +1053,7 @@ class _VerseWrap extends StatelessWidget {
                         quarterMarkerDisplayLabel,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: appearance.textColor,
+                          color: appearance.quarterMarkerTextColor,
                           fontSize: quarterMarkerFontSize,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
@@ -1294,7 +1319,7 @@ class _VerseWrap extends StatelessWidget {
     return spans;
   }
 
-  static const String _tafkheemLetters = 'Ø®ØµØ¶ØºØ·Ù‚Ø¸';
+  static const String _tafkheemLetters = 'خصضغطقظ';
 
   List<InlineSpan> _buildPlainTajweedAwareSpans(
     String text, {
@@ -1779,7 +1804,7 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
             label: _quarterMarkerDisplayLabel(
               _quarterMarkerLabel(surahNumber, verseNumber),
             ),
-            color: widget.appearance.surahBadgeColor.withValues(alpha: 0.6),
+            color: widget.appearance.quarterMarkerTextColor,
           ),
         );
       }
@@ -1919,9 +1944,7 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
                   style: TextStyle(
                     color:
                         position.color ??
-                        widget.appearance.surahBadgeColor.withValues(
-                          alpha: 0.6,
-                        ),
+                        widget.appearance.quarterMarkerTextColor,
                     fontSize: markerFontSize,
                     fontWeight: FontWeight.w800,
                     height: 1,
@@ -1996,7 +2019,7 @@ class _PageDivider extends StatelessWidget {
             child: Text(
               toArabicNumber(pageNumber),
               style: TextStyle(
-                color: appearance.textColor,
+                color: appearance.quarterMarkerTextColor,
                 fontWeight: FontWeight.w800,
                 fontFamily: _pageNumberFontFamily,
                 //حجم خط أرقام الصفحات
@@ -2041,3 +2064,4 @@ class _KhatmDuaButton extends StatelessWidget {
     );
   }
 }
+

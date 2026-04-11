@@ -40,6 +40,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
     super.initState();
     _enabled = widget.store.savedSalawatReminderEnabled;
     _intervalMinutes = widget.store.savedSalawatReminderIntervalMinutes;
+    if (!_intervals.contains(_intervalMinutes)) {
+      _intervalMinutes = _intervals.first;
+    }
     _pauseAtPrayer = widget.store.savedSalawatPauseAtPrayer;
     _prayerPauseMinutes = widget.store.savedSalawatPrayerPauseMinutes;
     _windowEnabled = widget.store.savedSalawatWindowEnabled;

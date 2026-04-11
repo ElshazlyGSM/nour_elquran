@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderAutoScroll on _ReaderPageState {
   void _syncPagedMushafScaleFromFontSize() {
@@ -36,15 +36,51 @@ extension _ReaderAutoScroll on _ReaderPageState {
       _showControlBarWhileAutoScroll = true;
       _showBottomBar = true;
     });
-    _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
-      if (!_standardItemScrollController.isAttached) {
+
+    void beginTimer() {
+      _autoScrollTimer?.cancel();
+      _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+        if (!_standardItemScrollController.isAttached) {
+          return;
+        }
+        _standardScrollOffsetController.animateScroll(
+          offset: _readingSpeed * 16,
+          duration: const Duration(milliseconds: 80),
+        );
+      });
+    }
+
+    void waitUntilReady(int attempt) {
+      if (!mounted || _isPagedMushafMode || !_isAutoScrolling) {
         return;
       }
-      _standardScrollOffsetController.animateScroll(
-        offset: _readingSpeed * 16,
-        duration: const Duration(milliseconds: 80),
-      );
-    });
+      final ready =
+          _standardItemScrollController.isAttached && !_isInitialStandardPositioning;
+      if (ready) {
+        beginTimer();
+        return;
+      }
+      if (attempt >= 18) {
+        _updateState(() {
+          _isAutoScrolling = false;
+          _isAutoScrollPaused = false;
+          _showControlBarWhileAutoScroll = true;
+          _showBottomBar = true;
+        });
+        return;
+      }
+      Future<void>.delayed(const Duration(milliseconds: 90), () {
+        waitUntilReady(attempt + 1);
+      });
+    }
+
+    final ready =
+        _standardItemScrollController.isAttached && !_isInitialStandardPositioning;
+    if (ready) {
+      beginTimer();
+      return;
+    }
+    waitUntilReady(0);
   }
 
   void _pauseAutoScroll() {

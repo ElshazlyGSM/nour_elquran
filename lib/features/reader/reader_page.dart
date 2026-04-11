@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -182,6 +182,27 @@ extension on _ReaderAppearance {
   };
 }
 
+
+extension _ReaderAppearanceQuarterMarkerColors on _ReaderAppearance {
+  Color get quarterMarkerTextColor => switch (this) {
+    _ReaderAppearance.night => const Color(0xFFF3E6A8),
+    _ReaderAppearance.nightTajweed => const Color(0xFFF0E0A0),
+    _ => textColor,
+  };
+
+  Color get quarterMarkerFillColor => switch (this) {
+    _ReaderAppearance.night => const Color(0xFF2B3D2E),
+    _ReaderAppearance.nightTajweed => const Color(0xFF243A34),
+    _ => initialVerseColor,
+  };
+
+  Color get quarterMarkerBorderColor => switch (this) {
+    _ReaderAppearance.night => const Color(0xFFBDA35A),
+    _ReaderAppearance.nightTajweed => const Color(0xFFC1A861),
+    _ => dividerColor,
+  };
+}
+
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
     super.key,
@@ -273,6 +294,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int _shamarlyCurrentPage = 1;
   String? _shamarlyPagesDirectoryPath;
   Map<String, int>? _shamarlyPageMap;
+  Map<int, int>? _shamarlyPageToSurahMap;
+  List<int>? _shamarlyJuzStartPages;
   bool _isLoadingShamarlyPageMap = false;
   double? _scaleStartFontSize;
   String? _audioError;
@@ -407,10 +430,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     final currentPage = _isMedinaPagesMode
         ? QuranCtrl.instance.state.currentPageNumber.value
         : (_isShamarlyPagesMode
-              ? _quranSource.getPageNumber(
-                  _selectedSurahNumber ?? widget.surahNumber,
-                  _selectedVerseNumber ?? widget.initialVerse,
-                )
+              ? _shamarlyCurrentPage
               : (_currentVisibleStandardPage() ??
                     _quranSource.getPageNumber(
                       _selectedSurahNumber ?? widget.surahNumber,
@@ -541,6 +561,30 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     };
   }
 
+  int? _resolveShamarlyVisibleSurahNumber(int pageNumber) {
+    final pageToSurah = _shamarlyPageToSurahMap;
+    if (pageToSurah == null) {
+      return null;
+    }
+    return pageToSurah[pageNumber];
+  }
+
+  int _currentShamarlyJuzNumberFromPage(int pageNumber) {
+    final starts = _shamarlyJuzStartPages;
+    if (starts == null || starts.isEmpty) {
+      return _currentJuzNumberFromPage(pageNumber);
+    }
+    var currentJuz = 1;
+    for (var i = 0; i < starts.length; i++) {
+      if (pageNumber >= starts[i]) {
+        currentJuz = i + 1;
+      } else {
+        break;
+      }
+    }
+    return currentJuz.clamp(1, currentQuranTotalJuzCount);
+  }
+
   int _resolveShamarlyPage(int surahNumber, int verseNumber) {
     final map = _shamarlyPageMap;
     if (map != null) {
@@ -566,22 +610,61 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         final mapNode = decoded['map'];
         if (mapNode is Map) {
           final parsed = <String, int>{};
+          final pageToSurah = <int, int>{};
           mapNode.forEach((key, value) {
             if (key is! String) {
               return;
             }
             if (value is int) {
-              parsed[key] = value;
+              final page = value;
+              parsed[key] = page;
+              final parts = key.split(':');
+              if (parts.length == 2) {
+                final surah = int.tryParse(parts[0]);
+                if (surah != null && page >= 1) {
+                  final existingSurah = pageToSurah[page];
+                  if (existingSurah == null || surah > existingSurah) {
+                    pageToSurah[page] = surah;
+                  }
+                }
+              }
             } else if (value is num) {
               parsed[key] = value.toInt();
+              final parts = key.split(':');
+              if (parts.length == 2) {
+                final surah = int.tryParse(parts[0]);
+                final page = value.toInt();
+                if (surah != null && page >= 1) {
+                  final existingSurah = pageToSurah[page];
+                  if (existingSurah == null || surah > existingSurah) {
+                    pageToSurah[page] = surah;
+                  }
+                }
+              }
             }
           });
           _shamarlyPageMap = parsed;
+          _shamarlyPageToSurahMap = pageToSurah;
+          _shamarlyJuzStartPages = List<int>.generate(
+            currentQuranTotalJuzCount,
+            (index) {
+              final juzVerses = _quranSource.getSurahAndVersesFromJuz(index + 1);
+              final firstSurah = juzVerses.keys.first;
+              final firstVerse = juzVerses[firstSurah]!.first;
+              return parsed['$firstSurah:$firstVerse'] ??
+                  _quranSource.getPageNumber(firstSurah, firstVerse);
+            },
+            growable: false,
+          );
         } else {
           _shamarlyPageMap = <String, int>{};
+          _shamarlyPageToSurahMap = <int, int>{};
+          _shamarlyJuzStartPages = null;
         }
       } else {
         _shamarlyPageMap = <String, int>{};
+          _shamarlyPageToSurahMap = <int, int>{};
+          _shamarlyJuzStartPages = null;
       }
     } finally {
       _isLoadingShamarlyPageMap = false;
@@ -935,16 +1018,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     final displayedPageNumber = _isMedinaPagesMode
         ? QuranCtrl.instance.state.currentPageNumber.value
         : (_isShamarlyPagesMode
-              ? _quranSource.getPageNumber(
-                  _selectedSurahNumber ?? widget.surahNumber,
-                  _selectedVerseNumber ?? widget.initialVerse,
-                )
+              ? _shamarlyCurrentPage
               : (_visibleStandardPageNumber ??
                     _quranSource.getPageNumber(
                       _selectedSurahNumber ?? widget.surahNumber,
                       _selectedVerseNumber ?? widget.initialVerse,
                     )));
-    final displayedJuzNumber = _currentJuzNumberFromPage(displayedPageNumber);
+    final displayedJuzNumber = _isShamarlyPagesMode ? _currentShamarlyJuzNumberFromPage(displayedPageNumber) : _currentJuzNumberFromPage(displayedPageNumber);
 
     return AnimatedBuilder(
       animation: widget.store,
@@ -1290,6 +1370,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               pagesDirectoryPath: _shamarlyPagesDirectoryPath,
               onPageTap: _showPagedControlBar,
               onPageChanged: (pageNumber) {
+                final pageSurahNumber = _resolveShamarlyVisibleSurahNumber(pageNumber);
                 if (_isSwitchingToPagedMushaf) {
                   _updateState(() {
                     _isSwitchingToPagedMushaf = false;
@@ -1297,6 +1378,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 }
                 _updateState(() {
                   _shamarlyCurrentPage = pageNumber;
+                  if (pageSurahNumber != null) {
+                    _visibleSurahNumber = pageSurahNumber;
+                  }
                 });
               },
             ),
@@ -1372,6 +1456,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           }
           _updateState(() {
             _medinaFontsDownloadProgress = progress;
+            if (progress < 1) {
+              _medinaFontsDownloadStatus = 'جارٍ تنزيل ملف مصحف المدينة... $percent%';
+            }
           });
         },
         onStatus: (message) {
@@ -1475,8 +1562,12 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           if (!mounted) {
             return;
           }
+          final percent = (progress * 100).round();
           _updateState(() {
             _shamarlyPagesDownloadProgress = progress;
+            if (progress < 1) {
+              _shamarlyPagesDownloadStatus = 'جارٍ تنزيل ملف الشمرلي... $percent%';
+            }
           });
         },
         onStatus: (message) {
@@ -1547,6 +1638,7 @@ class _ReaderTopJumpButton extends StatelessWidget {
     );
   }
 }
+
 
 
 

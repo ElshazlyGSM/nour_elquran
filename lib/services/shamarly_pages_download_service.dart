@@ -91,15 +91,15 @@ class ShamarlyPagesDownloadService {
     bool Function()? shouldCancel,
   }) async {
     if (kIsWeb) {
-      throw Exception('Shamarly pages download is not supported on web.');
+      throw Exception('تعذر الوصول إلى تخزين الجهاز.');
     }
     if (ShamarlyPagesDownloadConfig.zipUrls.isEmpty) {
-      throw Exception('Shamarly ZIP URLs are not configured.');
+      throw Exception('تعذر الوصول إلى تخزين الجهاز.');
     }
 
     final zipFile = await _zipFile();
     if (zipFile == null) {
-      throw Exception('Unable to access storage.');
+      throw Exception('تعذر الوصول إلى تخزين الجهاز.');
     }
 
     final tempFile = File('${zipFile.path}.part');
@@ -110,10 +110,9 @@ class ShamarlyPagesDownloadService {
     final errors = <String>[];
     for (var index = 0; index < ShamarlyPagesDownloadConfig.zipUrls.length; index++) {
       final url = ShamarlyPagesDownloadConfig.zipUrls[index];
-      final sourceLabel = 'المصدر ${index + 1}';
       try {
         onProgress(0);
-        onStatus?.call('جارٍ تنزيل ملف الشمرلي من $sourceLabel...');
+        onStatus?.call('جارٍ تنزيل ملف الشمرلي...');
         await _downloadZipFromUrl(
           url: url,
           zipFile: zipFile,
@@ -128,7 +127,7 @@ class ShamarlyPagesDownloadService {
         final marker = await _completionMarker();
         await marker?.writeAsString('ok', flush: true);
         onProgress(1);
-        onStatus?.call('تم التحميل بنجاح.');
+        onStatus?.call('تم تحميل مصحف الشمرلي بنجاح.');
         return;
       } catch (error) {
         errors.add('$url -> $error');
@@ -147,7 +146,7 @@ class ShamarlyPagesDownloadService {
       }
     }
 
-    throw Exception('فشل تنزيل مصحف الشمرلي من كل المصادر: ');
+    throw Exception('تعذر الوصول إلى تخزين الجهاز.');
   }
 
   Future<void> _downloadZipFromUrl({
@@ -170,7 +169,7 @@ class ShamarlyPagesDownloadService {
       final response = await client.send(request);
 
       if (response.statusCode != 200 && response.statusCode != 206) {
-        throw Exception('Download failed (${response.statusCode}).');
+        throw Exception('تعذر الوصول إلى تخزين الجهاز.');
       }
 
       if (response.statusCode == 200 && existingBytes > 0) {
@@ -215,7 +214,7 @@ class ShamarlyPagesDownloadService {
   Future<void> _extractZip(File zipFile, {bool Function()? shouldCancel}) async {
     final pagesDir = await _pagesDirectory();
     if (pagesDir == null) {
-      throw Exception('Unable to access storage.');
+      throw Exception('تعذر الوصول إلى تخزين الجهاز.');
     }
     final bytes = await zipFile.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes);
