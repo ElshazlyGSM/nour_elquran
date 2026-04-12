@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+﻿import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -330,7 +330,7 @@ class SalawatNotificationService {
     bool vibrationEnabled,
   ) => NotificationDetails(
     android: AndroidNotificationDetails(
-      'salawat_reminders_channel_clean_v3_${vibrationEnabled ? 'vib' : 'silent'}',
+      'salawat_reminders_channel_clean_v4_${vibrationEnabled ? 'vib' : 'silent'}',
       'تذكير الصلاة على النبي',
       channelDescription: 'تنبيهات دورية للصلاة والسلام على سيدنا النبي',
       importance: Importance.max,
@@ -343,8 +343,8 @@ class SalawatNotificationService {
           : null,
       timeoutAfter: 60000,
       onlyAlertOnce: false,
-      category: AndroidNotificationCategory.alarm,
-      audioAttributesUsage: AudioAttributesUsage.alarm,
+      category: AndroidNotificationCategory.reminder,
+      audioAttributesUsage: AudioAttributesUsage.notification,
     ),
   );
 
@@ -352,3 +352,4 @@ class SalawatNotificationService {
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
+
