@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,6 @@ class AppUpdateService {
   static final instance = AppUpdateService._();
   static final navigatorKey = GlobalKey<NavigatorState>();
 
-  // ضع هنا رابط ملف JSON بعد رفعه على GitHub بصيغة raw.
   static const String manifestUrl = 'https://raw.githubusercontent.com/ElshazlyGSM/mushaf-pages/main/app_update_manifest.example.json';
 
   static const String _ignoreVersionKey = 'app_update_ignored_version';
@@ -121,10 +120,15 @@ class AppUpdateService {
     }
   }
 
-  Future<void> checkForUpdatesFromNavigator() async {
-    final dialogContext = navigatorKey.currentContext;
+  Future<void> checkForUpdatesFromNavigator({int retryCount = 6}) async {
+    final navigatorState = navigatorKey.currentState;
+    final dialogContext = navigatorState?.overlay?.context ?? navigatorKey.currentContext;
     if (dialogContext == null) {
-      return;
+      if (retryCount <= 0) {
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      return checkForUpdatesFromNavigator(retryCount: retryCount - 1);
     }
     await checkForUpdates(dialogContext);
   }
@@ -193,12 +197,8 @@ class AppUpdateService {
     AppUpdateManifest manifest, {
     required String currentVersion,
   }) {
-    final title = manifest.title.isNotEmpty
-        ? manifest.title
-        : '\u062a\u062d\u062f\u064a\u062b \u062c\u062f\u064a\u062f \u0645\u062a\u0627\u062d';
-    final message = manifest.message.isNotEmpty
-        ? manifest.message
-        : '\u0647\u0646\u0627\u0643 \u0625\u0635\u062f\u0627\u0631 \u0623\u062d\u062f\u062b \u0645\u0646 \u0627\u0644\u062a\u0637\u0628\u064a\u0642.';
+    final title = manifest.title.isNotEmpty ? manifest.title : 'تحديث جديد متاح';
+    final message = manifest.message.isNotEmpty ? manifest.message : 'هناك إصدار أحدث من التطبيق.';
 
     return showDialog<_UpdatePromptAction>(
       context: context,
@@ -217,19 +217,16 @@ class AppUpdateService {
                   Text(message),
                   const SizedBox(height: 12),
                   Text(
-                    '${'\u0625\u0635\u062f\u0627\u0631\u0643 \u0627\u0644\u062d\u0627\u0644\u064a'}: $currentVersion',
+                    'إصدارك الحالي: $currentVersion',
                     style: theme.textTheme.bodySmall,
                   ),
                   Text(
-                    '${'\u0627\u0644\u0625\u0635\u062f\u0627\u0631 \u0627\u0644\u062c\u062f\u064a\u062f'}: ${manifest.latestVersion}',
+                    'الإصدار الجديد: ${manifest.latestVersion}',
                     style: theme.textTheme.bodySmall,
                   ),
                   if (manifest.whatsNew.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      '\u0645\u0627 \u0627\u0644\u062c\u062f\u064a\u062f',
-                      style: theme.textTheme.titleMedium,
-                    ),
+                    Text('ما الجديد', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     for (final item in manifest.whatsNew)
                       Padding(
@@ -237,7 +234,7 @@ class AppUpdateService {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('\u2022 '),
+                            const Text('• '),
                             Expanded(child: Text(item)),
                           ],
                         ),
@@ -250,23 +247,17 @@ class AppUpdateService {
           actions: [
             if (!manifest.forceUpdate && manifest.ignoreEnabled)
               TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(
-                  _UpdatePromptAction.ignoreVersion,
-                ),
-                child: const Text('\u062a\u062c\u0627\u0647\u0644'),
+                onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.ignoreVersion),
+                child: const Text('تجاهل'),
               ),
             if (!manifest.forceUpdate && manifest.remindLaterEnabled)
               TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(
-                  _UpdatePromptAction.remindLater,
-                ),
-                child: const Text('\u0630\u0643\u0631\u0646\u064a \u0644\u0627\u062d\u0642\u064b\u0627'),
+                onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.remindLater),
+                child: const Text('ذكرني لاحقًا'),
               ),
             FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(
-                _UpdatePromptAction.updateNow,
-              ),
-              child: const Text('\u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0622\u0646'),
+              onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.updateNow),
+              child: const Text('تحديث الآن'),
             ),
           ],
         );
@@ -277,9 +268,7 @@ class AppUpdateService {
   bool _isRemoteVersionNewer(String current, String remote) {
     final currentParts = _parseVersion(current);
     final remoteParts = _parseVersion(remote);
-    final maxLength = currentParts.length > remoteParts.length
-        ? currentParts.length
-        : remoteParts.length;
+    final maxLength = currentParts.length > remoteParts.length ? currentParts.length : remoteParts.length;
 
     for (var i = 0; i < maxLength; i++) {
       final currentValue = i < currentParts.length ? currentParts[i] : 0;
@@ -353,13 +342,12 @@ class AppUpdateManifest {
   factory AppUpdateManifest.preview() {
     return AppUpdateManifest(
       latestVersion: '2.2.0',
-      title: '\u062a\u062d\u062f\u064a\u062b \u062c\u062f\u064a\u062f \u0645\u062a\u0627\u062d',
-      message:
-          '\u0647\u0630\u0627 \u0627\u0644\u062a\u062d\u062f\u064a\u062b \u064a\u062d\u062a\u0648\u064a \u0639\u0644\u0649 \u062a\u062d\u0633\u064a\u0646\u0627\u062a \u0645\u0647\u0645\u0629 \u0648\u0625\u0635\u0644\u0627\u062d\u0627\u062a \u062c\u062f\u064a\u062f\u0629.',
+      title: 'تحديث جديد متاح',
+      message: 'هذا التحديث يحتوي على تحسينات مهمة وإصلاحات جديدة.',
       whatsNew: const [
-        '\u062a\u062d\u0633\u064a\u0646 \u062b\u0628\u0627\u062a \u0645\u0635\u062d\u0641 \u0627\u0644\u0645\u062f\u064a\u0646\u0629',
-        '\u062a\u062d\u0633\u064a\u0646 \u0633\u0631\u0639\u0629 \u0627\u0644\u062a\u0646\u0642\u0644 \u0628\u064a\u0646 \u0627\u0644\u0633\u0648\u0631 \u0648\u0627\u0644\u0623\u062c\u0632\u0627\u0621',
-        '\u0625\u0635\u0644\u0627\u062d\u0627\u062a \u0639\u0627\u0645\u0629 \u0648\u062a\u062d\u0633\u064a\u0646\u0627\u062a \u0641\u064a \u0627\u0644\u0623\u062f\u0627\u0621',
+        'تحسين ثبات مصحف المدينة',
+        'تحسين سرعة التنقل بين السور والأجزاء',
+        'إصلاحات عامة وتحسينات في الأداء',
       ],
       forceUpdate: false,
       remindLaterEnabled: true,

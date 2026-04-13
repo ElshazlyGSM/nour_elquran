@@ -1,15 +1,16 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:quran_library/quran_library.dart';
 
 import 'app/quran_app.dart';
 import 'data/egypt_prayer_cities.dart';
 import 'features/notifications/adhan/prayer_notification_service.dart';
 import 'features/notifications/salawat/salawat_notification_service.dart';
-import 'services/daily_quran_reminder_service.dart';
-import 'services/current_quran_text_source.dart';
 import 'services/app_update_service.dart';
+import 'services/current_quran_text_source.dart';
+import 'services/daily_quran_reminder_service.dart';
 import 'services/quran_store.dart';
 import 'services/salawat_unlock_service.dart';
 
@@ -41,18 +42,18 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     super.dispose();
   }
 
-  late final WidgetsBindingObserver _lifecycleObserver =
-      _BootstrapLifecycleObserver(
-        onResume: () async {
-          final store = _store;
-          if (store == null) {
-            return;
-          }
-          await _reschedulePrayerNotifications(store);
-          await _rescheduleSalawat(store);
-          unawaited(_refreshAndRescheduleDailyReminder(store));
-        },
-      );
+  late final WidgetsBindingObserver _lifecycleObserver = _BootstrapLifecycleObserver(
+    onResume: () async {
+      final store = _store;
+      if (store == null) {
+        return;
+      }
+      await _syncPrayerCityFromLocation(store);
+      await _reschedulePrayerNotifications(store);
+      await _rescheduleSalawat(store);
+      unawaited(_refreshAndRescheduleDailyReminder(store));
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +83,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                     color: Colors.white,
                     fontSize: 50,
                     fontWeight: FontWeight.bold,
-                    // letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -103,14 +103,18 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
     setState(() => _store = store);
     unawaited(_postBootstrapSetup(store));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 700), () {
-        return AppUpdateService.instance.checkForUpdatesFromNavigator();
-      });
-    });
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 20), () async {
+        await AppUpdateService.instance.checkForUpdatesFromNavigator();
+      }),
+    );
   }
 
   Future<void> _postBootstrapSetup(QuranStore store) async {
+    try {
+      await _syncPrayerCityFromLocation(store);
+    } catch (_) {}
+
     try {
       await PrayerNotificationService.instance.initialize();
     } catch (_) {}
@@ -134,10 +138,44 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     unawaited(_refreshAndRescheduleDailyReminder(store));
   }
 
+  Future<void> _syncPrayerCityFromLocation(QuranStore store) async {
+    if (!store.savedPrayerAutoDetect) {
+      return;
+    }
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+    );
+    final nearest = nearestPrayerCity(position.latitude, position.longitude);
+    if (nearest.name == store.savedPrayerCityName) {
+      return;
+    }
+
+    await store.savePrayerPreferences(
+      cityName: nearest.name,
+      autoDetect: true,
+      hijriOffset: store.savedPrayerHijriOffset,
+      prayerOffsets: store.savedPrayerOffsets,
+      adhanEnabled: store.savedPrayerAdhanEnabled,
+      reminderMinutes: store.savedPrayerReminderMinutes,
+      prayerEnabledMap: store.savedPrayerEnabledMap,
+      prayerReminderByPrayer: store.savedPrayerReminderByPrayer,
+      adhanProfile: store.savedPrayerAdhanProfile,
+    );
+  }
+
   Future<void> _reschedulePrayerNotifications(QuranStore store) {
-    final city =
-        _resolvePrayerCity(store.savedPrayerCityName) ??
-        egyptPrayerCities.first;
+    final city = resolvePrayerCityByName(store.savedPrayerCityName);
     return PrayerNotificationService.instance.reschedulePrayerNotifications(
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
@@ -149,7 +187,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<void> _rescheduleSalawat(QuranStore store) {
-    final city = _resolvePrayerCity(store.savedPrayerCityName);
+    final city = resolvePrayerCityByName(store.savedPrayerCityName);
     return SalawatNotificationService.instance.reschedule(
       enabled: store.savedSalawatReminderEnabled,
       intervalMinutes: store.savedSalawatReminderIntervalMinutes,
@@ -183,18 +221,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     final day = now.day.toString().padLeft(2, '0');
     return '${now.year}-$month-$day';
   }
-
-  PrayerCity? _resolvePrayerCity(String? cityName) {
-    if (cityName == null) {
-      return null;
-    }
-    for (final city in egyptPrayerCities) {
-      if (city.name == cityName) {
-        return city;
-      }
-    }
-    return null;
-  }
 }
 
 class _BootstrapLifecycleObserver with WidgetsBindingObserver {
@@ -209,4 +235,3 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
-

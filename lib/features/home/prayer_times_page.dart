@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -131,10 +131,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   PrayerCity _resolveSavedCity() {
     final savedName = widget.store?.savedPrayerCityName;
-    return egyptPrayerCities.firstWhere(
-      (city) => city.name == savedName,
-      orElse: () => egyptPrayerCities.first,
-    );
+    return resolvePrayerCityByName(savedName);
   }
 
   @override
@@ -541,21 +538,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   }
 
   PrayerCity _nearestCity(double latitude, double longitude) {
-    var result = egyptPrayerCities.first;
-    var minDistance = double.infinity;
-    for (final city in egyptPrayerCities) {
-      final distance = Geolocator.distanceBetween(
-        latitude,
-        longitude,
-        city.coordinates.latitude,
-        city.coordinates.longitude,
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-        result = city;
-      }
-    }
-    return result;
+    return nearestPrayerCity(latitude, longitude);
   }
 
   Future<void> _showPrayerSettings() async {

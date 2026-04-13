@@ -485,15 +485,10 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
   }
 
   PrayerCity? _resolvePrayerCity(String? cityName) {
-    if (cityName == null) {
+    if (cityName == null || cityName.trim().isEmpty) {
       return null;
     }
-    for (final city in egyptPrayerCities) {
-      if (city.name == cityName) {
-        return city;
-      }
-    }
-    return null;
+    return resolvePrayerCityByName(cityName);
   }
 
   String _intervalLabel(int minutes) {

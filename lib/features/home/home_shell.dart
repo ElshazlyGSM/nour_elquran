@@ -246,10 +246,7 @@ class _HomeShellState extends State<HomeShell> {
 
   PrayerCity _resolveSavedCity() {
     final savedName = widget.store.savedPrayerCityName;
-    return egyptPrayerCities.firstWhere(
-      (city) => city.name == savedName,
-      orElse: () => egyptPrayerCities.first,
-    );
+    return resolvePrayerCityByName(savedName);
   }
 
   PrayerTimes _buildPrayerTimes(DateTime date) {

@@ -1,4 +1,4 @@
-﻿package com.elshazly.noorquran.app
+package com.elshazly.noorquran.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -20,7 +20,7 @@ class SalawatUnlockService : Service() {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 val action = intent?.action ?: return
-                if (action != Intent.ACTION_USER_PRESENT && action != Intent.ACTION_SCREEN_ON) {
+                if (action != Intent.ACTION_USER_PRESENT) {
                     return
                 }
                 maybeNotify(context)
@@ -54,7 +54,6 @@ class SalawatUnlockService : Service() {
         val filter =
             IntentFilter().apply {
                 addAction(Intent.ACTION_USER_PRESENT)
-                addAction(Intent.ACTION_SCREEN_ON)
             }
         registerReceiver(unlockReceiver, filter)
         receiverRegistered = true
