@@ -1,4 +1,4 @@
-package com.elshazly.noorquran.app
+﻿package com.elshazly.noorquran.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:quran_library/quran_library.dart';
@@ -104,7 +104,9 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     setState(() => _store = store);
     unawaited(_postBootstrapSetup(store));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(AppUpdateService.instance.checkForUpdatesFromNavigator());
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        return AppUpdateService.instance.checkForUpdatesFromNavigator();
+      });
     });
   }
 

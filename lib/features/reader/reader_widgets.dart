@@ -1524,13 +1524,14 @@ class _HighlightedRichText extends StatelessWidget {
           textAlign: textAlign,
           textDirection: textDirection,
           textWidthBasis: textWidthBasis,
-          textScaler: MediaQuery.textScalerOf(context),
+          textScaler: TextScaler.noScaling,
         ),
         child: RichText(
           textAlign: textAlign,
           textDirection: textDirection,
           textWidthBasis: textWidthBasis,
           softWrap: softWrap,
+          textScaler: TextScaler.noScaling,
           text: text,
         ),
       ),
@@ -1670,8 +1671,10 @@ class _VerseHighlightPainter extends CustomPainter {
       final sameLine =
           (box.top - currentTop).abs() <= lineTolerance &&
           (box.bottom - currentBottom).abs() <= lineTolerance;
+      final horizontalGap = box.left - currentRight;
+      final shouldMerge = sameLine && horizontalGap <= 6.0;
 
-      if (sameLine) {
+      if (shouldMerge) {
         currentLeft = math.min(currentLeft, box.left);
         currentRight = math.max(currentRight, box.right);
         currentTop = math.min(currentTop, box.top);

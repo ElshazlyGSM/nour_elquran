@@ -19,6 +19,7 @@ class AppUpdateService {
 
   static const String _ignoreVersionKey = 'app_update_ignored_version';
   static const String _remindAtKey = 'app_update_remind_at';
+  static const String _remindVersionKey = 'app_update_remind_version';
 
   bool _checking = false;
   bool _dialogShown = false;
@@ -67,7 +68,11 @@ class AppUpdateService {
         }
 
         final remindAtMillis = prefs.getInt(_remindAtKey);
-        if (remindAtMillis != null) {
+        final remindVersion = prefs.getString(_remindVersionKey)?.trim();
+        if (remindVersion != null && remindVersion != latestVersion) {
+          await prefs.remove(_remindAtKey);
+          await prefs.remove(_remindVersionKey);
+        } else if (remindAtMillis != null) {
           final remindAt = DateTime.fromMillisecondsSinceEpoch(remindAtMillis);
           if (DateTime.now().isBefore(remindAt)) {
             return;
@@ -102,6 +107,7 @@ class AppUpdateService {
                 .add(Duration(hours: manifest.remindAfterHours))
                 .millisecondsSinceEpoch,
           );
+          await prefs.setString(_remindVersionKey, latestVersion);
           break;
         case _UpdatePromptAction.ignoreVersion:
           await prefs.setString(_ignoreVersionKey, latestVersion);
@@ -127,6 +133,7 @@ class AppUpdateService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_ignoreVersionKey);
     await prefs.remove(_remindAtKey);
+    await prefs.remove(_remindVersionKey);
   }
 
   Future<AppUpdateManifest?> _fetchManifest() async {
