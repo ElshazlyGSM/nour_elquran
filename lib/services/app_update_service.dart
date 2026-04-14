@@ -179,7 +179,7 @@ class AppUpdateService {
       }
     }
 
-    final url = manifest.storeUrl?.trim();
+    final url = (Platform.isIOS ? manifest.iosStoreUrl : manifest.storeUrl)?.trim();
     if (url == null || url.isEmpty) {
       return;
     }
@@ -310,6 +310,7 @@ class AppUpdateManifest {
     required this.ignoreEnabled,
     required this.remindAfterHours,
     required this.storeUrl,
+    required this.iosStoreUrl,
   });
 
   final String latestVersion;
@@ -321,6 +322,7 @@ class AppUpdateManifest {
   final bool ignoreEnabled;
   final int remindAfterHours;
   final String? storeUrl;
+  final String? iosStoreUrl;
 
   factory AppUpdateManifest.fromJson(Map<String, dynamic> json) {
     final whatsNewRaw = json['whats_new'];
@@ -336,6 +338,7 @@ class AppUpdateManifest {
       ignoreEnabled: json['ignore_enabled'] != false,
       remindAfterHours: int.tryParse('${json['remind_after_hours'] ?? 24}') ?? 24,
       storeUrl: json['store_url']?.toString(),
+      iosStoreUrl: json['ios_store_url']?.toString(),
     );
   }
 
@@ -354,6 +357,8 @@ class AppUpdateManifest {
       ignoreEnabled: true,
       remindAfterHours: 24,
       storeUrl: 'https://play.google.com/store/apps/details?id=com.elshazly.noorquran.app',
+      iosStoreUrl: null,
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -813,7 +813,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             : _playbackStartVerse! + index;
       });
       unawaited(_persistCurrentPosition());
-      _scrollSelectedVerseIntoView();
+      _scrollSelectedVerseIntoView(alignment: 0.5);
     });
 
     _audioPlayer.positionStream.listen((position) {
@@ -850,7 +850,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         _selectedVerseNumber = activeTiming!.ayah;
       });
       unawaited(_persistCurrentPosition());
-      _scrollSelectedVerseIntoView();
+      _scrollSelectedVerseIntoView(alignment: 0.5);
     });
 
     _libraryAudioStateSubscription = AudioCtrl
@@ -892,7 +892,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             _selectedVerseNumber = ayah.ayahNumber;
           });
           unawaited(_persistCurrentPosition());
-          _scrollSelectedVerseIntoView();
+          _scrollSelectedVerseIntoView(alignment: 0.5);
         });
 
     _librarySelectionSubscription = QuranCtrl

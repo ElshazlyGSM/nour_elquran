@@ -11,5 +11,6 @@
   "remind_later_enabled": true,
   "ignore_enabled": true,
   "remind_after_hours": 24,
-  "store_url": "https://play.google.com/store/apps/details?id=com.elshazly.noorquran.app"
+  "store_url": "https://play.google.com/store/apps/details?id=com.elshazly.noorquran.app",
+  "ios_store_url": "https://apps.apple.com/app/idYOUR_APP_ID"
 }

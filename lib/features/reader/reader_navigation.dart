@@ -1,4 +1,4 @@
-part of 'reader_page.dart';
+﻿part of 'reader_page.dart';
 
 extension _ReaderNavigation on _ReaderPageState {
   static const int _maxInitialStandardPositionAttempts = 8;
@@ -244,24 +244,38 @@ extension _ReaderNavigation on _ReaderPageState {
       return;
     }
 
-    final key = _verseKeys['${_selectedSurahNumber!}:${_selectedVerseNumber!}'];
+    final targetPage = _quranSource.getPageNumber(
+      _selectedSurahNumber!,
+      _selectedVerseNumber!,
+    );
+    final isPlaybackScroll = alignment != null;
+    final key = _findVerseKey(
+      _selectedSurahNumber!,
+      _selectedVerseNumber!,
+      pageNumber: targetPage,
+    );
     final targetContext = key?.currentContext;
     if (targetContext == null) {
       if (allowApproximateJump &&
           _standardItemScrollController.isAttached &&
           mounted) {
-        final targetPage = _quranSource.getPageNumber(
-          _selectedSurahNumber!,
-          _selectedVerseNumber!,
-        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted ||
               !_standardItemScrollController.isAttached ||
               _isPagedMushafMode) {
             return;
           }
-          _standardItemScrollController.jumpTo(index: targetPage - 1);
-          Future.delayed(const Duration(milliseconds: 120), () {
+          if (isPlaybackScroll) {
+            _standardItemScrollController.scrollTo(
+              index: targetPage - 1,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: 0,
+            );
+          } else {
+            _standardItemScrollController.jumpTo(index: targetPage - 1);
+          }
+          Future.delayed(const Duration(milliseconds: 140), () {
             if (!mounted) {
               return;
             }
@@ -281,11 +295,30 @@ extension _ReaderNavigation on _ReaderPageState {
       Scrollable.ensureVisible(
         targetContext,
         alignment: alignment ?? 0.28,
-        duration: Duration.zero,
+        duration: isPlaybackScroll
+            ? const Duration(milliseconds: 180)
+            : Duration.zero,
+        curve: Curves.easeOutCubic,
       );
     });
   }
 
+
+  GlobalKey? _findVerseKey(int surahNumber, int verseNumber, {int? pageNumber}) {
+    if (pageNumber != null) {
+      final exact = _verseKeys['$pageNumber:$surahNumber:$verseNumber'];
+      if (exact != null) {
+        return exact;
+      }
+    }
+    final suffix = ':$surahNumber:$verseNumber';
+    for (final entry in _verseKeys.entries) {
+      if (entry.key.endsWith(suffix)) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
   void _jumpPagedToSelectedVerse() {
     if (!_isMedinaPagesMode) {
       return;
@@ -403,8 +436,11 @@ extension _ReaderNavigation on _ReaderPageState {
       }
 
       final verseContext =
-          _verseKeys['${_selectedSurahNumber!}:${_selectedVerseNumber!}']
-              ?.currentContext;
+          _findVerseKey(
+            _selectedSurahNumber!,
+            _selectedVerseNumber!,
+            pageNumber: targetPage,
+          )?.currentContext;
       if (verseContext != null && verseContext.mounted) {
         Scrollable.ensureVisible(
           verseContext,
@@ -552,4 +588,11 @@ extension _ReaderNavigation on _ReaderPageState {
     );
   }
 }
+
+
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-part of 'reader_page.dart';
+﻿part of 'reader_page.dart';
 
 extension _ReaderAutoScroll on _ReaderPageState {
   void _syncPagedMushafScaleFromFontSize() {
@@ -211,3 +211,4 @@ extension _ReaderAutoScroll on _ReaderPageState {
     unawaited(_persistReaderPreferences());
   }
 }
+
