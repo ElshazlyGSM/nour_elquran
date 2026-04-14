@@ -1,22 +1,20 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:adhan_dart/adhan_dart.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
-
-import '../../../services/notification_permission_guard.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../data/egypt_prayer_cities.dart';
 import '../../../services/adhan_audio_cache_service.dart';
+import '../../../services/notification_permission_guard.dart';
 
 class PrayerNotificationService {
   PrayerNotificationService._();
 
-  static final PrayerNotificationService instance =
-      PrayerNotificationService._();
+  static final PrayerNotificationService instance = PrayerNotificationService._();
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -56,10 +54,8 @@ class PrayerNotificationService {
       tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
     }
 
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     if (await NotificationPermissionGuard.shouldRequest()) {
       try {
         await android?.requestNotificationsPermission();
@@ -94,12 +90,8 @@ class PrayerNotificationService {
     await initialize();
     await _cancelPrayerNotificationsOnly();
 
-    if (!adhanEnabled) {
-      return;
-    }
-
     final now = DateTime.now();
-    for (var dayOffset = 0; dayOffset < 3; dayOffset++) {
+    for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
       final date = DateTime(now.year, now.month, now.day + dayOffset);
       final prayerTimes = _buildPrayerTimes(
         city: city,
@@ -109,20 +101,10 @@ class PrayerNotificationService {
 
       final entries = <_ScheduledPrayer>[
         _ScheduledPrayer('fajr', 'الفجر', prayerTimes.fajr.toLocal(), 11),
-        _ScheduledPrayer(
-          'sunrise',
-          'الشروق',
-          prayerTimes.sunrise.toLocal(),
-          16,
-        ),
+        _ScheduledPrayer('sunrise', 'الشروق', prayerTimes.sunrise.toLocal(), 16),
         _ScheduledPrayer('dhuhr', 'الظهر', prayerTimes.dhuhr.toLocal(), 22),
         _ScheduledPrayer('asr', 'العصر', prayerTimes.asr.toLocal(), 33),
-        _ScheduledPrayer(
-          'maghrib',
-          'المغرب',
-          prayerTimes.maghrib.toLocal(),
-          44,
-        ),
+        _ScheduledPrayer('maghrib', 'المغرب', prayerTimes.maghrib.toLocal(), 44),
         _ScheduledPrayer('isha', 'العشاء', prayerTimes.isha.toLocal(), 55),
       ];
 
@@ -135,47 +117,38 @@ class PrayerNotificationService {
         }
 
         final isSunrise = entry.key == 'sunrise';
-        await _scheduleEntry(
-          id: dayOffset * 1000 + entry.idSeed,
-          title: 'حان الآن موعد أذان ${entry.name}',
-          body: 'دخل الوقت حسب توقيت ${city.name}',
-          scheduledAt: entry.time,
-          adhanProfile: adhanProfile,
-          isPrayerTimeAlarm: true,
-          soundOverride: isSunrise ? 'shoro2' : null,
-          channelSuffixOverride: isSunrise ? 'sunrise' : null,
-          channelNameOverride:
-              isSunrise ? 'تنبيه الشروق' : null,
-        );
+        if (adhanEnabled) {
+          await _scheduleEntry(
+            id: dayOffset * 1000 + entry.idSeed,
+            title: 'حان الآن موعد ${entry.name}',
+            body: 'دخل الوقت حسب توقيت ${city.name}',
+            scheduledAt: entry.time,
+            adhanProfile: adhanProfile,
+            isPrayerTimeAlarm: true,
+            soundOverride: isSunrise ? 'shoro2' : null,
+            channelSuffixOverride: isSunrise ? 'sunrise' : null,
+            channelNameOverride: isSunrise ? 'تنبيه الشروق' : null,
+          );
+        }
 
         final reminderMinutes = prayerReminderByPrayer[entry.key] ?? 0;
         if (reminderMinutes > 0) {
-          final reminderTime = entry.time.subtract(
-            Duration(minutes: reminderMinutes),
-          );
+          final reminderTime = entry.time.subtract(Duration(minutes: reminderMinutes));
           if (reminderTime.isAfter(now)) {
             await _scheduleEntry(
               id: dayOffset * 1000 + entry.idSeed + 500,
               title: 'اقترب موعد ${entry.name}',
-              body:
-                  'متبقي ${reminderMinutes.toString()} دقيقة على ${entry.name} في ${city.name}',
+              body: 'متبقي ${reminderMinutes.toString()} دقيقة على ${entry.name} في ${city.name}',
               scheduledAt: reminderTime,
               adhanProfile: adhanProfile,
               soundOverride: isSunrise ? 'shoro2' : null,
               channelSuffixOverride: isSunrise ? 'sunrise' : null,
-              channelNameOverride:
-                  isSunrise ? 'تنبيه الشروق' : null,
+              channelNameOverride: isSunrise ? 'تنبيه الشروق' : null,
             );
           }
         }
       }
     }
-
-    final pending = await _notifications.pendingNotificationRequests();
-    // ignore: avoid_print
-    print(
-      '[PrayerNotificationService] Scheduled ${pending.length} prayer notifications.',
-    );
   }
 
   Future<void> _cancelPrayerNotificationsOnly() async {
@@ -200,7 +173,7 @@ class PrayerNotificationService {
       544,
       555,
     ];
-    for (var dayOffset = 0; dayOffset < 3; dayOffset++) {
+    for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
       final prefix = dayOffset * 1000;
       for (final seed in prayerIdSeeds) {
         await _notifications.cancel(prefix + seed);
@@ -248,12 +221,9 @@ class PrayerNotificationService {
       channelNameOverride: channelNameOverride,
     );
     final scheduledDate = tz.TZDateTime.from(scheduledAt, tz.local);
-    final preferredMode =
-        isPrayerTimeAlarm
-            ? AndroidScheduleMode.alarmClock
-            : (_canScheduleExactAlarms
-                ? AndroidScheduleMode.exactAllowWhileIdle
-                : AndroidScheduleMode.inexactAllowWhileIdle);
+    final preferredMode = _canScheduleExactAlarms
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
     try {
       return await _notifications.zonedSchedule(
         id,
@@ -303,8 +273,7 @@ class PrayerNotificationService {
           ? RawResourceAndroidNotificationSound(soundOverride)
           : RawResourceAndroidNotificationSound('a2trb');
       final reminderChannelSuffix = channelSuffixOverride ?? 'v3';
-      final reminderChannelName =
-          channelNameOverride ?? 'تنبيهات قبل الصلاة';
+      final reminderChannelName = channelNameOverride ?? 'تذكير قبل الصلاة';
       return NotificationDetails(
         android: AndroidNotificationDetails(
           'prayer_reminder_channel_$reminderChannelSuffix',
@@ -318,15 +287,14 @@ class PrayerNotificationService {
           vibrationPattern: Int64List.fromList([0, 300, 180, 500]),
           timeoutAfter: 60000,
           onlyAlertOnce: false,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
+          category: AndroidNotificationCategory.reminder,
+          audioAttributesUsage: AudioAttributesUsage.notification,
         ),
       );
     }
 
     final normalizedProfile = adhanProfile.trim().toLowerCase();
-    final downloaded =
-        await AdhanAudioCacheService.instance.isDownloaded(normalizedProfile);
+    final downloaded = await AdhanAudioCacheService.instance.isDownloaded(normalizedProfile);
     final channelSuffix = channelSuffixOverride ??
         switch (normalizedProfile) {
           'haram' => 'haram',
@@ -356,22 +324,17 @@ class PrayerNotificationService {
         sound: sound,
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 500, 220, 700]),
-        category: AndroidNotificationCategory.alarm,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.reminder,
+        audioAttributesUsage: AudioAttributesUsage.notification,
       ),
     );
   }
 
-  Future<AndroidNotificationSound?> _androidSoundForProfile(
-    String profile,
-  ) async {
-    final localUri = await AdhanAudioCacheService.instance.localUriForProfile(
-      profile,
-    );
+  Future<AndroidNotificationSound?> _androidSoundForProfile(String profile) async {
+    final localUri = await AdhanAudioCacheService.instance.localUriForProfile(profile);
     if (localUri != null) {
       return UriAndroidNotificationSound(localUri);
     }
-
     return switch (profile) {
       _ => null,
     };

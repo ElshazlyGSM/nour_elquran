@@ -1,7 +1,7 @@
-import 'dart:io';
+﻿import 'dart:io';
 
-import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 class AdhanAudioCacheService {
@@ -15,15 +15,24 @@ class AdhanAudioCacheService {
   static const Map<String, _AdhanAudioSource> _sources = {
     'haram': _AdhanAudioSource(
       fileName: 'harm.ogg',
-      url: 'https://storage.googleapis.com/nour-quran/harm.ogg',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/harm.ogg',
+        'https://storage.googleapis.com/nour-quran/harm.ogg',
+      ],
     ),
     'egypt': _AdhanAudioSource(
       fileName: 'abdelbast.ogg',
-      url: 'https://storage.googleapis.com/nour-quran/abdelbast.ogg',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/abdelbast.ogg',
+        'https://storage.googleapis.com/nour-quran/abdelbast.ogg',
+      ],
     ),
     'soft': _AdhanAudioSource(
       fileName: 'mashary.ogg',
-      url: 'https://storage.googleapis.com/nour-quran/mashary.ogg',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/mashary.ogg',
+        'https://storage.googleapis.com/nour-quran/mashary.ogg',
+      ],
     ),
   };
 
@@ -98,57 +107,66 @@ class AdhanAudioCacheService {
       throw ArgumentError.value(profile, 'profile', 'Unsupported adhan profile');
     }
 
-    final client = http.Client();
-    try {
-      final request = http.Request('GET', Uri.parse(source.url));
-      final response = await client.send(request);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw http.ClientException(
-          'Failed to download adhan audio for $profile',
-          request.url,
-        );
-      }
-
-      final tempFile = File('${destination.path}.part');
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-
-      final totalBytes = response.contentLength ?? 0;
-      var receivedBytes = 0;
-      final sink = tempFile.openWrite();
+    http.ClientException? lastError;
+    for (final url in source.urls) {
+      final client = http.Client();
       try {
-        await for (final chunk in response.stream) {
-          sink.add(chunk);
-          receivedBytes += chunk.length;
-          if (onProgress != null && totalBytes > 0) {
-            await onProgress((receivedBytes / totalBytes).clamp(0.0, 1.0));
-          }
+        final request = http.Request('GET', Uri.parse(url));
+        final response = await client.send(request);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          lastError = http.ClientException(
+            'Failed to download adhan audio for $profile',
+            request.url,
+          );
+          continue;
         }
-      } finally {
-        await sink.flush();
-        await sink.close();
-      }
 
-      if (await destination.exists()) {
-        await destination.delete();
+        final tempFile = File('${destination.path}.part');
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+
+        final totalBytes = response.contentLength ?? 0;
+        var receivedBytes = 0;
+        final sink = tempFile.openWrite();
+        try {
+          await for (final chunk in response.stream) {
+            sink.add(chunk);
+            receivedBytes += chunk.length;
+            if (onProgress != null && totalBytes > 0) {
+              await onProgress((receivedBytes / totalBytes).clamp(0.0, 1.0));
+            }
+          }
+        } finally {
+          await sink.flush();
+          await sink.close();
+        }
+
+        if (await destination.exists()) {
+          await destination.delete();
+        }
+        await tempFile.rename(destination.path);
+        if (onProgress != null) {
+          await onProgress(1.0);
+        }
+        return;
+      } on http.ClientException catch (error) {
+        lastError = error;
+      } finally {
+        client.close();
       }
-      await tempFile.rename(destination.path);
-      if (onProgress != null) {
-        await onProgress(1.0);
-      }
-    } finally {
-      client.close();
     }
+
+    throw lastError ?? http.ClientException('Failed to download adhan audio for $profile');
   }
 }
 
 class _AdhanAudioSource {
   const _AdhanAudioSource({
     required this.fileName,
-    required this.url,
+    required this.urls,
   });
 
   final String fileName;
-  final String url;
+  final List<String> urls;
 }

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -37,6 +37,7 @@ class PrayerSettingsPage extends StatefulWidget {
     required this.initialPrayerReminderByPrayer,
     required this.initialAdhanProfile,
     required this.adhanProfiles,
+    required this.onChanged,
   });
 
   final List<String> prayerKeys;
@@ -49,6 +50,7 @@ class PrayerSettingsPage extends StatefulWidget {
   final Map<String, int> initialPrayerReminderByPrayer;
   final String initialAdhanProfile;
   final List<(String, String)> adhanProfiles;
+  final Future<void> Function(PrayerSettingsResult result) onChanged;
 
   @override
   State<PrayerSettingsPage> createState() => _PrayerSettingsPageState();
@@ -72,6 +74,8 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   final Set<String> _downloadingProfiles = <String>{};
   final Map<String, double> _downloadProgress = <String, double>{};
   bool _downloadStatesLoaded = false;
+  Future<void> _saveFuture = Future<void>.value();
+  bool _dirty = false;
 
   @override
   void initState() {
@@ -93,8 +97,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
       if (!mounted) return;
       if (_isSunrisePreviewing &&
           (state.processingState == ProcessingState.completed ||
-              (!state.playing &&
-                  state.processingState == ProcessingState.idle))) {
+              (!state.playing && state.processingState == ProcessingState.idle))) {
         setState(() => _isSunrisePreviewing = false);
       }
       if (_isPreviewLoading &&
@@ -131,6 +134,40 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     super.dispose();
   }
 
+  PrayerSettingsResult _buildResult() {
+    return PrayerSettingsResult(
+      adhanEnabled: _adhanEnabled,
+      hijriOffset: _hijriOffset,
+      prayerOffsets: Map<String, int>.from(_prayerOffsets),
+      prayerEnabledMap: Map<String, bool>.from(_prayerEnabledMap),
+      prayerReminderByPrayer: Map<String, int>.from(_prayerReminderByPrayer),
+      adhanProfile: _adhanProfile,
+    );
+  }
+
+  Future<void> _persistNow() {
+    final result = _buildResult();
+    _saveFuture = _saveFuture.then((_) async {
+      await widget.onChanged(result);
+      _dirty = false;
+    });
+    return _saveFuture;
+  }
+
+  Future<void> _flushPendingSave() async {
+    if (_dirty) {
+      await _persistNow();
+    }
+    await _saveFuture;
+  }
+
+  void _mutate(VoidCallback action) {
+    setState(() {
+      action();
+      _dirty = true;
+    });
+  }
+
   String _formatTime(DateTime dateTime) {
     final hour = dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12;
     final minute = dateTime.minute.toString().padLeft(2, '0');
@@ -165,9 +202,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   Future<void> _loadDownloadStates() async {
     final downloaded = <String>{};
     for (final profile in widget.adhanProfiles) {
-      if (!AdhanAudioCacheService.instance.supportsProfile(profile.$1)) {
-        continue;
-      }
+      if (!AdhanAudioCacheService.instance.supportsProfile(profile.$1)) continue;
       if (await AdhanAudioCacheService.instance.isDownloaded(profile.$1)) {
         downloaded.add(profile.$1);
       }
@@ -182,8 +217,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   }
 
   Future<void> _previewAdhan(String profile) async {
-    if (_previewingProfile == profile &&
-        (_previewPlayer.playing || _isPreviewLoading)) {
+    if (_previewingProfile == profile && (_previewPlayer.playing || _isPreviewLoading)) {
       await _previewPlayer.stop();
       if (!mounted) return;
       setState(() {
@@ -198,22 +232,16 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     if (!AdhanAudioCacheService.instance.supportsProfile(profile)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('هذا الخيار يستخدم نغمة الهاتف الافتراضية'),
-        ),
+        const SnackBar(content: Text('هذا الخيار يستخدم نغمة الهاتف الافتراضية')),
       );
       return;
     }
 
-    final localPath = await AdhanAudioCacheService.instance.localPathForProfile(
-      profile,
-    );
+    final localPath = await AdhanAudioCacheService.instance.localPathForProfile(profile);
     if (localPath == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('حمّل هذا الأذان أولًا لتجربته واستخدامه'),
-        ),
+        const SnackBar(content: Text('حمّل هذا الأذان أولًا لتجربته واستخدامه')),
       );
       return;
     }
@@ -236,9 +264,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
         _pendingPreviewProfile = null;
         _isPreviewLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تعذر تشغيل معاينة الأذان')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تشغيل معاينة الأذان')),
+      );
     }
   }
 
@@ -264,15 +292,14 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSunrisePreviewing = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تعذر تشغيل معاينة الشروق')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تشغيل معاينة الشروق')),
+      );
     }
   }
 
   Future<void> _downloadAdhan(String profile) async {
-    if (_downloadingProfiles.contains(profile) ||
-        _downloadedProfiles.contains(profile)) {
+    if (_downloadingProfiles.contains(profile) || _downloadedProfiles.contains(profile)) {
       return;
     }
 
@@ -298,11 +325,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'تم تنزيل الأذان. لا تنسَ حفظ الإعدادات في أسفل الصفحة',
-            ),
-          ),
+          const SnackBar(content: Text('تم تنزيل الأذان وبات جاهزًا للاختيار فورًا')),
         );
     } catch (_) {
       if (!mounted) return;
@@ -310,9 +333,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
         _downloadingProfiles.remove(profile);
         _downloadProgress.remove(profile);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تعذر تنزيل ملف الأذان')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تنزيل ملف الأذان')),
+      );
     }
   }
 
@@ -325,11 +348,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
         width: 40,
         height: 40,
         child: Center(
-          child: SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       );
     }
@@ -340,9 +359,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
 
     return IconButton(
       tooltip: isDownloaded ? 'تم التنزيل' : 'تنزيل الأذان',
-      onPressed: isDownloading || isDownloaded
-          ? null
-          : () => _downloadAdhan(profile),
+      onPressed: isDownloading || isDownloaded ? null : () => _downloadAdhan(profile),
       icon: isDownloading
           ? SizedBox(
               width: 22,
@@ -356,18 +373,13 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                   ),
                   Text(
                     '${(progress * 100).round()}',
-                    style: const TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
             )
           : Icon(
-              isDownloaded
-                  ? Icons.download_done_rounded
-                  : Icons.download_for_offline_rounded,
+              isDownloaded ? Icons.download_done_rounded : Icons.download_for_offline_rounded,
               color: isDownloaded ? const Color(0xFF355B3D) : null,
             ),
     );
@@ -385,7 +397,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
 
   void _selectProfile(String profile) {
     if (_canSelectProfile(profile)) {
-      setState(() => _adhanProfile = profile);
+      _mutate(() => _adhanProfile = profile);
       return;
     }
     ScaffoldMessenger.of(context)
@@ -395,17 +407,110 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
       );
   }
 
-  Future<void> _saveAndClose() async {
-    await _previewPlayer.stop();
-    if (!mounted) return;
-    Navigator.of(context).pop(
-      PrayerSettingsResult(
-        adhanEnabled: _adhanEnabled,
-        hijriOffset: _hijriOffset,
-        prayerOffsets: _prayerOffsets,
-        prayerEnabledMap: _prayerEnabledMap,
-        prayerReminderByPrayer: _prayerReminderByPrayer,
-        adhanProfile: _adhanProfile,
+  Widget _buildAdhanProfilesCard(
+    Color surfaceColor,
+    Color borderColor,
+    Color titleColor,
+    Color mutedColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+        childrenPadding: EdgeInsets.zero,
+        dense: true,
+        minTileHeight: 52,
+        leading: const Icon(Icons.music_note_rounded),
+        title: const Text('نغمة الأذان', style: TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(
+          widget.adhanProfiles.firstWhere((profile) => profile.$1 == _adhanProfile).$2,
+          style: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
+        ),
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.wb_twilight_rounded),
+            title: const Text('تنبيه الشروق', style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text('يعمل مع الشروق فقط', style: TextStyle(color: mutedColor)),
+            trailing: IconButton(
+              onPressed: _previewSunriseTone,
+              icon: Icon(
+                _isSunrisePreviewing ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+              ),
+            ),
+          ),
+          const Divider(height: 18),
+          for (final profile in widget.adhanProfiles)
+            Builder(
+              builder: (context) {
+                final canSelect = _canSelectProfile(profile.$1);
+                final isDownloaded = _downloadedProfiles.contains(profile.$1);
+                final isDownloading = _downloadingProfiles.contains(profile.$1);
+                final subtitle = isDownloading
+                    ? 'قيد التحميل'
+                    : isDownloaded
+                        ? 'جاهز للاستخدام'
+                        : AdhanAudioCacheService.instance.supportsProfile(profile.$1)
+                            ? 'حمّله أولًا'
+                            : 'نغمة النظام';
+                return ListTile(
+                  onTap: canSelect ? () => _selectProfile(profile.$1) : null,
+                  enabled: canSelect,
+                  contentPadding: EdgeInsets.zero,
+                  minLeadingWidth: 32,
+                  leading: Icon(
+                    _adhanProfile == profile.$1
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_off_rounded,
+                    color: _adhanProfile == profile.$1
+                        ? const Color(0xFF355B3D)
+                        : canSelect
+                            ? const Color(0xFFB6AA8A)
+                            : const Color(0xFFD0C7B3),
+                  ),
+                  title: Text(
+                    profile.$2,
+                    style: TextStyle(fontWeight: FontWeight.w800, color: canSelect ? titleColor : mutedColor),
+                  ),
+                  subtitle: Text(subtitle, style: TextStyle(color: mutedColor)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildDownloadAction(profile.$1),
+                      IconButton(
+                        onPressed: () => _previewAdhan(profile.$1),
+                        icon: SizedBox(
+                          width: 26,
+                          height: 26,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                (_previewingProfile == profile.$1 || _pendingPreviewProfile == profile.$1)
+                                    ? Icons.stop_circle_rounded
+                                    : Icons.play_circle_fill_rounded,
+                              ),
+                              if (_isPreviewLoading && _pendingPreviewProfile == profile.$1)
+                                const SizedBox(
+                                  width: 26,
+                                  height: 26,
+                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
       ),
     );
   }
@@ -415,6 +520,8 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     final reminder = _prayerReminderByPrayer[key] ?? 0;
     final offset = _prayerOffsets[key] ?? 0;
     final enabled = _prayerEnabledMap[key] ?? true;
+    final adhanControlsEnabled = _adhanEnabled && enabled;
+    final reminderControlsEnabled = enabled;
     final prayerTime = _effectivePrayerTime(key);
 
     return Container(
@@ -447,14 +554,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                 flex: 3,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.white,
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -462,9 +564,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? const Color(0xFFF2ECDF)
-                            : const Color(0xFF143A2A),
+                        color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF143A2A),
                         fontSize: 12.5,
                       ),
                     ),
@@ -476,10 +576,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Switch.adaptive(
-                    value: enabled && _adhanEnabled,
+                    value: adhanControlsEnabled,
                     onChanged: _adhanEnabled
-                        ? (value) =>
-                              setState(() => _prayerEnabledMap[key] = value)
+                        ? (value) => _mutate(() => _prayerEnabledMap[key] = value)
                         : null,
                   ),
                 ),
@@ -491,39 +590,31 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
             children: [
               Expanded(
                 child: _PrayerSettingBox(
-                  title: 'تعديل الوقت ',
-                  value: offset == 0
-                      ? 'بدون'
-                      : '${offset > 0 ? '+' : '-'} ${toArabicNumber(offset.abs())} د',
-                  onMinus: () => setState(
-                    () => _prayerOffsets[key] = ((_prayerOffsets[key] ?? 0) - 1)
-                        .clamp(-30, 30),
-                  ),
-                  onPlus: () => setState(
-                    () => _prayerOffsets[key] = ((_prayerOffsets[key] ?? 0) + 1)
-                        .clamp(-30, 30),
-                  ),
+                  title: 'تعديل الوقت',
+                  value: offset == 0 ? 'بدون' : '${offset > 0 ? '+' : '-'} ${toArabicNumber(offset.abs())} د',
+                  onMinus: reminderControlsEnabled
+                      ? () => _mutate(
+                            () => _prayerOffsets[key] = ((_prayerOffsets[key] ?? 0) - 1).clamp(-30, 30),
+                          )
+                      : null,
+                  onPlus: reminderControlsEnabled
+                      ? () => _mutate(
+                            () => _prayerOffsets[key] = ((_prayerOffsets[key] ?? 0) + 1).clamp(-30, 30),
+                          )
+                      : null,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _PrayerSettingBox(
-                  title: 'تنبيه قبل الموعد',
-                  value: reminder == 0
-                      ? 'عند الوقت'
-                      : '${toArabicNumber(reminder)} د',
-                  onMinus: !enabled
+                  title: 'تذكير قبل الموعد',
+                  value: reminder == 0 ? 'عند الوقت' : '${toArabicNumber(reminder)} د',
+                  onMinus: !reminderControlsEnabled
                       ? null
-                      : () => setState(
-                          () => _prayerReminderByPrayer[key] = (reminder - 1)
-                              .clamp(0, 60),
-                        ),
-                  onPlus: !enabled
+                      : () => _mutate(() => _prayerReminderByPrayer[key] = (reminder - 1).clamp(0, 60)),
+                  onPlus: !reminderControlsEnabled
                       ? null
-                      : () => setState(
-                          () => _prayerReminderByPrayer[key] = (reminder + 1)
-                              .clamp(0, 60),
-                        ),
+                      : () => _mutate(() => _prayerReminderByPrayer[key] = (reminder + 1).clamp(0, 60)),
                 ),
               ),
             ],
@@ -536,264 +627,86 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark
-        ? const Color(0xFF152127)
-        : const Color(0xFFF8F3E7);
-    final borderColor = isDark
-        ? const Color(0xFF26343B)
-        : const Color(0xFFE8DCC0);
-    final tileColor = isDark ? const Color(0xFF18242A) : Colors.white;
-    final titleColor = isDark
-        ? const Color(0xFFF2ECDF)
-        : const Color(0xFF143A2A);
-    final mutedColor = isDark
-        ? const Color(0xFFB7C1BC)
-        : const Color(0xFF8E8677);
-    return Scaffold(
-      appBar: AppBar(title: const Text('إعدادات مواقيت الصلاة')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor),
+    final surfaceColor = isDark ? const Color(0xFF152127) : const Color(0xFFF8F3E7);
+    final borderColor = isDark ? const Color(0xFF26343B) : const Color(0xFFE8DCC0);
+    final titleColor = isDark ? const Color(0xFFF2ECDF) : const Color(0xFF143A2A);
+    final mutedColor = isDark ? const Color(0xFFB7C1BC) : const Color(0xFF8E8677);
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (_, _) {
+        unawaited(_flushPendingSave());
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('إعدادات مواقيت الصلاة')),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  children: [
+                    SwitchListTile.adaptive(
+                      value: _adhanEnabled,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (value) => _mutate(() => _adhanEnabled = value),
+                      title: const Text('تفعيل إشعارات الصلاة', style: TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: const Text('يمكنك إيقاف صوت الأذان مع بقاء تذكيرات ما قبل الموعد مفعلة'),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                children: [
-                  SwitchListTile.adaptive(
-                    value: _adhanEnabled,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (value) {
-                      setState(() => _adhanEnabled = value);
-                      if (value) {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'لا تنسَ حفظ الإعدادات في أسفل الصفحة',
-                              ),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                      }
-                    },
-                    title: const Text('تفعيل تنبيهات الأذان'),
-                    subtitle: const Text('تشغيل أو إيقاف التنبيهات كلها'),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+              const SizedBox(height: 12),
+              _buildAdhanProfilesCard(surfaceColor, borderColor, titleColor, mutedColor),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text('تعديل التاريخ الهجري', style: TextStyle(fontWeight: FontWeight.w800)),
                     ),
-                    decoration: BoxDecoration(
-                      color: tileColor,
-                      borderRadius: BorderRadius.circular(16),
+                    IconButton(
+                      onPressed: () => _mutate(() => _hijriOffset = (_hijriOffset - 1).clamp(-3, 3)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.remove_rounded),
                     ),
-                    child: Text(
-                      'الأذان المختار: ${widget.adhanProfiles.firstWhere((profile) => profile.$1 == _adhanProfile).$2}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: titleColor,
+                    SizedBox(
+                      width: 72,
+                      child: Text(
+                        _formatHijriOffset(_hijriOffset),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w800, color: titleColor),
                       ),
                     ),
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () => _mutate(() => _hijriOffset = (_hijriOffset + 1).clamp(-3, 3)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.add_rounded),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.wb_twilight_rounded),
-                    title: const Text(
-                      'تنبيه الشروق',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Text(
-                      'يعمل مع الشروق فقط',
-                      style: TextStyle(color: mutedColor),
-                    ),
-                    trailing: IconButton(
-                      onPressed: _previewSunriseTone,
-                      icon: Icon(
-                        _isSunrisePreviewing
-                            ? Icons.stop_circle_rounded
-                            : Icons.play_circle_fill_rounded,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 18),
-                  for (final profile in widget.adhanProfiles)
-                    Builder(
-                      builder: (context) {
-                        final canSelect = _canSelectProfile(profile.$1);
-                        final isDownloaded = _downloadedProfiles.contains(
-                          profile.$1,
-                        );
-                        final isDownloading = _downloadingProfiles.contains(
-                          profile.$1,
-                        );
-                        final subtitle = isDownloading
-                            ? 'قيد التحميل'
-                            : isDownloaded
-                            ? null
-                            : AdhanAudioCacheService.instance.supportsProfile(
-                                profile.$1,
-                              )
-                            ? 'حمّله أولًا'
-                            : null;
-                        return ListTile(
-                          onTap: canSelect
-                              ? () => _selectProfile(profile.$1)
-                              : null,
-                          enabled: canSelect,
-                          contentPadding: EdgeInsets.zero,
-                          minLeadingWidth: 32,
-                          leading: Icon(
-                            _adhanProfile == profile.$1
-                                ? Icons.radio_button_checked_rounded
-                                : Icons.radio_button_off_rounded,
-                            color: _adhanProfile == profile.$1
-                                ? const Color(0xFF355B3D)
-                                : canSelect
-                                ? const Color(0xFFB6AA8A)
-                                : const Color(0xFFD0C7B3),
-                          ),
-                          title: Text(
-                            profile.$2,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: canSelect ? titleColor : mutedColor,
-                            ),
-                          ),
-                          subtitle: subtitle == null
-                              ? null
-                              : Text(
-                                  subtitle,
-                                  style: TextStyle(color: mutedColor),
-                                ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildDownloadAction(profile.$1),
-                              IconButton(
-                                onPressed: () => _previewAdhan(profile.$1),
-                                icon: SizedBox(
-                                  width: 26,
-                                  height: 26,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(
-                                        (_previewingProfile == profile.$1 ||
-                                                _pendingPreviewProfile ==
-                                                    profile.$1)
-                                            ? Icons.stop_circle_rounded
-                                            : Icons.play_circle_fill_rounded,
-                                      ),
-                                      if (_isPreviewLoading &&
-                                          _pendingPreviewProfile == profile.$1)
-                                        const SizedBox(
-                                          width: 26,
-                                          height: 26,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.2,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: borderColor),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'تعديل التاريخ الهجري',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(
-                      () => _hijriOffset = (_hijriOffset - 1).clamp(-3, 3),
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 32,
-                      height: 32,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.remove_rounded),
-                  ),
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      _formatHijriOffset(_hijriOffset),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: titleColor,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(
-                      () => _hijriOffset = (_hijriOffset + 1).clamp(-3, 3),
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 32,
-                      height: 32,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.add_rounded),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            for (final key in widget.prayerKeys) _buildPrayerTile(key),
-            FilledButton(
-              onPressed: _saveAndClose,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF143A2A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text('حفظ الإعدادات'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              for (final key in widget.prayerKeys) _buildPrayerTile(key),
+            ],
+          ),
         ),
       ),
     );
@@ -819,9 +732,7 @@ class _PrayerSettingBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.75),
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -841,10 +752,7 @@ class _PrayerSettingBox extends StatelessWidget {
               IconButton(
                 onPressed: onMinus,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(
-                  width: 30,
-                  height: 30,
-                ),
+                constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.remove_rounded, size: 18),
               ),
@@ -857,19 +765,14 @@ class _PrayerSettingBox extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? const Color(0xFFF2ECDF)
-                        : const Color(0xFF143A2A),
+                    color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF143A2A),
                   ),
                 ),
               ),
               IconButton(
                 onPressed: onPlus,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(
-                  width: 30,
-                  height: 30,
-                ),
+                constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.add_rounded, size: 18),
               ),

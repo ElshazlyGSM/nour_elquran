@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.KeyguardManager
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
@@ -20,8 +21,15 @@ class SalawatUnlockService : Service() {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 val action = intent?.action ?: return
-                if (action != Intent.ACTION_USER_PRESENT) {
+                if (action != Intent.ACTION_USER_PRESENT && action != Intent.ACTION_SCREEN_ON) {
                     return
+                }
+                if (action == Intent.ACTION_SCREEN_ON) {
+                    val keyguard =
+                        ContextCompat.getSystemService(context, KeyguardManager::class.java)
+                    if (keyguard?.isKeyguardLocked == true) {
+                        return
+                    }
                 }
                 maybeNotify(context)
             }
@@ -54,6 +62,7 @@ class SalawatUnlockService : Service() {
         val filter =
             IntentFilter().apply {
                 addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_ON)
             }
         registerReceiver(unlockReceiver, filter)
         receiverRegistered = true

@@ -927,3 +927,59 @@ Why isolated:
 - Tasbih page larger tap zone
   - Goal: make the lower tasbih section easier to tap.
   - Fix: wrap the lower button + bead interaction area in a transparent tap target so pressing anywhere there increments the counter.
+
+## April 2026 Release Prep Notes
+- Adhan online audio fallback
+  - New primary download URLs were added for adhan audio:
+    - `mashary.ogg`
+    - `harm.ogg`
+    - `abdelbast.ogg`
+  - Old URLs remain as fallback.
+  - File:
+    - `lib/services/adhan_audio_cache_service.dart`
+
+- Adhan settings UX cleanup
+  - Adhan profiles were moved into a compact expandable section instead of taking a large fixed area.
+  - The duplicated "selected adhan" box was removed.
+  - Per-prayer master behavior was refined:
+    - main adhan toggle controls prayer adhan switches
+    - reminder-before-prayer controls remain adjustable independently
+  - File:
+    - `lib/features/notifications/adhan/adhan_notification_settings_page.dart`
+
+- Save-on-back behavior
+  - Adhan settings and salawat settings no longer save after every tap.
+  - Changes are now saved once on page exit using app back or system back.
+  - Files:
+    - `lib/features/notifications/adhan/adhan_notification_settings_page.dart`
+    - `lib/features/notifications/salawat/salawat_notification_settings_page.dart`
+
+- Adhan scheduling window extended
+  - Prayer notifications and reminder-before-prayer were extended from 3 days ahead to 7 days ahead.
+  - File:
+    - `lib/features/notifications/adhan/prayer_notification_service.dart`
+
+- Salawat unlock / screen-on feature status
+  - This feature was the source of Google Play foreground-service concern.
+  - We tested both:
+    - receiver-only path
+    - foreground-service path
+  - Result:
+    - receiver-only was not reliable on the tested device
+    - foreground-service worked better functionally but is the part that triggers Play Console review requirements
+  - Keep in mind before final store build:
+    - if foreground service remains enabled, Play Console declaration is required
+    - if store-safe build is preferred, disable this feature for release
+
+- Manifest/name cleanup
+  - Android app label was normalized back to:
+    - `نور القرآن`
+  - File:
+    - `android/app/src/main/AndroidManifest.xml`
+
+- Final release reminder
+  - Before uploading final store build:
+    - `flutter clean`
+    - `flutter pub get`
+    - build fresh release artifact
+    - recheck Play Console foreground-service declaration status

@@ -12,7 +12,6 @@ import 'services/app_update_service.dart';
 import 'services/current_quran_text_source.dart';
 import 'services/daily_quran_reminder_service.dart';
 import 'services/quran_store.dart';
-import 'services/salawat_unlock_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,14 +126,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await _rescheduleSalawat(store);
     } catch (_) {}
 
-    try {
-      if (store.savedSalawatUnlockEnabled) {
-        await SalawatUnlockService.start();
-      } else {
-        await SalawatUnlockService.stop();
-      }
-    } catch (_) {}
-
     unawaited(_refreshAndRescheduleDailyReminder(store));
   }
 
@@ -209,7 +200,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await DailyQuranReminderService.instance.reschedule(
         todayIsoDate: todayIsoDate,
         lastAppOpenIsoDate: todayIsoDate,
-      );
+        );
     } catch (_) {
       // This reminder is secondary and must never interfere with core notifications.
     }

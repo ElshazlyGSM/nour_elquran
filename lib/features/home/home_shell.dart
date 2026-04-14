@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -61,6 +61,7 @@ class _HomeShellState extends State<HomeShell> {
     final rawTextScale = mediaQuery.textScaler.scale(16) / 16;
     final clampedTextScale = rawTextScale.clamp(1.0, 1.10);
     final lastRead = widget.store.lastRead;
+    final prayerCity = _resolveSavedCity();
     final upcomingPrayer = _buildUpcomingPrayer();
     final hijriDate = _buildHijriDate();
     final screenWidth = mediaQuery.size.width;
@@ -81,7 +82,7 @@ class _HomeShellState extends State<HomeShell> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: backgroundGradient,
-            stops: [0, 0.48, 0.80],
+            stops: const [0, 0.48, 0.80],
           ),
         ),
         child: SafeArea(
@@ -109,9 +110,7 @@ class _HomeShellState extends State<HomeShell> {
                         ),
                         const SizedBox(width: 12),
                         Material(
-                          color: Colors.white.withValues(
-                            alpha: isDark ? 0.10 : 0.08,
-                          ),
+                          color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.08),
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -145,18 +144,14 @@ class _HomeShellState extends State<HomeShell> {
                     _HomeUpcomingPrayerCard(
                       prayerName: upcomingPrayer.name,
                       prayerTime: _formatTime(upcomingPrayer.time),
-                      remaining: _formatCountdown(
-                        upcomingPrayer.time.difference(_now),
-                      ),
+                      remaining: _formatCountdown(upcomingPrayer.time.difference(_now)),
                       hijriDate: hijriDate,
+                      cityLabel: prayerCity.name,
                     ),
-
                     const SizedBox(height: 18),
                     if (lastRead != null)
                       _ContinueCard(
-                        surahName: _quranSource.getSurahNameArabic(
-                          lastRead.surahNumber,
-                        ),
+                        surahName: _quranSource.getSurahNameArabic(lastRead.surahNumber),
                         verseNumber: lastRead.verseNumber,
                         onTap: () => _openPage(
                           context,
@@ -195,7 +190,7 @@ class _HomeShellState extends State<HomeShell> {
                         ),
                         _FeatureCard(
                           title: 'مواقيت الصلاة',
-                          subtitle: 'التوقيت والتنبيهات وبوصلة باتجاه الصلاة',
+                          subtitle: 'التوقيت والتنبيهات وبوصلة القبلة',
                           icon: Icons.access_time_filled_rounded,
                           accent: const Color(0xFF8C6A1F),
                           onTap: () => _openPage(
@@ -238,8 +233,7 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _openPage(BuildContext context, Widget page) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            Directionality(textDirection: TextDirection.rtl, child: page),
+        builder: (_) => Directionality(textDirection: TextDirection.rtl, child: page),
       ),
     );
   }
@@ -272,31 +266,11 @@ class _HomeShellState extends State<HomeShell> {
     final enabledMap = widget.store.savedPrayerEnabledMap;
     final today = _buildPrayerTimes(_now);
     final entries = <_UpcomingPrayerData>[
-      _UpcomingPrayerData(
-        key: 'fajr',
-        name: _prayerNames['fajr']!,
-        time: today.fajr.toLocal(),
-      ),
-      _UpcomingPrayerData(
-        key: 'dhuhr',
-        name: _prayerNames['dhuhr']!,
-        time: today.dhuhr.toLocal(),
-      ),
-      _UpcomingPrayerData(
-        key: 'asr',
-        name: _prayerNames['asr']!,
-        time: today.asr.toLocal(),
-      ),
-      _UpcomingPrayerData(
-        key: 'maghrib',
-        name: _prayerNames['maghrib']!,
-        time: today.maghrib.toLocal(),
-      ),
-      _UpcomingPrayerData(
-        key: 'isha',
-        name: _prayerNames['isha']!,
-        time: today.isha.toLocal(),
-      ),
+      _UpcomingPrayerData(key: 'fajr', name: _prayerNames['fajr']!, time: today.fajr.toLocal()),
+      _UpcomingPrayerData(key: 'dhuhr', name: _prayerNames['dhuhr']!, time: today.dhuhr.toLocal()),
+      _UpcomingPrayerData(key: 'asr', name: _prayerNames['asr']!, time: today.asr.toLocal()),
+      _UpcomingPrayerData(key: 'maghrib', name: _prayerNames['maghrib']!, time: today.maghrib.toLocal()),
+      _UpcomingPrayerData(key: 'isha', name: _prayerNames['isha']!, time: today.isha.toLocal()),
     ];
 
     for (final entry in entries) {
@@ -305,9 +279,7 @@ class _HomeShellState extends State<HomeShell> {
       }
     }
 
-    final tomorrowFajr = _buildPrayerTimes(
-      _now.add(const Duration(days: 1)),
-    ).fajr.toLocal();
+    final tomorrowFajr = _buildPrayerTimes(_now.add(const Duration(days: 1))).fajr.toLocal();
     return _UpcomingPrayerData(
       key: 'fajr',
       name: _prayerNames['fajr']!,
@@ -371,12 +343,14 @@ class _HomeUpcomingPrayerCard extends StatelessWidget {
     required this.prayerTime,
     required this.remaining,
     required this.hijriDate,
+    required this.cityLabel,
   });
 
   final String prayerName;
   final String prayerTime;
   final String remaining;
   final String hijriDate;
+  final String cityLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +394,7 @@ class _HomeUpcomingPrayerCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$prayerName • $prayerTime',
+                  '$prayerName • $prayerTime • $cityLabel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -495,14 +469,10 @@ class _ContinueCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF18242A)
-                : Colors.white.withValues(alpha: 0.05),
+            color: isDark ? const Color(0xFF18242A) : Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark
-                  ? const Color(0xFF25343C)
-                  : Colors.white.withValues(alpha: 0.16),
+              color: isDark ? const Color(0xFF25343C) : Colors.white.withValues(alpha: 0.16),
             ),
           ),
           child: Row(
@@ -574,10 +544,7 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
-      1.0,
-      1.10,
-    );
+    final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 1.10);
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
@@ -605,9 +572,7 @@ class _FeatureCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: scale > 1.06 ? 16 : 17,
                   fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? const Color(0xFFF1EBDE)
-                      : const Color(0xFF143A2A),
+                  color: isDark ? const Color(0xFFF1EBDE) : const Color(0xFF143A2A),
                 ),
               ),
               const SizedBox(height: 6),
@@ -619,9 +584,7 @@ class _FeatureCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
-                  color: isDark
-                      ? const Color(0xFFB8C0BC)
-                      : const Color(0xFF5C655F),
+                  color: isDark ? const Color(0xFFB8C0BC) : const Color(0xFF5C655F),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -692,22 +655,18 @@ class _ProphetHighlightCard extends StatelessWidget {
                     Text(
                       'سيدنا النبي ﷺ',
                       style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFFF5EFD9)
-                            : const Color(0xFF143A2A),
+                        color: isDark ? const Color(0xFFF5EFD9) : const Color(0xFF143A2A),
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'السيرة النبوية وإعدادات الصلاة والسلام',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFFE4D6AE)
-                            : const Color(0xFF5A4A24),
+                        color: isDark ? const Color(0xFFE4D6AE) : const Color(0xFF5A4A24),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),

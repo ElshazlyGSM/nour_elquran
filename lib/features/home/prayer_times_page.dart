@@ -283,7 +283,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                       const _HeaderChip(
                         icon: Icons.notifications_active_rounded,
                         label: 'الأذان مفعل',
-                      ),
+                        ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -333,7 +333,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               labelText: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629',
               prefixIcon: Icon(Icons.location_city_rounded),
             ),
-            items: egyptPrayerCities
+            items: prayerCities
                 .map(
                   (city) => DropdownMenuItem(
                     value: city,
@@ -544,11 +544,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   Future<void> _showPrayerSettings() async {
     final basePrayerTimes = _buildBasePrayerTimes(_now);
     final prayerTimes = {
-      for (final entry in _buildEntries(basePrayerTimes))
-        entry.key: entry.time,
+      for (final entry in _buildEntries(basePrayerTimes)) entry.key: entry.time,
     };
 
-    final result = await Navigator.of(context).push<PrayerSettingsResult>(
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Directionality(
           textDirection: TextDirection.rtl,
@@ -563,32 +562,28 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             initialPrayerReminderByPrayer: _prayerReminderByPrayer,
             initialAdhanProfile: _adhanProfile,
             adhanProfiles: _adhanProfiles,
+            onChanged: (result) async {
+              final normalizedPrayerOffsets = _normalizePrayerOffsets(result.prayerOffsets);
+              final normalizedPrayerReminders = _normalizePrayerReminders(
+                result.prayerReminderByPrayer,
+              );
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _adhanEnabled = result.adhanEnabled;
+                _hijriOffset = result.hijriOffset;
+                _prayerOffsets = normalizedPrayerOffsets;
+                _prayerEnabledMap = Map<String, bool>.from(result.prayerEnabledMap);
+                _prayerReminderByPrayer = normalizedPrayerReminders;
+                _adhanProfile = result.adhanProfile;
+              });
+              await _persistPrayerPreferences();
+            },
           ),
         ),
       ),
     );
-
-    if (result == null || !mounted) {
-      return;
-    }
-
-    final normalizedPrayerOffsets = _normalizePrayerOffsets(
-      result.prayerOffsets,
-    );
-    final normalizedPrayerReminders = _normalizePrayerReminders(
-      result.prayerReminderByPrayer,
-    );
-
-    setState(() {
-      _adhanEnabled = result.adhanEnabled;
-      _hijriOffset = result.hijriOffset;
-      _prayerOffsets = normalizedPrayerOffsets;
-      _prayerEnabledMap = Map<String, bool>.from(result.prayerEnabledMap);
-      _prayerReminderByPrayer = normalizedPrayerReminders;
-      _adhanProfile = result.adhanProfile;
-    });
-
-    await _persistPrayerPreferences();
   }
 
   Future<void> _persistPrayerPreferences() async {

@@ -17,7 +17,6 @@ import java.io.FileInputStream
 
 class MainActivity : AudioServiceActivity() {
     private val adhanChannel = "com.elshazly.noorquran/adhan_audio"
-    private val salawatUnlockChannel = "com.elshazly.noorquran/salawat_unlock"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,38 +47,6 @@ class MainActivity : AudioServiceActivity() {
                 }
             }
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, salawatUnlockChannel)
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "start" -> {
-                        val intent = Intent(this, SalawatUnlockService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
-                        result.success(true)
-                    }
-                    "stop" -> {
-                        val intent = Intent(this, SalawatUnlockService::class.java)
-                        stopService(intent)
-                        result.success(true)
-                    }
-                    "notifyOnce" -> {
-                        val intent =
-                            Intent(this, SalawatUnlockService::class.java).apply {
-                                action = SalawatUnlockService.ACTION_NOTIFY_ONCE
-                            }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
-                        result.success(true)
-                    }
-                    else -> result.notImplemented()
-                }
-            }
     }
 
     private fun registerNotificationSound(filePath: String, fileName: String): String? {
