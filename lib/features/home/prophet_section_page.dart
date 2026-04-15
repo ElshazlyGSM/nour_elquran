@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../notifications/salawat/salawat_notification_settings_page.dart';
 import '../../services/quran_store.dart';
@@ -44,7 +44,7 @@ class ProphetSectionPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'قسم خاص بسيرة سيدنا النبي ﷺ والصلاة والسلام على حضرته ',
+                      'قسم خاص بسيرة سيدنا النبي ﷺ والصلاة والسلام على حضرته',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -99,13 +99,13 @@ class ProphetSectionPage extends StatelessWidget {
                         child: _ProphetFeatureCard(
                           title: 'صيغ الصلاة والسلام',
                           subtitle:
-                              'قائمة بصيغ متنوعة يمكن قراءتها واحدة واحدة',
+                              'قائمة بصيغ متنوعة يمكنك قراءتها واحدة واحدة',
                           icon: Icons.auto_stories_rounded,
                           accent: const Color(0xFF6B4E9A),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => const SalawatFormulasPage(),
+                                builder: (_) => SalawatFormulasPage(store: store),
                               ),
                             );
                           },
@@ -163,13 +163,13 @@ class _ProphetFeatureCard extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 360;
         final leading = Container(
-          width: 52,
-          height: 52,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: accent, size: 28),
+          child: Icon(icon, color: accent, size: 22),
         );
 
         final titleRow = Row(
@@ -217,25 +217,27 @@ class _ProphetFeatureCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(child: titleRow),
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: Color(0xFF8C6A1F),
+                if (compact) ...[
+                  leading,
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      color: isDark
+                          ? const Color(0xFFF2ECDF)
+                          : const Color(0xFF143A2A),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                  ),
+                ] else
+                  titleRow,
+                const SizedBox(height: 10),
                 Text(
                   subtitle,
-                  maxLines: compact ? 3 : 4,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13.5,
-                    height: 1.5,
+                    fontSize: 14.5,
+                    height: 1.6,
                     color: isDark
                         ? const Color(0xFFBAC3BE)
                         : const Color(0xFF4F5A53),
@@ -249,3 +251,4 @@ class _ProphetFeatureCard extends StatelessWidget {
     );
   }
 }
+

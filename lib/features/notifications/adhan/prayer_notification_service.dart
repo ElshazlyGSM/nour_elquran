@@ -1,4 +1,5 @@
-﻿import 'dart:typed_data';
+﻿import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/services.dart';
@@ -43,7 +44,11 @@ class PrayerNotificationService {
 
   Future<void> _initializeInternal() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: androidSettings);
+    const darwinSettings = DarwinInitializationSettings();
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+    );
     await _notifications.initialize(settings);
 
     tz.initializeTimeZones();
@@ -56,25 +61,36 @@ class PrayerNotificationService {
 
     final android = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
+    final ios = _notifications.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
     if (await NotificationPermissionGuard.shouldRequest()) {
-      try {
-        await android?.requestNotificationsPermission();
-      } on PlatformException catch (error) {
-        if (error.code != 'permissionRequestInProgress') {
-          rethrow;
+      if (Platform.isAndroid) {
+        try {
+          await android?.requestNotificationsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
         }
-      }
-      try {
-        await android?.requestExactAlarmsPermission();
-      } on PlatformException catch (error) {
-        if (error.code != 'permissionRequestInProgress') {
-          rethrow;
+        try {
+          await android?.requestExactAlarmsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
         }
+      } else if (Platform.isIOS) {
+        await ios?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
       }
       await NotificationPermissionGuard.markRequested();
     }
-    _canScheduleExactAlarms =
-        await android?.canScheduleExactNotifications() ?? true;
+    _canScheduleExactAlarms = Platform.isAndroid
+        ? await android?.canScheduleExactNotifications() ?? true
+        : true;
 
     _initialized = true;
   }
@@ -221,6 +237,18 @@ class PrayerNotificationService {
       channelNameOverride: channelNameOverride,
     );
     final scheduledDate = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (!Platform.isAndroid) {
+      await _notifications.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      return;
+    }
+
     final preferredMode = _canScheduleExactAlarms
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -268,6 +296,13 @@ class PrayerNotificationService {
     String? channelSuffixOverride,
     String? channelNameOverride,
   }) async {
+    final normalizedProfile = adhanProfile.trim().toLowerCase();
+    final iosSound = _iOSBundledSoundForPrayer(
+      profile: normalizedProfile,
+      isPrayerTimeAlarm: isPrayerTimeAlarm,
+      soundOverride: soundOverride,
+    );
+
     if (!isPrayerTimeAlarm) {
       final reminderSound = soundOverride != null
           ? RawResourceAndroidNotificationSound(soundOverride)
@@ -276,7 +311,7 @@ class PrayerNotificationService {
       final reminderChannelName = channelNameOverride ?? 'تذكير قبل الصلاة';
       return NotificationDetails(
         android: AndroidNotificationDetails(
-          'prayer_reminder_channel_$reminderChannelSuffix',
+          'prayer_reminder_channel_' + reminderChannelSuffix,
           reminderChannelName,
           channelDescription: 'تنبيهات تسبق وقت الصلاة بالصوت المخصص للتنبيه',
           importance: Importance.max,
@@ -290,10 +325,16 @@ class PrayerNotificationService {
           category: AndroidNotificationCategory.reminder,
           audioAttributesUsage: AudioAttributesUsage.notification,
         ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+          sound: iosSound,
+        ),
       );
     }
 
-    final normalizedProfile = adhanProfile.trim().toLowerCase();
     final downloaded = await AdhanAudioCacheService.instance.isDownloaded(normalizedProfile);
     final channelSuffix = channelSuffixOverride ??
         switch (normalizedProfile) {
@@ -315,7 +356,7 @@ class PrayerNotificationService {
 
     return NotificationDetails(
       android: AndroidNotificationDetails(
-        'prayer_times_channel_v4_${channelSuffix}_${downloaded ? 'downloaded' : 'system'}',
+        'prayer_times_channel_v4_' + channelSuffix + '_' + (downloaded ? 'downloaded' : 'system'),
         channelName,
         channelDescription: 'تنبيهات دخول الوقت والتنبيه المسبق',
         importance: Importance.max,
@@ -326,6 +367,13 @@ class PrayerNotificationService {
         vibrationPattern: Int64List.fromList([0, 500, 220, 700]),
         category: AndroidNotificationCategory.reminder,
         audioAttributesUsage: AudioAttributesUsage.notification,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+        sound: iosSound,
       ),
     );
   }
@@ -339,6 +387,35 @@ class PrayerNotificationService {
       _ => null,
     };
   }
+
+  String? _iOSBundledSoundForPrayer({
+    required String profile,
+    required bool isPrayerTimeAlarm,
+    String? soundOverride,
+  }) {
+    if (soundOverride != null) {
+      return _iOSBundledSoundName(soundOverride);
+    }
+    if (!isPrayerTimeAlarm) {
+      return 'a2trb.caf';
+    }
+    return switch (profile) {
+      'haram' => 'harm.caf',
+      'egypt' => 'abdelbast.caf',
+      'soft' => 'mashary.caf',
+      _ => null,
+    };
+  }
+
+  String? _iOSBundledSoundName(String soundName) => switch (soundName) {
+    'a2trb' => 'a2trb.caf',
+    'shoro2' => 'shoro2.caf',
+    'harm' => 'harm.caf',
+    'abdelbast' => 'abdelbast.caf',
+    'mashary' => 'mashary.caf',
+    'saly' => 'saly.caf',
+    _ => null,
+  };
 }
 
 class _ScheduledPrayer {
@@ -349,3 +426,8 @@ class _ScheduledPrayer {
   final DateTime time;
   final int idSeed;
 }
+
+
+
+
+

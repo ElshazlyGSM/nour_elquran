@@ -353,3 +353,5 @@ class SalawatNotificationService {
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
 
+
+

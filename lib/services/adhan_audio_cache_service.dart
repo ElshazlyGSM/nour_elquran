@@ -76,6 +76,9 @@ class AdhanAudioCacheService {
   }
 
   Future<String?> localUriForProfile(String profile) async {
+    if (!Platform.isAndroid) {
+      return null;
+    }
     final file = await fileForProfile(profile);
     if (file == null) {
       return null;
@@ -170,3 +173,4 @@ class _AdhanAudioSource {
   final String fileName;
   final List<String> urls;
 }
+

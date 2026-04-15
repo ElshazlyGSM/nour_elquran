@@ -53,6 +53,56 @@ class _HomeShellState extends State<HomeShell> {
     super.dispose();
   }
 
+  Future<void> _showThemeModeSheet(BuildContext context) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        final current = widget.store.savedThemeMode;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ListTile(
+                title: Text(
+                  'وضع التطبيق',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text('اختر بين الفاتح والداكن أو اتبع وضع الجهاز'),
+              ),
+              _ThemeModeTile(
+                value: 'system',
+                current: current,
+                title: 'اتباع وضع الجهاز',
+                icon: Icons.brightness_auto_rounded,
+                onTap: () => Navigator.of(context).pop('system'),
+              ),
+              _ThemeModeTile(
+                value: 'light',
+                current: current,
+                title: 'الوضع الفاتح',
+                icon: Icons.light_mode_rounded,
+                onTap: () => Navigator.of(context).pop('light'),
+              ),
+              _ThemeModeTile(
+                value: 'dark',
+                current: current,
+                title: 'الوضع الداكن',
+                icon: Icons.dark_mode_rounded,
+                onTap: () => Navigator.of(context).pop('dark'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null) {
+      return;
+    }
+    await widget.store.saveThemeMode(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -114,17 +164,15 @@ class _HomeShellState extends State<HomeShell> {
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              widget.store.saveDarkModeEnabled(
-                                !widget.store.savedDarkModeEnabled,
-                              );
-                            },
+                            onTap: () => _showThemeModeSheet(context),
                             child: Padding(
                               padding: const EdgeInsets.all(10),
                               child: Icon(
-                                isDark
-                                    ? Icons.light_mode_rounded
-                                    : Icons.dark_mode_rounded,
+                                switch (widget.store.savedThemeMode) {
+                                  'dark' => Icons.dark_mode_rounded,
+                                  'system' => Icons.brightness_auto_rounded,
+                                  _ => Icons.light_mode_rounded,
+                                },
                                 color: const Color(0xFFE6C16A),
                               ),
                             ),
@@ -684,6 +732,35 @@ class _ProphetHighlightCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ThemeModeTile extends StatelessWidget {
+  const _ThemeModeTile({
+    required this.value,
+    required this.current,
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String value;
+  final String current;
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = value == current;
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: selected
+          ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2F6A53))
+          : const Icon(Icons.radio_button_unchecked_rounded),
+      onTap: onTap,
     );
   }
 }

@@ -259,7 +259,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'ملحوظة: بعض الأجهزة قد تؤخر الإشعارات عند قفل الشاشة أو تقييد البطارية. يفضل إضافة التطبيق إلى استثناءات توفير البطارية لضمان الانتظام.',
+                          'ملحوظة: بعض الأجهزة قد تؤخر الإشعارات عند قفل الشاشة أو مع تقييد البطارية. سيأخذك الزر إلى إعدادات التطبيق، ومن هناك ادخل إلى البطارية أو التشغيل في الخلفية واسمح للتطبيق بالعمل دون تقييد.',
                           style: TextStyle(fontSize: 12, color: mutedTextColor),
                         ),
                         const SizedBox(height: 10),
@@ -268,7 +268,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                             await BackgroundExecutionSettings.openBackgroundSettings();
                           },
                           icon: const Icon(Icons.battery_saver_rounded),
-                          label: const Text('فتح إعدادات البطارية والخلفية'),
+                          label: const Text('فتح إعدادات التطبيق والبطارية'),
                         ),
                         const SizedBox(height: 16),
                         Container(
@@ -487,6 +487,7 @@ class _TimeBox extends StatelessWidget {
     );
   }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
@@ -29,8 +29,11 @@ class QuranApp extends StatelessWidget {
           locale: const Locale('ar'),
           theme: buildAppTheme(),
           darkTheme: buildDarkAppTheme(),
-          themeMode:
-              store.savedDarkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+          themeMode: switch (store.savedThemeMode) {
+            'dark' => ThemeMode.dark,
+            'system' => ThemeMode.system,
+            _ => ThemeMode.light,
+          },
           home: Directionality(
             textDirection: TextDirection.rtl,
             child: HomeShell(store: store),
@@ -40,3 +43,5 @@ class QuranApp extends StatelessWidget {
     );
   }
 }
+
+

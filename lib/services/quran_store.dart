@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,11 +57,13 @@ class QuranStore extends ChangeNotifier {
   static const _salawatVibrationEnabledKey = 'salawat_vibration_enabled';
   static const _salawatUnlockEnabledKey = 'salawat_unlock_enabled';
   static const _salawatUnlockLastKey = 'salawat_unlock_last';
+  static const _salawatFormulaCountsKey = 'salawat_formula_counts_v1';
   static const _readerBookmarksKey = 'reader_bookmarks_v1';
   static const _readSirahEpisodesKey = 'read_sirah_episodes_v1';
   static const _lastSirahEpisodeIdKey = 'last_sirah_episode_id';
   static const _lastAppOpenDateKey = 'last_app_open_date';
   static const _darkModeEnabledKey = 'dark_mode_enabled';
+  static const _themeModeKey = 'theme_mode';
 
   final SharedPreferences _prefs;
   LastReadPosition? _lastRead;
@@ -139,12 +141,38 @@ class QuranStore extends ChangeNotifier {
       _prefs.getBool(_salawatUnlockEnabledKey) ?? false;
   int get savedSalawatUnlockLastMillis =>
       _prefs.getInt(_salawatUnlockLastKey) ?? 0;
+  Map<String, int> get savedSalawatFormulaCounts {
+    final raw = _prefs.getString(_salawatFormulaCountsKey);
+    if (raw == null || raw.isEmpty) {
+      return <String, int>{};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return <String, int>{};
+      }
+      return Map<String, int>.fromEntries(
+        decoded.entries.map(
+          (entry) => MapEntry(entry.key, (entry.value as num?)?.toInt() ?? 0),
+        ),
+      );
+    } catch (_) {
+      return <String, int>{};
+    }
+  }
   Set<String> get savedReadSirahEpisodeIds =>
       _prefs.getStringList(_readSirahEpisodesKey)?.toSet() ?? <String>{};
   String? get savedLastSirahEpisodeId =>
       _prefs.getString(_lastSirahEpisodeIdKey);
   String? get savedLastAppOpenDate => _prefs.getString(_lastAppOpenDateKey);
-  bool get savedDarkModeEnabled => _prefs.getBool(_darkModeEnabledKey) ?? false;
+  String get savedThemeMode {
+    final saved = _prefs.getString(_themeModeKey);
+    if (saved == 'light' || saved == 'dark' || saved == 'system') {
+      return saved!;
+    }
+    return (_prefs.getBool(_darkModeEnabledKey) ?? false) ? 'dark' : 'light';
+  }
+  bool get savedDarkModeEnabled => savedThemeMode == 'dark';
 
   static Future<QuranStore> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -355,6 +383,16 @@ class QuranStore extends ChangeNotifier {
     await _prefs.setInt(_salawatUnlockLastKey, value);
   }
 
+  Future<void> saveSalawatFormulaCount({
+    required String formulaId,
+    required int count,
+  }) async {
+    final updated = Map<String, int>.from(savedSalawatFormulaCounts);
+    updated[formulaId] = count;
+    await _prefs.setString(_salawatFormulaCountsKey, jsonEncode(updated));
+    notifyListeners();
+  }
+
   Future<void> markSirahEpisodeRead(String episodeId) async {
     final updated = savedReadSirahEpisodeIds..add(episodeId);
     await _prefs.setStringList(_readSirahEpisodesKey, updated.toList());
@@ -371,9 +409,17 @@ class QuranStore extends ChangeNotifier {
     await _prefs.setString(_lastAppOpenDateKey, isoDate);
   }
 
-  Future<void> saveDarkModeEnabled(bool enabled) async {
-    await _prefs.setBool(_darkModeEnabledKey, enabled);
+  Future<void> saveThemeMode(String mode) async {
+    if (mode != 'light' && mode != 'dark' && mode != 'system') {
+      return;
+    }
+    await _prefs.setString(_themeModeKey, mode);
+    await _prefs.setBool(_darkModeEnabledKey, mode == 'dark');
     notifyListeners();
+  }
+
+  Future<void> saveDarkModeEnabled(bool enabled) async {
+    await saveThemeMode(enabled ? 'dark' : 'light');
   }
 
   bool isVerseBookmarked({required int surahNumber, required int verseNumber}) {
@@ -424,3 +470,7 @@ class QuranStore extends ChangeNotifier {
     );
   }
 }
+
+
+
+

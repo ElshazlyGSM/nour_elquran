@@ -72,12 +72,40 @@ class MainActivity : AudioServiceActivity() {
         val packageUri = Uri.parse("package:$packageName")
         val manufacturer = Build.MANUFACTURER.lowercase()
 
+        intents += Intent("android.settings.APP_BATTERY_SETTINGS").apply {
+            putExtra("android.provider.extra.APP_PACKAGE", packageName)
+            data = packageUri
+        }
+        intents += Intent("android.settings.VIEW_ADVANCED_POWER_USAGE_DETAIL").apply {
+            data = packageUri
+            putExtra("package_name", packageName)
+            putExtra("packageName", packageName)
+        }
+
         if (manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus")) {
             intents += Intent().apply {
                 component = ComponentName(
                     "com.coloros.oppoguardelf",
                     "com.coloros.powermanager.fuelgaue.PowerUsageModelActivity",
                 )
+                putExtra("packageName", packageName)
+                putExtra("pkg_name", packageName)
+            }
+            intents += Intent().apply {
+                component = ComponentName(
+                    "com.coloros.oppoguardelf",
+                    "com.coloros.powermanager.fuelgaue.PowerConsumptionActivity",
+                )
+                putExtra("packageName", packageName)
+                putExtra("pkg_name", packageName)
+            }
+            intents += Intent().apply {
+                component = ComponentName(
+                    "com.coloros.oppoguardelf",
+                    "com.coloros.powermanager.fuelgaue.PowerControlActivity",
+                )
+                putExtra("packageName", packageName)
+                putExtra("pkg_name", packageName)
             }
             intents += Intent().apply {
                 component = ComponentName(
@@ -200,5 +228,6 @@ class MainActivity : AudioServiceActivity() {
             else -> "audio/*"
         }
 }
+
 
 

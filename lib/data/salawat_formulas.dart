@@ -1,4 +1,4 @@
-class SalawatFormula {
+﻿class SalawatFormula {
   const SalawatFormula({
     required this.title,
     required this.text,
