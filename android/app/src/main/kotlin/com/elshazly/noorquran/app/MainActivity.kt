@@ -1,5 +1,6 @@
-package com.elshazly.noorquran.app
+﻿package com.elshazly.noorquran.app
 
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Intent
 import android.media.MediaScannerConnection
@@ -7,7 +8,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
 import android.provider.MediaStore
+import android.provider.Settings
 import androidx.core.view.WindowCompat
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -17,6 +20,7 @@ import java.io.FileInputStream
 
 class MainActivity : AudioServiceActivity() {
     private val adhanChannel = "com.elshazly.noorquran/adhan_audio"
+    private val settingsChannel = "com.elshazly.noorquran/device_settings"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +51,73 @@ class MainActivity : AudioServiceActivity() {
                 }
             }
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, settingsChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "openBackgroundSettings" -> {
+                        try {
+                            result.success(openBackgroundSettings())
+                        } catch (t: Throwable) {
+                            result.error("open_background_settings_failed", t.message, null)
+                        }
+                    }
+
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun openBackgroundSettings(): Boolean {
+        val intents = mutableListOf<Intent>()
+        val packageUri = Uri.parse("package:$packageName")
+        val manufacturer = Build.MANUFACTURER.lowercase()
+
+        if (manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus")) {
+            intents += Intent().apply {
+                component = ComponentName(
+                    "com.coloros.oppoguardelf",
+                    "com.coloros.powermanager.fuelgaue.PowerUsageModelActivity",
+                )
+            }
+            intents += Intent().apply {
+                component = ComponentName(
+                    "com.oppo.safe",
+                    "com.oppo.safe.permission.startup.StartupAppListActivity",
+                )
+            }
+            intents += Intent().apply {
+                component = ComponentName(
+                    "com.coloros.safecenter",
+                    "com.coloros.safecenter.startupapp.StartupAppListActivity",
+                )
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(PowerManager::class.java)
+            if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                intents += Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = packageUri
+                }
+            }
+            intents += Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        }
+
+        intents += Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = packageUri
+        }
+        intents += Intent(Settings.ACTION_SETTINGS)
+
+        for (intent in intents) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val resolved = intent.resolveActivity(packageManager)
+            if (resolved != null) {
+                startActivity(intent)
+                return true
+            }
+        }
+
+        return false
     }
 
     private fun registerNotificationSound(filePath: String, fileName: String): String? {
@@ -129,3 +200,5 @@ class MainActivity : AudioServiceActivity() {
             else -> "audio/*"
         }
 }
+
+

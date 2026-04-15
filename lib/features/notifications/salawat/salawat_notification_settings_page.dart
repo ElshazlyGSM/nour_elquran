@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/egypt_prayer_cities.dart';
+import '../../../services/background_execution_settings.dart';
 import '../../../services/quran_store.dart';
 import 'salawat_notification_service.dart';
 
@@ -261,6 +262,14 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                           'ملحوظة: بعض الأجهزة قد تؤخر الإشعارات عند قفل الشاشة أو تقييد البطارية. يفضل إضافة التطبيق إلى استثناءات توفير البطارية لضمان الانتظام.',
                           style: TextStyle(fontSize: 12, color: mutedTextColor),
                         ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await BackgroundExecutionSettings.openBackgroundSettings();
+                          },
+                          icon: const Icon(Icons.battery_saver_rounded),
+                          label: const Text('فتح إعدادات البطارية والخلفية'),
+                        ),
                         const SizedBox(height: 16),
                         Container(
                           width: double.infinity,
@@ -478,3 +487,7 @@ class _TimeBox extends StatelessWidget {
     );
   }
 }
+
+
+
+

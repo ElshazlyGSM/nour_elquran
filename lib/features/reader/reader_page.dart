@@ -269,6 +269,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   bool _isPlayingAudio = false;
   bool _isPreparingAudio = false;
   bool _currentPlaybackUsesNetwork = false;
+  bool _suspendPlaylistIndexSelectionSync = false;
   bool _isAdvancingToNextSurah = false;
   bool _isInitialStandardPositioning = false;
   bool _isSwitchingToPagedMushaf = false;
@@ -785,6 +786,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         _isPlayingAudio = state.playing;
         if (state.playing) {
           _isPreparingAudio = false;
+          _suspendPlaylistIndexSelectionSync = false;
         } else if (state.processingState == ProcessingState.loading ||
             state.processingState == ProcessingState.buffering ||
             (_isPreparingAudio &&
@@ -800,7 +802,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _audioPlayer.currentIndexStream.listen((index) {
       if (!mounted ||
           index == null ||
-          _activeAudioEngine == _AudioEngine.library) {
+          _activeAudioEngine == _AudioEngine.library ||
+          _suspendPlaylistIndexSelectionSync) {
         return;
       }
       if (_playbackSurahNumber == null || _playbackStartVerse == null) {
@@ -1638,6 +1641,8 @@ class _ReaderTopJumpButton extends StatelessWidget {
     );
   }
 }
+
+
 
 
 

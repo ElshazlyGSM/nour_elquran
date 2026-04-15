@@ -258,6 +258,7 @@ extension _ReaderAudio on _ReaderPageState {
       _isPreparingAudio = false;
       _isPlayingAudio = false;
       _currentPlaybackUsesNetwork = false;
+      _suspendPlaylistIndexSelectionSync = true;
       _selectedSurahNumber = surahNumber;
       _selectedVerseNumber = verseNumber;
     });
@@ -368,6 +369,7 @@ extension _ReaderAudio on _ReaderPageState {
         _updateState(() {
           _isPreparingAudio = false;
           _isPlayingAudio = true;
+          _suspendPlaylistIndexSelectionSync = false;
           _audioError = null;
         });
       }
@@ -378,6 +380,7 @@ extension _ReaderAudio on _ReaderPageState {
             : '\u062a\u0639\u0630\u0631 \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0635\u0648\u062a. \u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u062a\u0635\u0627\u0644 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a.';
         _isPreparingAudio = false;
         _isPlayingAudio = false;
+        _suspendPlaylistIndexSelectionSync = false;
       });
       return;
     }
@@ -454,6 +457,7 @@ extension _ReaderAudio on _ReaderPageState {
         _currentPlaybackUsesNetwork = false;
         _isPreparingAudio = false;
         _isPlayingAudio = true;
+        _suspendPlaylistIndexSelectionSync = false;
         _audioError = null;
       });
     }
@@ -474,6 +478,8 @@ extension _ReaderAudio on _ReaderPageState {
         _currentPlaybackUsesNetwork = false;
         _isPreparingAudio = false;
         _isPlayingAudio = false;
+        _suspendPlaylistIndexSelectionSync = false;
+        _suspendPlaylistIndexSelectionSync = false;
       });
     }
     await AudioCtrl.instance.state.audioPlayer.stop();
@@ -527,4 +533,5 @@ extension _ReaderAudio on _ReaderPageState {
     }
   }
 }
+
 

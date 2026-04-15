@@ -26,61 +26,21 @@ extension _ReaderAutoScroll on _ReaderPageState {
 
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
-    _controlBarHideTimer?.cancel();
-    _ignoreAutoScrollTapUntil = DateTime.now().add(
-      const Duration(milliseconds: 900),
-    );
     _updateState(() {
       _isAutoScrolling = true;
       _isAutoScrollPaused = false;
       _showControlBarWhileAutoScroll = true;
       _showBottomBar = true;
     });
-
-    void beginTimer() {
-      _autoScrollTimer?.cancel();
-      _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
-        if (!_standardItemScrollController.isAttached) {
-          return;
-        }
-        _standardScrollOffsetController.animateScroll(
-          offset: _readingSpeed * 16,
-          duration: const Duration(milliseconds: 80),
-        );
-      });
-    }
-
-    void waitUntilReady(int attempt) {
-      if (!mounted || _isPagedMushafMode || !_isAutoScrolling) {
+    _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      if (!_standardItemScrollController.isAttached) {
         return;
       }
-      final ready =
-          _standardItemScrollController.isAttached && !_isInitialStandardPositioning;
-      if (ready) {
-        beginTimer();
-        return;
-      }
-      if (attempt >= 18) {
-        _updateState(() {
-          _isAutoScrolling = false;
-          _isAutoScrollPaused = false;
-          _showControlBarWhileAutoScroll = true;
-          _showBottomBar = true;
-        });
-        return;
-      }
-      Future<void>.delayed(const Duration(milliseconds: 90), () {
-        waitUntilReady(attempt + 1);
-      });
-    }
-
-    final ready =
-        _standardItemScrollController.isAttached && !_isInitialStandardPositioning;
-    if (ready) {
-      beginTimer();
-      return;
-    }
-    waitUntilReady(0);
+      _standardScrollOffsetController.animateScroll(
+        offset: _readingSpeed * 16,
+        duration: const Duration(milliseconds: 80),
+      );
+    });
   }
 
   void _pauseAutoScroll() {
@@ -96,9 +56,6 @@ extension _ReaderAutoScroll on _ReaderPageState {
 
   void _resumeAutoScroll() {
     _controlBarHideTimer?.cancel();
-    _ignoreAutoScrollTapUntil = DateTime.now().add(
-      const Duration(milliseconds: 500),
-    );
     _startAutoScroll();
   }
 
@@ -120,8 +77,8 @@ extension _ReaderAutoScroll on _ReaderPageState {
     _updateState(() {
       _isAutoScrolling = false;
       _isAutoScrollPaused = false;
-      _showControlBarWhileAutoScroll = true;
-      _showBottomBar = true;
+      _showControlBarWhileAutoScroll = false;
+      _showBottomBar = false;
     });
   }
 
@@ -135,6 +92,15 @@ extension _ReaderAutoScroll on _ReaderPageState {
       _showControlBarWhileAutoScroll = true;
       _showBottomBar = true;
     });
+    _controlBarHideTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted || !_isAutoScrolling) {
+        return;
+      }
+      _updateState(() {
+        _showControlBarWhileAutoScroll = false;
+        _showBottomBar = false;
+      });
+    });
   }
 
   Future<void> _increaseReadingSpeed() async {
@@ -146,6 +112,9 @@ extension _ReaderAutoScroll on _ReaderPageState {
       _readingSpeed = _readingSpeedForTargetJuzMinutes(targetMinutes);
     });
     unawaited(_persistReaderPreferences());
+    if (!_isAutoScrolling) {
+      _startAutoScroll();
+    }
     _showControlBarForFineTuning();
   }
 
@@ -158,6 +127,9 @@ extension _ReaderAutoScroll on _ReaderPageState {
       _readingSpeed = _readingSpeedForTargetJuzMinutes(targetMinutes);
     });
     unawaited(_persistReaderPreferences());
+    if (!_isAutoScrolling) {
+      _startAutoScroll();
+    }
     _showControlBarForFineTuning();
   }
 
@@ -179,7 +151,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = _snapFontSize((_fontSize + 1).clamp(14.0, 42.0));
+      _fontSize = (_fontSize + 2).clamp(14.0, 42.0);
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();
@@ -204,11 +176,10 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = _snapFontSize((_fontSize - 1).clamp(14.0, 42.0));
+      _fontSize = (_fontSize - 2).clamp(14.0, 42.0);
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();
     unawaited(_persistReaderPreferences());
   }
 }
-
