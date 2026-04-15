@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 const _readerSearchSource = currentQuranTextSource;
 
