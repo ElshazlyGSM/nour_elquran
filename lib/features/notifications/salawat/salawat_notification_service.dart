@@ -329,8 +329,8 @@ class SalawatNotificationService {
   ) => NotificationDetails(
     android: AndroidNotificationDetails(
       'salawat_reminders_channel_clean_v4_${vibrationEnabled ? 'vib' : 'silent'}',
-      'ØªØ°ÙƒÙŠØ± Ø§Ù„ØµÙ„Ø§Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù†Ø¨ÙŠ',
-      channelDescription: 'ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø¯ÙˆØ±ÙŠØ© Ù„Ù„ØµÙ„Ø§Ø© ÙˆØ§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ø§Ù„Ù†Ø¨ÙŠ',
+      'تذكير الصلاة على النبي',
+      channelDescription: 'تنبيهات دورية للصلاة والسلام على سيدنا النبي',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
@@ -346,8 +346,8 @@ class SalawatNotificationService {
     ),
   );
 
-  String get _title => 'Ø§Ù„ØµÙ„Ø§Ø© ÙˆØ§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ø§Ù„Ù†Ø¨ÙŠ';
+  String get _title => 'الصلاة والسلام على سيدنا النبي';
 
-  String get _body => 'Ø§Ù„Ù„Ù‡Ù… ØµÙ„ ÙˆØ³Ù„Ù… ÙˆØ¨Ø§Ø±Ùƒ Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ù…Ø­Ù…Ø¯ ÙˆØ¹Ù„Ù‰ Ø¢Ù„Ù‡ ÙˆØµØ­Ø¨Ù‡ ÙˆØ³Ù„Ù…';
+  String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
 

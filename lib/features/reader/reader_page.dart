@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -182,7 +182,6 @@ extension on _ReaderAppearance {
   };
 }
 
-
 extension _ReaderAppearanceQuarterMarkerColors on _ReaderAppearance {
   Color get quarterMarkerTextColor => switch (this) {
     _ReaderAppearance.night => const Color(0xFFF3E6A8),
@@ -263,6 +262,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   DateTime? _ignoreAutoScrollTapUntil;
   double _bottomBarOffset = 0;
   bool _isAutoScrolling = false;
+  int? _lockedAutoScrollTargetMinutes;
+
   bool _isAutoScrollPaused = false;
   bool _showControlBarWhileAutoScroll = false;
   bool _showBottomBar = false;
@@ -649,7 +650,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           _shamarlyJuzStartPages = List<int>.generate(
             currentQuranTotalJuzCount,
             (index) {
-              final juzVerses = _quranSource.getSurahAndVersesFromJuz(index + 1);
+              final juzVerses = _quranSource.getSurahAndVersesFromJuz(
+                index + 1,
+              );
               final firstSurah = juzVerses.keys.first;
               final firstVerse = juzVerses[firstSurah]!.first;
               return parsed['$firstSurah:$firstVerse'] ??
@@ -664,8 +667,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         }
       } else {
         _shamarlyPageMap = <String, int>{};
-          _shamarlyPageToSurahMap = <int, int>{};
-          _shamarlyJuzStartPages = null;
+        _shamarlyPageToSurahMap = <int, int>{};
+        _shamarlyJuzStartPages = null;
       }
     } finally {
       _isLoadingShamarlyPageMap = false;
@@ -682,8 +685,6 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       }
     }
   }
-
-  
 
   @override
   void initState() {
@@ -1027,7 +1028,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                       _selectedSurahNumber ?? widget.surahNumber,
                       _selectedVerseNumber ?? widget.initialVerse,
                     )));
-    final displayedJuzNumber = _isShamarlyPagesMode ? _currentShamarlyJuzNumberFromPage(displayedPageNumber) : _currentJuzNumberFromPage(displayedPageNumber);
+    final displayedJuzNumber = _isShamarlyPagesMode
+        ? _currentShamarlyJuzNumberFromPage(displayedPageNumber)
+        : _currentJuzNumberFromPage(displayedPageNumber);
 
     return AnimatedBuilder(
       animation: widget.store,
@@ -1373,7 +1376,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               pagesDirectoryPath: _shamarlyPagesDirectoryPath,
               onPageTap: _showPagedControlBar,
               onPageChanged: (pageNumber) {
-                final pageSurahNumber = _resolveShamarlyVisibleSurahNumber(pageNumber);
+                final pageSurahNumber = _resolveShamarlyVisibleSurahNumber(
+                  pageNumber,
+                );
                 if (_isSwitchingToPagedMushaf) {
                   _updateState(() {
                     _isSwitchingToPagedMushaf = false;
@@ -1407,7 +1412,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       _medinaFontsDownloadError = null;
     });
     try {
-      final downloaded = await _medinaFontsDownloadService.countDownloadedPages();
+      final downloaded = await _medinaFontsDownloadService
+          .countDownloadedPages();
       final isReady = await _medinaFontsDownloadService.isFullyDownloaded();
       if (!mounted) {
         return;
@@ -1460,7 +1466,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           _updateState(() {
             _medinaFontsDownloadProgress = progress;
             if (progress < 1) {
-              _medinaFontsDownloadStatus = 'جارٍ تنزيل ملف مصحف المدينة... $percent%';
+              _medinaFontsDownloadStatus =
+                  'جارٍ تنزيل ملف مصحف المدينة... $percent%';
             }
           });
         },
@@ -1569,7 +1576,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           _updateState(() {
             _shamarlyPagesDownloadProgress = progress;
             if (progress < 1) {
-              _shamarlyPagesDownloadStatus = 'جارٍ تنزيل ملف الشمرلي... $percent%';
+              _shamarlyPagesDownloadStatus =
+                  'جارٍ تنزيل ملف الشمرلي... $percent%';
             }
           });
         },
@@ -1641,11 +1649,3 @@ class _ReaderTopJumpButton extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -42,18 +42,15 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   };
 
   static const _adhanProfiles = [
-    (
-      'default',
-      '\u0646\u063a\u0645\u0629 \u0627\u0644\u0646\u0638\u0627\u0645',
-    ),
-    ('allah_akbar', 'Ø§Ù„Ù„Ù‡ Ø£ÙƒØ¨Ø±'),
-    ('__full_adhans__', 'Ø£Ø°Ø§Ù†Ø§Øª ÙƒØ§Ù…Ù„Ø©'),
-    ('nsr_elden', 'Ù†ØµØ± Ø§Ù„Ø¯ÙŠÙ† Ø·ÙˆØ¨Ø§Ø±'),
-    ('egypt', 'Ø¹Ø¨Ø¯ Ø§Ù„Ø¨Ø§Ø³Ø·'),
-    ('mnshawy', 'Ø§Ù„Ù…Ù†Ø´Ø§ÙˆÙŠ'),
-    ('mowahd', 'Ø£Ø°Ø§Ù† Ù…ØµØ± Ø§Ù„Ù…ÙˆØ­Ø¯'),
-    ('haram', '\u0623\u0630\u0627\u0646 \u0627\u0644\u062d\u0631\u0645'),
-    ('soft', 'Ù…Ø´Ø§Ø±ÙŠ'),
+    ('default', 'نغمة النظام'),
+    ('allah_akbar', 'الله أكبر'),
+    ('__full_adhans__', 'أذانات كاملة'),
+    ('nsr_elden', 'نصر الدين طوبار'),
+    ('egypt', 'عبد الباسط'),
+    ('mnshawy', 'المنشاوي'),
+    ('mowahd', 'أذان مصر الموحد'),
+    ('haram', 'أذان الحرم'),
+    ('soft', 'مشاري'),
   ];
 
   late PrayerCity _selectedCity;
@@ -723,4 +720,3 @@ class _PrayerEntry {
   final String key;
   final bool isPrayer;
 }
-

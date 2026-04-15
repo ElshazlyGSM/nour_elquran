@@ -79,7 +79,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                   color: Colors.white,
                 ),
                 Text(
-                  'Ù†ÙˆØ± Ø§Ù„Ù‚Ø±Ø¢Ù†',
+                  'نور القرآن',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 50,

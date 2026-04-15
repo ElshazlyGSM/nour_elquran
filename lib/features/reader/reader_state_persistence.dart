@@ -7,8 +7,8 @@ extension _ReaderStatePersistence on _ReaderPageState {
   ) {
     if (darkModeEnabled) {
       return switch (appearance) {
-        _ReaderAppearance.classic || _ReaderAppearance.golden =>
-          _ReaderAppearance.night,
+        _ReaderAppearance.classic ||
+        _ReaderAppearance.golden => _ReaderAppearance.night,
         _ReaderAppearance.tajweed => _ReaderAppearance.nightTajweed,
         _ReaderAppearance.medinaPages => _ReaderAppearance.medinaPages,
         _ReaderAppearance.shamarlyPages => _ReaderAppearance.shamarlyPages,
@@ -23,7 +23,9 @@ extension _ReaderStatePersistence on _ReaderPageState {
   }
 
   int get _selectedReciterIndex {
-    final index = readerReciters.indexWhere((item) => item.id == _selectedReciter.id);
+    final index = readerReciters.indexWhere(
+      (item) => item.id == _selectedReciter.id,
+    );
     return index >= 0 ? index : 0;
   }
 
@@ -39,9 +41,9 @@ extension _ReaderStatePersistence on _ReaderPageState {
         findReaderReciterById('mp3:118') ?? readerReciters.first,
       quran.Reciter.arMinshawi =>
         readerReciters
-            .where((item) => item.legacyReciter == quran.Reciter.arMinshawi)
-            .firstOrNull ??
-        defaultReaderReciter,
+                .where((item) => item.legacyReciter == quran.Reciter.arMinshawi)
+                .firstOrNull ??
+            defaultReaderReciter,
       _ => defaultReaderReciter,
     };
   }
@@ -51,10 +53,15 @@ extension _ReaderStatePersistence on _ReaderPageState {
       : '${toArabicNumber(_selectedRepeatCount)}×';
 
   String get _estimatedJuzReadingTimeLabel {
-    return '\u0648\u0642\u062a \u0627\u0644\u062c\u0632\u0621 ${toArabicNumber(_currentTargetJuzMinutes)} \u062f';
+    final minutes =
+        _isAutoScrollModeActive && _lockedAutoScrollTargetMinutes != null
+        ? _lockedAutoScrollTargetMinutes!
+        : _currentTargetJuzMinutes;
+    return '\u0648\u0642\u062a \u0627\u0644\u062c\u0632\u0621 ${toArabicNumber(minutes)} \u062f';
   }
 
-  int get _currentTargetJuzMinutes => _estimatedJuzMinutesValue.round().clamp(5, 60);
+  int get _currentTargetJuzMinutes =>
+      _estimatedJuzMinutesValue.round().clamp(5, 60);
 
   double get _estimatedJuzMinutesValue {
     final currentPage =
@@ -88,7 +95,11 @@ extension _ReaderStatePersistence on _ReaderPageState {
   ({int startPage, int endPage, int pageCount}) _currentJuzPageRange(
     int currentPage,
   ) {
-    for (var juzNumber = 1; juzNumber <= currentQuranTotalJuzCount; juzNumber++) {
+    for (
+      var juzNumber = 1;
+      juzNumber <= currentQuranTotalJuzCount;
+      juzNumber++
+    ) {
       final verses = _quranSource.getSurahAndVersesFromJuz(juzNumber);
       final firstSurah = verses.keys.first;
       final firstVerse = verses[firstSurah]!.first;
@@ -211,8 +222,8 @@ extension _ReaderStatePersistence on _ReaderPageState {
     if (savedAppearance != null) {
       _appearance = _appearanceForThemePreference(
         _ReaderAppearance.values.firstWhere(
-        (appearance) => appearance.name == savedAppearance,
-        orElse: () => _ReaderAppearance.classic,
+          (appearance) => appearance.name == savedAppearance,
+          orElse: () => _ReaderAppearance.classic,
         ),
         darkModeEnabled,
       );
@@ -220,10 +231,13 @@ extension _ReaderStatePersistence on _ReaderPageState {
       _appearance = _ReaderAppearance.night;
     }
 
-    final fallbackFontSize =
-        _appearance == _ReaderAppearance.golden ? 24.0 : _fontSize;
-    _fontSize =
-        (widget.store.savedFontSize ?? fallbackFontSize).clamp(14.0, 42.0);
+    final fallbackFontSize = _appearance == _ReaderAppearance.golden
+        ? 24.0
+        : _fontSize;
+    _fontSize = (widget.store.savedFontSize ?? fallbackFontSize).clamp(
+      14.0,
+      42.0,
+    );
     _lastContinuousFontSize = _fontSize;
     _readingSpeed =
         (widget.store.savedReadingSpeed ?? _readingSpeedForTargetJuzMinutes(15))
@@ -246,9 +260,7 @@ extension _ReaderStatePersistence on _ReaderPageState {
     var fontSize = _fontSize;
     if (_isPagedMushafMode) {
       fontSize = _lastContinuousFontSize;
-      if (_isMedinaPagesMode &&
-          !_useMedinaOnDemandDownload &&
-          mounted) {
+      if (_isMedinaPagesMode && !_useMedinaOnDemandDownload && mounted) {
         final scaleFactor = QuranCtrl.instance.state.scaleFactor.value;
         _fontSize = ((scaleFactor - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
       }
@@ -273,4 +285,3 @@ extension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
   T? get lastOrNull => isEmpty ? null : last;
 }
-

@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderAutoScroll on _ReaderPageState {
   void _syncPagedMushafScaleFromFontSize() {
@@ -27,6 +27,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
     _updateState(() {
+      _lockedAutoScrollTargetMinutes = _currentTargetJuzMinutes;
       _isAutoScrolling = true;
       _isAutoScrollPaused = false;
       _showControlBarWhileAutoScroll = true;
@@ -77,6 +78,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
     _updateState(() {
       _isAutoScrolling = false;
       _isAutoScrollPaused = false;
+      _lockedAutoScrollTargetMinutes = null;
       _showControlBarWhileAutoScroll = false;
       _showBottomBar = false;
     });
@@ -110,6 +112,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
     final targetMinutes = (_currentTargetJuzMinutes - 1).clamp(5, 60);
     _updateState(() {
       _readingSpeed = _readingSpeedForTargetJuzMinutes(targetMinutes);
+      _lockedAutoScrollTargetMinutes = targetMinutes;
     });
     unawaited(_persistReaderPreferences());
     if (!_isAutoScrolling) {
@@ -125,6 +128,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
     final targetMinutes = (_currentTargetJuzMinutes + 1).clamp(5, 60);
     _updateState(() {
       _readingSpeed = _readingSpeedForTargetJuzMinutes(targetMinutes);
+      _lockedAutoScrollTargetMinutes = targetMinutes;
     });
     unawaited(_persistReaderPreferences());
     if (!_isAutoScrolling) {
