@@ -34,7 +34,7 @@ class ProphetSectionPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
             children: [
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(24),
@@ -67,7 +67,7 @@ class ProphetSectionPage extends StatelessWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final spacing = 12.0;
+                  final spacing = 10.0;
                   final canShowThree = width >= 860;
                   final cardWidth = canShowThree
                       ? (width - spacing * 2) / 3
@@ -161,28 +161,27 @@ class _ProphetFeatureCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 360;
         final leading = Container(
-          width: 46,
-          height: 46,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: accent, size: 22),
+          child: Icon(icon, color: accent, size: 20),
         );
 
         final titleRow = Row(
           children: [
             leading,
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 16.5,
+                  fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: isDark
                       ? const Color(0xFFF2ECDF)
@@ -194,13 +193,13 @@ class _ProphetFeatureCard extends StatelessWidget {
         );
 
         return InkWell(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF18242A) : Colors.white,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isDark
                     ? const Color(0xFF26343B)
@@ -209,34 +208,20 @@ class _ProphetFeatureCard extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: accent.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (compact) ...[
-                  leading,
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      color: isDark
-                          ? const Color(0xFFF2ECDF)
-                          : const Color(0xFF143A2A),
-                    ),
-                  ),
-                ] else
-                  titleRow,
-                const SizedBox(height: 10),
+                titleRow,
+                const SizedBox(height: 8),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 13.5,
                     height: 1.6,
                     color: isDark
                         ? const Color(0xFFBAC3BE)

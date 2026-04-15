@@ -153,7 +153,7 @@ class _SalawatFormulasPageState extends State<SalawatFormulasPage> {
                         child: Text(
                           item.title,
                           style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 20,
                             fontWeight: FontWeight.w800,
                             color: isDark
                                 ? const Color(0xFFF2ECDF)
@@ -320,7 +320,7 @@ class _SalawatFormulaDetailPageState extends State<SalawatFormulaDetailPage> {
               child: Text(
                 'عدد تكرار الذكر: $_count',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: isDark
                       ? const Color(0xFFF2ECDF)

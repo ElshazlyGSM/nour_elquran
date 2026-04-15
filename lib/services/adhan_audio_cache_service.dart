@@ -13,11 +13,10 @@ class AdhanAudioCacheService {
   );
 
   static const Map<String, _AdhanAudioSource> _sources = {
-    'haram': _AdhanAudioSource(
-      fileName: 'harm.ogg',
+    'nsr_elden': _AdhanAudioSource(
+      fileName: 'azan-nsr-elden.mp3',
       urls: [
-        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/harm.ogg',
-        'https://storage.googleapis.com/nour-quran/harm.ogg',
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/azan-nsr-elden.mp3',
       ],
     ),
     'egypt': _AdhanAudioSource(
@@ -25,6 +24,25 @@ class AdhanAudioCacheService {
       urls: [
         'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/abdelbast.ogg',
         'https://storage.googleapis.com/nour-quran/abdelbast.ogg',
+      ],
+    ),
+    'mnshawy': _AdhanAudioSource(
+      fileName: 'azan-elmnshawy.mp3',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/azan-elmnshawy.mp3',
+      ],
+    ),
+    'mowahd': _AdhanAudioSource(
+      fileName: 'azan-mowahd.mp3',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/azan-mowahd.mp3',
+      ],
+    ),
+    'haram': _AdhanAudioSource(
+      fileName: 'harm.ogg',
+      urls: [
+        'https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/harm.ogg',
+        'https://storage.googleapis.com/nour-quran/harm.ogg',
       ],
     ),
     'soft': _AdhanAudioSource(
@@ -173,4 +191,5 @@ class _AdhanAudioSource {
   final String fileName;
   final List<String> urls;
 }
+
 

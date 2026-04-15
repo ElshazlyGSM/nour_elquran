@@ -311,7 +311,7 @@ class PrayerNotificationService {
       final reminderChannelName = channelNameOverride ?? 'تذكير قبل الصلاة';
       return NotificationDetails(
         android: AndroidNotificationDetails(
-          'prayer_reminder_channel_' + reminderChannelSuffix,
+          'prayer_reminder_channel_$reminderChannelSuffix',
           reminderChannelName,
           channelDescription: 'تنبيهات تسبق وقت الصلاة بالصوت المخصص للتنبيه',
           importance: Importance.max,
@@ -338,16 +338,24 @@ class PrayerNotificationService {
     final downloaded = await AdhanAudioCacheService.instance.isDownloaded(normalizedProfile);
     final channelSuffix = channelSuffixOverride ??
         switch (normalizedProfile) {
+          'allah_akbar' => 'allah_akbar',
+          'nsr_elden' => 'nsr_elden',
+          'egypt' => 'abdelbast',
+          'mnshawy' => 'mnshawy',
+          'mowahd' => 'mowahd',
           'haram' => 'haram',
-          'egypt' => 'egypt',
-          'soft' => 'soft',
+          'soft' => 'mashary',
           _ => 'default',
         };
     final channelName = channelNameOverride ??
         switch (normalizedProfile) {
+          'allah_akbar' => 'تنبيهات الصلاة - الله أكبر',
+          'nsr_elden' => 'تنبيهات الصلاة - نصر الدين طوبار',
+          'egypt' => 'تنبيهات الصلاة - عبد الباسط',
+          'mnshawy' => 'تنبيهات الصلاة - المنشاوي',
+          'mowahd' => 'تنبيهات الصلاة - أذان مصر الموحد',
           'haram' => 'تنبيهات الصلاة - أذان الحرم',
-          'egypt' => 'تنبيهات الصلاة - أذان مصر',
-          'soft' => 'تنبيهات الصلاة - أذان هادئ',
+          'soft' => 'تنبيهات الصلاة - مشاري',
           _ => 'تنبيهات الصلاة',
         };
     final sound = soundOverride != null
@@ -356,7 +364,7 @@ class PrayerNotificationService {
 
     return NotificationDetails(
       android: AndroidNotificationDetails(
-        'prayer_times_channel_v4_' + channelSuffix + '_' + (downloaded ? 'downloaded' : 'system'),
+        'prayer_times_channel_v4_${channelSuffix}_${downloaded ? 'downloaded' : 'system'}',
         channelName,
         channelDescription: 'تنبيهات دخول الوقت والتنبيه المسبق',
         importance: Importance.max,
@@ -384,6 +392,7 @@ class PrayerNotificationService {
       return UriAndroidNotificationSound(localUri);
     }
     return switch (profile) {
+      'allah_akbar' => RawResourceAndroidNotificationSound('azan_alah_akbr'),
       _ => null,
     };
   }
@@ -400,8 +409,12 @@ class PrayerNotificationService {
       return 'a2trb.caf';
     }
     return switch (profile) {
-      'haram' => 'harm.caf',
+      'allah_akbar' => 'azan-alah-akbr.caf',
+      'nsr_elden' => 'azan-nsr-elden.caf',
       'egypt' => 'abdelbast.caf',
+      'mnshawy' => 'azan-elmnshawy.caf',
+      'mowahd' => 'azan-mowahd.caf',
+      'haram' => 'harm.caf',
       'soft' => 'mashary.caf',
       _ => null,
     };
@@ -413,6 +426,7 @@ class PrayerNotificationService {
     'harm' => 'harm.caf',
     'abdelbast' => 'abdelbast.caf',
     'mashary' => 'mashary.caf',
+    'azan_alah_akbr' => 'azan-alah-akbr.caf',
     'saly' => 'saly.caf',
     _ => null,
   };
@@ -426,6 +440,9 @@ class _ScheduledPrayer {
   final DateTime time;
   final int idSeed;
 }
+
+
+
 
 
 

@@ -87,6 +87,7 @@ flutter:
     - assets/episodes/
     - assets/a2trb.ogg
     - assets/audio/shoro2.ogg
+    - assets/audio/azan-alah-akbr.ogg
     - assets/salawat_formulas_template.json
     - assets/quran/
   fonts:
@@ -111,5 +112,6 @@ flutter_launcher_icons:
   adaptive_icon_background: "#143A2A"
   adaptive_icon_foreground: assets/IMG_4554.png
   remove_alpha_ios: true
+
 
 

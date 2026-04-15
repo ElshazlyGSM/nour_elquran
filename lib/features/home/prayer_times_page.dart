@@ -46,9 +46,14 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       'default',
       '\u0646\u063a\u0645\u0629 \u0627\u0644\u0646\u0638\u0627\u0645',
     ),
+    ('allah_akbar', 'الله أكبر'),
+    ('__full_adhans__', 'أذانات كاملة'),
+    ('nsr_elden', 'نصر الدين طوبار'),
+    ('egypt', 'عبد الباسط'),
+    ('mnshawy', 'المنشاوي'),
+    ('mowahd', 'أذان مصر الموحد'),
     ('haram', '\u0623\u0630\u0627\u0646 \u0627\u0644\u062d\u0631\u0645'),
-    ('egypt', '\u0623\u0630\u0627\u0646 \u0645\u0635\u0631'),
-    ('soft', '\u0623\u0630\u0627\u0646 \u0647\u0627\u062f\u0626'),
+    ('soft', 'مشاري'),
   ];
 
   late PrayerCity _selectedCity;
@@ -713,6 +718,8 @@ class _PrayerEntry {
   final String key;
   final bool isPrayer;
 }
+
+
 
 
 

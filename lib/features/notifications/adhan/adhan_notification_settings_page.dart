@@ -70,6 +70,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   String? _previewingProfile;
   String? _pendingPreviewProfile;
   bool _isSunrisePreviewing = false;
+  Future<void> _previewOperation = Future<void>.value();
   final Set<String> _downloadedProfiles = <String>{};
   final Set<String> _downloadingProfiles = <String>{};
   final Map<String, double> _downloadProgress = <String, double>{};
@@ -216,88 +217,140 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     });
   }
 
-  Future<void> _previewAdhan(String profile) async {
-    if (_previewingProfile == profile && (_previewPlayer.playing || _isPreviewLoading)) {
-      await _previewPlayer.stop();
-      if (!mounted) return;
-      setState(() {
-        _previewingProfile = null;
-        _pendingPreviewProfile = null;
-        _isPreviewLoading = false;
-        _isSunrisePreviewing = false;
-      });
-      return;
-    }
 
-    if (!AdhanAudioCacheService.instance.supportsProfile(profile)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('هذا الخيار يستخدم نغمة الهاتف الافتراضية')),
-      );
-      return;
-    }
-
-    final localPath = await AdhanAudioCacheService.instance.localPathForProfile(profile);
-    if (localPath == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('حمّل هذا الأذان أولًا لتجربته واستخدامه')),
-      );
-      return;
-    }
-
-    setState(() {
-      _pendingPreviewProfile = profile;
-      _previewingProfile = null;
-      _isPreviewLoading = true;
-      _isSunrisePreviewing = false;
-    });
-
+  Future<void> _stopAllPreviewState() async {
     try {
       await _previewPlayer.stop();
-      await _previewPlayer.setFilePath(localPath);
-      unawaited(_previewPlayer.play());
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _previewingProfile = null;
-        _pendingPreviewProfile = null;
-        _isPreviewLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تشغيل معاينة الأذان')),
-      );
-    }
-  }
-
-  Future<void> _previewSunriseTone() async {
-    if (_isSunrisePreviewing && _previewPlayer.playing) {
-      await _previewPlayer.stop();
-      if (!mounted) return;
-      setState(() => _isSunrisePreviewing = false);
-      return;
-    }
-
+    } catch (_) {}
+    if (!mounted) return;
     setState(() {
       _previewingProfile = null;
       _pendingPreviewProfile = null;
       _isPreviewLoading = false;
-      _isSunrisePreviewing = true;
+      _isSunrisePreviewing = false;
     });
-
-    try {
-      await _previewPlayer.stop();
-      await _previewPlayer.setAsset('assets/audio/shoro2.ogg');
-      unawaited(_previewPlayer.play());
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isSunrisePreviewing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تشغيل معاينة الشروق')),
-      );
-    }
   }
 
+  Future<void> _runSerializedPreview(Future<void> Function() action) async {
+    _previewOperation = _previewOperation.then((_) => action());
+    await _previewOperation;
+  }
+  Future<void> _previewAdhan(String profile) async {
+    await _runSerializedPreview(() async {
+      if (_isDividerProfile(profile)) {
+        return;
+      }
+
+      final isSameRunning =
+          (_previewingProfile == profile || _pendingPreviewProfile == profile) &&
+          (_previewPlayer.playing || _isPreviewLoading);
+      if (isSameRunning) {
+        await _stopAllPreviewState();
+        return;
+      }
+
+      await _stopAllPreviewState();
+
+      if (profile == 'default') {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('هذا الخيار يستخدم نغمة الهاتف الافتراضية')),
+        );
+        return;
+      }
+
+      if (_isBundledProfile(profile)) {
+        if (!mounted) return;
+        setState(() {
+          _previewingProfile = profile;
+          _pendingPreviewProfile = null;
+          _isPreviewLoading = false;
+          _isSunrisePreviewing = false;
+        });
+        await _previewPlayer.setAsset('assets/audio/azan-alah-akbr.ogg');
+        unawaited(_previewPlayer.play());
+        return;
+      }
+
+
+      final localPath = await AdhanAudioCacheService.instance.localPathForProfile(profile);
+      if (localPath == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حمّل هذا الأذان أولًا لتجربته واستخدامه')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _previewingProfile = profile;
+        _pendingPreviewProfile = null;
+        _isPreviewLoading = false;
+        _isSunrisePreviewing = false;
+      });
+
+      await _previewPlayer.setFilePath(localPath);
+      unawaited(_previewPlayer.play());
+    });
+  }
+
+  Future<void> _previewSunriseTone() async {
+    await _runSerializedPreview(() async {
+      final isSameRunning = _isSunrisePreviewing && _previewPlayer.playing;
+      if (isSameRunning) {
+        await _stopAllPreviewState();
+        return;
+      }
+
+      await _stopAllPreviewState();
+
+      if (!mounted) return;
+      setState(() {
+        _previewingProfile = null;
+        _pendingPreviewProfile = null;
+        _isPreviewLoading = false;
+        _isSunrisePreviewing = true;
+      });
+
+      try {
+        await _previewPlayer.setAsset('assets/audio/shoro2.ogg');
+        unawaited(_previewPlayer.play());
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _isSunrisePreviewing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تشغيل معاينة الشروق')),
+        );
+      }
+    });
+  }
+
+
+  bool _isDividerProfile(String profile) => profile == '__full_adhans__';
+
+  bool _isBundledProfile(String profile) => profile == 'allah_akbar';
+
+  String _profileSubtitle(String profile) {
+    if (_isDividerProfile(profile)) {
+      return '';
+    }
+    if (profile == 'default') {
+      return 'نغمة النظام';
+    }
+    if (_isBundledProfile(profile)) {
+      return 'مدمج داخل التطبيق';
+    }
+    final isDownloading = _downloadingProfiles.contains(profile);
+    final isDownloaded = _downloadedProfiles.contains(profile);
+    if (isDownloading) {
+      return 'قيد التحميل';
+    }
+    if (isDownloaded) {
+      return 'جاهز للاستخدام';
+    }
+    return 'حمّله أولًا';
+  }
   Future<void> _downloadAdhan(String profile) async {
     if (_downloadingProfiles.contains(profile) || _downloadedProfiles.contains(profile)) {
       return;
@@ -340,7 +393,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   }
 
   Widget _buildDownloadAction(String profile) {
-    if (!AdhanAudioCacheService.instance.supportsProfile(profile)) {
+    if (!AdhanAudioCacheService.instance.supportsProfile(profile) || _isBundledProfile(profile)) {
       return const SizedBox(width: 40);
     }
     if (!_downloadStatesLoaded) {
@@ -386,7 +439,10 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   }
 
   bool _canSelectProfile(String profile) {
-    if (!AdhanAudioCacheService.instance.supportsProfile(profile)) {
+    if (_isDividerProfile(profile)) {
+      return false;
+    }
+    if (!AdhanAudioCacheService.instance.supportsProfile(profile) || _isBundledProfile(profile)) {
       return true;
     }
     if (!_downloadStatesLoaded) {
@@ -396,6 +452,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   }
 
   void _selectProfile(String profile) {
+    if (_isDividerProfile(profile)) {
+      return;
+    }
     if (_canSelectProfile(profile)) {
       _mutate(() => _adhanProfile = profile);
       return;
@@ -448,16 +507,31 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
           for (final profile in widget.adhanProfiles)
             Builder(
               builder: (context) {
+                if (_isDividerProfile(profile.$1)) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(child: Divider(color: borderColor)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            profile.$2,
+                            style: TextStyle(
+                              color: mutedColor,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: borderColor)),
+                      ],
+                    ),
+                  );
+                }
+
                 final canSelect = _canSelectProfile(profile.$1);
-                final isDownloaded = _downloadedProfiles.contains(profile.$1);
-                final isDownloading = _downloadingProfiles.contains(profile.$1);
-                final subtitle = isDownloading
-                    ? 'قيد التحميل'
-                    : isDownloaded
-                        ? 'جاهز للاستخدام'
-                        : AdhanAudioCacheService.instance.supportsProfile(profile.$1)
-                            ? 'حمّله أولًا'
-                            : 'نغمة النظام';
+                final subtitle = _profileSubtitle(profile.$1);
+                final showPreview = profile.$1 != 'default';
                 return ListTile(
                   onTap: canSelect ? () => _selectProfile(profile.$1) : null,
                   enabled: canSelect,
@@ -475,36 +549,44 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                   ),
                   title: Text(
                     profile.$2,
-                    style: TextStyle(fontWeight: FontWeight.w800, color: canSelect ? titleColor : mutedColor),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: canSelect ? titleColor : mutedColor,
+                    ),
                   ),
                   subtitle: Text(subtitle, style: TextStyle(color: mutedColor)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildDownloadAction(profile.$1),
-                      IconButton(
-                        onPressed: () => _previewAdhan(profile.$1),
-                        icon: SizedBox(
-                          width: 26,
-                          height: 26,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Icon(
-                                (_previewingProfile == profile.$1 || _pendingPreviewProfile == profile.$1)
-                                    ? Icons.stop_circle_rounded
-                                    : Icons.play_circle_fill_rounded,
-                              ),
-                              if (_isPreviewLoading && _pendingPreviewProfile == profile.$1)
-                                const SizedBox(
-                                  width: 26,
-                                  height: 26,
-                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                      if (showPreview)
+                        IconButton(
+                          onPressed: () => _previewAdhan(profile.$1),
+                          icon: SizedBox(
+                            width: 26,
+                            height: 26,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(
+                                  (_previewingProfile == profile.$1 ||
+                                          _pendingPreviewProfile == profile.$1)
+                                      ? Icons.stop_circle_rounded
+                                      : Icons.play_circle_fill_rounded,
                                 ),
-                            ],
+                                if (_isPreviewLoading &&
+                                    _pendingPreviewProfile == profile.$1)
+                                  const SizedBox(
+                                    width: 26,
+                                    height: 26,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 );
@@ -783,3 +865,20 @@ class _PrayerSettingBox extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
