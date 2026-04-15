@@ -22,7 +22,7 @@ class SalawatNotificationService {
   // Keep a safety margin under the historical ~500 alarms ceiling while
   // extending the rolling window so reminders do not stop quickly on
   // short intervals unless the app is reopened.
-  static const _maxScheduledNotifications = 400;
+  static const _maxScheduledNotifications = 180;
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
@@ -156,10 +156,6 @@ class SalawatNotificationService {
         await _notifications.cancel(request.id);
       }
     }
-
-    for (var id = _scheduledBaseId; id < _scheduledCeilingId; id++) {
-      await _notifications.cancel(id);
-    }
   }
 
   Future<void> _scheduleSimpleRollingNotifications({
@@ -182,18 +178,18 @@ class SalawatNotificationService {
 
     while (nextId < _scheduledCeilingId) {
       final withinWindow = _isWithinWindow(
-            nextTime,
-            enabled: windowEnabled,
-            startMinutes: windowStartMinutes,
-            endMinutes: windowEndMinutes,
-          );
+        nextTime,
+        enabled: windowEnabled,
+        startMinutes: windowStartMinutes,
+        endMinutes: windowEndMinutes,
+      );
       final withinPrayerPause = _isWithinPrayerPause(
-            nextTime,
-            city: city,
-            prayerOffsets: prayerOffsets,
-            pauseAtPrayer: pauseAtPrayer,
-            pauseDuration: pauseDuration,
-          );
+        nextTime,
+        city: city,
+        prayerOffsets: prayerOffsets,
+        pauseAtPrayer: pauseAtPrayer,
+        pauseDuration: pauseDuration,
+      );
       if (!withinWindow || withinPrayerPause) {
         if (skippedCount < 3) {
           _log(
@@ -218,7 +214,9 @@ class SalawatNotificationService {
           androidScheduleMode: preferredMode,
         );
       } on PlatformException catch (error) {
-        _log('Schedule failed id=$nextId mode=$preferredMode: ${error.code} ${error.message}');
+        _log(
+          'Schedule failed id=$nextId mode=$preferredMode: ${error.code} ${error.message}',
+        );
         final message = error.message ?? '';
         if (message.contains('Maximum limit of concurrent alarms')) {
           break;
@@ -331,8 +329,8 @@ class SalawatNotificationService {
   ) => NotificationDetails(
     android: AndroidNotificationDetails(
       'salawat_reminders_channel_clean_v4_${vibrationEnabled ? 'vib' : 'silent'}',
-      'تذكير الصلاة على النبي',
-      channelDescription: 'تنبيهات دورية للصلاة والسلام على سيدنا النبي',
+      'ØªØ°ÙƒÙŠØ± Ø§Ù„ØµÙ„Ø§Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù†Ø¨ÙŠ',
+      channelDescription: 'ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø¯ÙˆØ±ÙŠØ© Ù„Ù„ØµÙ„Ø§Ø© ÙˆØ§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ø§Ù„Ù†Ø¨ÙŠ',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
@@ -348,10 +346,8 @@ class SalawatNotificationService {
     ),
   );
 
-  String get _title => 'الصلاة والسلام على سيدنا النبي';
+  String get _title => 'Ø§Ù„ØµÙ„Ø§Ø© ÙˆØ§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ø§Ù„Ù†Ø¨ÙŠ';
 
-  String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
+  String get _body => 'Ø§Ù„Ù„Ù‡Ù… ØµÙ„ ÙˆØ³Ù„Ù… ÙˆØ¨Ø§Ø±Ùƒ Ø¹Ù„Ù‰ Ø³ÙŠØ¯Ù†Ø§ Ù…Ø­Ù…Ø¯ ÙˆØ¹Ù„Ù‰ Ø¢Ù„Ù‡ ÙˆØµØ­Ø¨Ù‡ ÙˆØ³Ù„Ù…';
 }
-
-
 

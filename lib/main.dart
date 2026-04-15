@@ -42,7 +42,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     super.dispose();
   }
 
-  late final WidgetsBindingObserver _lifecycleObserver = _BootstrapLifecycleObserver(
+  late final WidgetsBindingObserver
+  _lifecycleObserver = _BootstrapLifecycleObserver(
     onResume: () async {
       final store = _store;
       if (store == null) {
@@ -50,7 +51,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       }
       await _syncPrayerCityFromLocation(store);
       await _reschedulePrayerNotifications(store);
-      await _rescheduleSalawat(store);
+      // Keep resume lightweight; salawat is refreshed on startup and settings save.
       unawaited(_refreshAndRescheduleDailyReminder(store));
     },
   );
@@ -78,7 +79,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                   color: Colors.white,
                 ),
                 Text(
-                  'نور القرآن',
+                  'Ù†ÙˆØ± Ø§Ù„Ù‚Ø±Ø¢Ù†',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 50,
@@ -123,9 +124,13 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await _reschedulePrayerNotifications(store);
     } catch (_) {}
 
-    try {
-      await _rescheduleSalawat(store);
-    } catch (_) {}
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 6), () async {
+        try {
+          await _rescheduleSalawat(store);
+        } catch (_) {}
+      }),
+    );
 
     unawaited(_refreshAndRescheduleDailyReminder(store));
   }
@@ -138,12 +143,15 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return;
     }
     var permission = await LocationPermissionPrompt.ensurePermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       return;
     }
 
     final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+      ),
     );
     final nearest = nearestPrayerCity(position.latitude, position.longitude);
     if (nearest.name == store.savedPrayerCityName) {
@@ -198,7 +206,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await DailyQuranReminderService.instance.reschedule(
         todayIsoDate: todayIsoDate,
         lastAppOpenIsoDate: todayIsoDate,
-        );
+      );
     } catch (_) {
       // This reminder is secondary and must never interfere with core notifications.
     }
@@ -224,6 +232,4 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
-
-
 

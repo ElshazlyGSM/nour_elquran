@@ -46,14 +46,14 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       'default',
       '\u0646\u063a\u0645\u0629 \u0627\u0644\u0646\u0638\u0627\u0645',
     ),
-    ('allah_akbar', 'الله أكبر'),
-    ('__full_adhans__', 'أذانات كاملة'),
-    ('nsr_elden', 'نصر الدين طوبار'),
-    ('egypt', 'عبد الباسط'),
-    ('mnshawy', 'المنشاوي'),
-    ('mowahd', 'أذان مصر الموحد'),
+    ('allah_akbar', 'Ø§Ù„Ù„Ù‡ Ø£ÙƒØ¨Ø±'),
+    ('__full_adhans__', 'Ø£Ø°Ø§Ù†Ø§Øª ÙƒØ§Ù…Ù„Ø©'),
+    ('nsr_elden', 'Ù†ØµØ± Ø§Ù„Ø¯ÙŠÙ† Ø·ÙˆØ¨Ø§Ø±'),
+    ('egypt', 'Ø¹Ø¨Ø¯ Ø§Ù„Ø¨Ø§Ø³Ø·'),
+    ('mnshawy', 'Ø§Ù„Ù…Ù†Ø´Ø§ÙˆÙŠ'),
+    ('mowahd', 'Ø£Ø°Ø§Ù† Ù…ØµØ± Ø§Ù„Ù…ÙˆØ­Ø¯'),
     ('haram', '\u0623\u0630\u0627\u0646 \u0627\u0644\u062d\u0631\u0645'),
-    ('soft', 'مشاري'),
+    ('soft', 'Ù…Ø´Ø§Ø±ÙŠ'),
   ];
 
   late PrayerCity _selectedCity;
@@ -198,219 +198,220 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
           children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: headerColor,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '\u0627\u0644\u0635\u0644\u0627\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 10,
-                  runSpacing: 6,
-                  children: [
-                    Text(
-                      nextPrayer.name,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFFE6C16A),
-                      ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: headerColor,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '\u0627\u0644\u0635\u0644\u0627\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        _formatTime(nextPrayer.time),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 6,
+                    children: [
+                      Text(
+                        nextPrayer.name,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFFE6C16A),
                         ),
                       ),
-                    ),
-                    if (_formatReminderShort(nextPrayer.key) !=
-                        '\u0639\u0646\u062f \u0627\u0644\u0648\u0642\u062a')
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE6C16A),
+                          color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          _formatReminderShort(nextPrayer.key),
+                          _formatTime(nextPrayer.time),
                           style: const TextStyle(
-                            color: Color(0xFF143A2A),
+                            color: Colors.white,
                             fontWeight: FontWeight.w800,
-                            fontSize: 13,
+                            fontSize: 15,
                           ),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '\u0627\u0644\u0645\u062a\u0628\u0642\u064a ${_formatCountdown(nextPrayer.time.difference(_now))}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _HeaderChip(
-                      icon: Icons.location_on_rounded,
-                      label: _selectedCity.name,
-                    ),
-                    if (hasAnyEnabledAdhan)
-                      const _HeaderChip(
-                        icon: Icons.notifications_active_rounded,
-                        label: 'Ø§Ù„Ø£Ø°Ø§Ù† Ù…ÙØ¹Ù„',
+                      if (_formatReminderShort(nextPrayer.key) !=
+                          '\u0639\u0646\u062f \u0627\u0644\u0648\u0642\u062a')
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6C16A),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _formatReminderShort(nextPrayer.key),
+                            style: const TextStyle(
+                              color: Color(0xFF143A2A),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (compactHeaderLayout) ...[
-                  _HeaderChip(
-                    icon: Icons.calendar_month_rounded,
-                    label:
-                        '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)} \u0647\u0640',
-                    expand: true,
-                  ),
-                  const SizedBox(height: 8),
-                  _HeaderChip(
-                    icon: Icons.today_rounded,
-                    label:
-                        '${toArabicNumber(_now.day)} / ${toArabicNumber(_now.month)} / ${toArabicNumber(_now.year)}',
-                    expand: true,
-                  ),
-                ] else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HeaderChip(
-                          icon: Icons.calendar_month_rounded,
-                          label:
-                              '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)} \u0647\u0640',
-                          expand: true,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _HeaderChip(
-                          icon: Icons.today_rounded,
-                          label:
-                              '${toArabicNumber(_now.day)} / ${toArabicNumber(_now.month)} / ${toArabicNumber(_now.year)}',
-                          expand: true,
-                        ),
-                      ),
                     ],
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<PrayerCity>(
-            initialValue: _selectedCity,
-            decoration: const InputDecoration(
-              labelText: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629',
-              prefixIcon: Icon(Icons.location_city_rounded),
-            ),
-            items: prayerCities
-                .map(
-                  (city) => DropdownMenuItem(
-                    value: city,
-                    child: Text('${city.name} - ${city.governorate}'),
+                  const SizedBox(height: 6),
+                  Text(
+                    '\u0627\u0644\u0645\u062a\u0628\u0642\u064a ${_formatCountdown(nextPrayer.time.difference(_now))}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                )
-                .toList(),
-            onChanged: (value) async {
-              if (value == null) return;
-              setState(() {
-                _selectedCity = value;
-                _autoDetectLocation = false;
-                _locationStatus =
-                    '\u062a\u0645 \u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u064a\u062f\u0648\u064a\u064b\u0627';
-              });
-              await _persistPrayerPreferences();
-            },
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text(
-              '\u0627\u0643\u062a\u0634\u0627\u0641 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627',
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _HeaderChip(
+                        icon: Icons.location_on_rounded,
+                        label: _selectedCity.name,
+                      ),
+                      if (hasAnyEnabledAdhan)
+                        const _HeaderChip(
+                          icon: Icons.notifications_active_rounded,
+                          label:
+                              '\u0627\u0644\u0623\u0630\u0627\u0646 \u0645\u0641\u0639\u0644',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (compactHeaderLayout) ...[
+                    _HeaderChip(
+                      icon: Icons.calendar_month_rounded,
+                      label:
+                          '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)} \u0647\u0640',
+                      expand: true,
+                    ),
+                    const SizedBox(height: 8),
+                    _HeaderChip(
+                      icon: Icons.today_rounded,
+                      label:
+                          '${toArabicNumber(_now.day)} / ${toArabicNumber(_now.month)} / ${toArabicNumber(_now.year)}',
+                      expand: true,
+                    ),
+                  ] else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _HeaderChip(
+                            icon: Icons.calendar_month_rounded,
+                            label:
+                                '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)} \u0647\u0640',
+                            expand: true,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _HeaderChip(
+                            icon: Icons.today_rounded,
+                            label:
+                                '${toArabicNumber(_now.day)} / ${toArabicNumber(_now.month)} / ${toArabicNumber(_now.year)}',
+                            expand: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
-            subtitle: Text(
-              _locationStatus ??
-                  '\u0627\u062e\u062a\u064a\u0627\u0631 \u0623\u0642\u0631\u0628 \u0645\u062f\u064a\u0646\u0629 \u062d\u0633\u0628 \u0627\u0644\u0645\u0648\u0642\u0639',
+            const SizedBox(height: 12),
+            DropdownButtonFormField<PrayerCity>(
+              initialValue: _selectedCity,
+              decoration: const InputDecoration(
+                labelText: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629',
+                prefixIcon: Icon(Icons.location_city_rounded),
+              ),
+              items: prayerCities
+                  .map(
+                    (city) => DropdownMenuItem(
+                      value: city,
+                      child: Text('${city.name} - ${city.governorate}'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) async {
+                if (value == null) return;
+                setState(() {
+                  _selectedCity = value;
+                  _autoDetectLocation = false;
+                  _locationStatus =
+                      '\u062a\u0645 \u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u064a\u062f\u0648\u064a\u064b\u0627';
+                });
+                await _persistPrayerPreferences();
+              },
             ),
-            value: _autoDetectLocation,
-            onChanged: (value) async {
-              setState(() => _autoDetectLocation = value);
-              await _persistPrayerPreferences();
-              if (value) await _detectCityFromLocation(showErrors: true);
-            },
-          ),
-          const SizedBox(height: 4),
-          for (final entry in entries)
-            Card(
-              color: isDark ? const Color(0xFF152127) : null,
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: entry.key == nextPrayer.key
-                      ? const Color(0xFFE6C16A)
-                      : const Color(0xFFE9DEC3),
-                  foregroundColor: const Color(0xFF143A2A),
-                  child: Icon(
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                '\u0627\u0643\u062a\u0634\u0627\u0641 \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627',
+              ),
+              subtitle: Text(
+                _locationStatus ??
+                    '\u0627\u062e\u062a\u064a\u0627\u0631 \u0623\u0642\u0631\u0628 \u0645\u062f\u064a\u0646\u0629 \u062d\u0633\u0628 \u0627\u0644\u0645\u0648\u0642\u0639',
+              ),
+              value: _autoDetectLocation,
+              onChanged: (value) async {
+                setState(() => _autoDetectLocation = value);
+                await _persistPrayerPreferences();
+                if (value) await _detectCityFromLocation(showErrors: true);
+              },
+            ),
+            const SizedBox(height: 4),
+            for (final entry in entries)
+              Card(
+                color: isDark ? const Color(0xFF152127) : null,
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: entry.key == nextPrayer.key
+                        ? const Color(0xFFE6C16A)
+                        : const Color(0xFFE9DEC3),
+                    foregroundColor: const Color(0xFF143A2A),
+                    child: Icon(
+                      entry.isPrayer
+                          ? Icons.access_time_rounded
+                          : Icons.wb_twilight_rounded,
+                    ),
+                  ),
+                  title: Text(
+                    entry.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  subtitle: Text(
                     entry.isPrayer
-                        ? Icons.access_time_rounded
-                        : Icons.wb_twilight_rounded,
+                        ? ((_prayerEnabledMap[entry.key] ?? true)
+                              ? '\u0627\u0644\u062a\u0646\u0628\u064a\u0647 ${_formatReminderShort(entry.key)}'
+                              : '\u0627\u0644\u062a\u0646\u0628\u064a\u0647 \u0645\u062a\u0648\u0642\u0641')
+                        : '\u0648\u0642\u062a \u0627\u0644\u0634\u0631\u0648\u0642',
                   ),
-                ),
-                title: Text(
-                  entry.name,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  entry.isPrayer
-                      ? ((_prayerEnabledMap[entry.key] ?? true)
-                            ? '\u0627\u0644\u062a\u0646\u0628\u064a\u0647 ${_formatReminderShort(entry.key)}'
-                            : '\u0627\u0644\u062a\u0646\u0628\u064a\u0647 \u0645\u062a\u0648\u0642\u0641')
-                      : '\u0648\u0642\u062a \u0627\u0644\u0634\u0631\u0648\u0642',
-                ),
-                trailing: Text(
-                  _formatTime(entry.time),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : const Color(0xFF143A2A),
+                  trailing: Text(
+                    _formatTime(entry.time),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : const Color(0xFF143A2A),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -566,7 +567,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             initialAdhanProfile: _adhanProfile,
             adhanProfiles: _adhanProfiles,
             onChanged: (result) async {
-              final normalizedPrayerOffsets = _normalizePrayerOffsets(result.prayerOffsets);
+              final normalizedPrayerOffsets = _normalizePrayerOffsets(
+                result.prayerOffsets,
+              );
               final normalizedPrayerReminders = _normalizePrayerReminders(
                 result.prayerReminderByPrayer,
               );
@@ -577,7 +580,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                 _adhanEnabled = result.adhanEnabled;
                 _hijriOffset = result.hijriOffset;
                 _prayerOffsets = normalizedPrayerOffsets;
-                _prayerEnabledMap = Map<String, bool>.from(result.prayerEnabledMap);
+                _prayerEnabledMap = Map<String, bool>.from(
+                  result.prayerEnabledMap,
+                );
                 _prayerReminderByPrayer = normalizedPrayerReminders;
                 _adhanProfile = result.adhanProfile;
               });
@@ -718,8 +723,4 @@ class _PrayerEntry {
   final String key;
   final bool isPrayer;
 }
-
-
-
-
 

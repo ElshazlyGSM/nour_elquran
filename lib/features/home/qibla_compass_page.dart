@@ -36,14 +36,18 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
 
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw Exception('خدمة الموقع متوقفة');
+        throw Exception(
+          '\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0648\u0642\u0639 \u0645\u062a\u0648\u0642\u0641\u0629',
+        );
       }
 
       var permission = await LocationPermissionPrompt.ensurePermission();
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        throw Exception('لم يتم منح إذن الموقع');
+        throw Exception(
+          '\u0644\u0645 \u064a\u062a\u0645 \u0645\u0646\u062d \u0625\u0630\u0646 \u0627\u0644\u0645\u0648\u0642\u0639',
+        );
       }
 
       final position = await Geolocator.getCurrentPosition();
@@ -96,7 +100,9 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø©'),
+        title: const Text(
+          '\u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0642\u0628\u0644\u0629',
+        ),
         backgroundColor: const Color(0xFF143A2A),
         foregroundColor: Colors.white,
       ),
@@ -123,7 +129,9 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 14),
-                          Text('Ø¬Ø§Ø±Ù ØªØ­Ø¯ÙŠØ¯ Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø©...'),
+                          Text(
+                            '\u062c\u0627\u0631\u064d \u062a\u062d\u062f\u064a\u062f \u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0642\u0628\u0644\u0629...',
+                          ),
                         ],
                       )
                     : _error != null
@@ -147,7 +155,9 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: _loadQiblaBearing,
-                            child: const Text('Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©'),
+                            child: const Text(
+                              '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629',
+                            ),
                           ),
                         ],
                       )
@@ -158,7 +168,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                             return const _CompassMessage(
                               icon: Icons.sync_problem_rounded,
                               text:
-                                  'Ø§Ù„Ø¨ÙˆØµÙ„Ø© ØªØ­ØªØ§Ø¬ ØªØ´ØºÙŠÙ„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ù…Ù† Ø¬Ø¯ÙŠØ¯ ØªØ´ØºÙŠÙ„Ù‹Ø§ ÙƒØ§Ù…Ù„Ù‹Ø§ØŒ ÙˆÙ„ÙŠØ³ Hot Reload.',
+                                  '\u0627\u0644\u0628\u0648\u0635\u0644\u0629 \u062a\u062d\u062a\u0627\u062c \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0645\u0646 \u062c\u062f\u064a\u062f \u062a\u0634\u063a\u064a\u0644\u064b\u0627 \u0643\u0627\u0645\u0644\u064b\u0627\u060c \u0648\u0644\u064a\u0633 Hot Reload.',
                             );
                           }
 
@@ -170,12 +180,14 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                 _CompassMessage(
                                   icon: Icons.explore_off_rounded,
                                   text:
-                                      'Ù‡Ø°Ø§ Ø§Ù„Ø¬Ù‡Ø§Ø² Ù„Ø§ ÙŠÙˆÙÙ‘Ø± Ø­Ø³Ø§Ø³ Ø§ØªØ¬Ø§Ù‡ Ù…Ù†Ø§Ø³Ø¨Ù‹Ø§ Ø§Ù„Ø¢Ù†.\nØ§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø© Ø§Ù„ØªÙ‚Ø±ÙŠØ¨ÙŠ: ${(_qiblaBearing ?? 0).toStringAsFixed(0)}Â°',
+                                      '\u0647\u0630\u0627 \u0627\u0644\u062c\u0647\u0627\u0632 \u0644\u0627 \u064a\u0648\u0641\u0651\u0631 \u062d\u0633\u0627\u0633 \u0627\u062a\u062c\u0627\u0647 \u0645\u0646\u0627\u0633\u0628\u064b\u0627 \u0627\u0644\u0622\u0646.\n\u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0642\u0628\u0644\u0629 \u0627\u0644\u062a\u0642\u0631\u064a\u0628\u064a: ${(_qiblaBearing ?? 0).toStringAsFixed(0)}\u00b0',
                                 ),
                                 const SizedBox(height: 16),
                                 FilledButton(
                                   onPressed: _loadQiblaBearing,
-                                  child: const Text('Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©'),
+                                  child: const Text(
+                                    '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629',
+                                  ),
                                 ),
                               ],
                             );
@@ -226,7 +238,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(top: 18),
                                         child: Text(
-                                          'Ø´Ù…Ø§Ù„',
+                                          '\u0634\u0645\u0627\u0644',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -239,7 +251,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(bottom: 18),
                                         child: Text(
-                                          'Ø¬Ù†ÙˆØ¨',
+                                          '\u062c\u0646\u0648\u0628',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -252,7 +264,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(left: 18),
                                         child: Text(
-                                          'ØºØ±Ø¨',
+                                          '\u063a\u0631\u0628',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -265,7 +277,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(right: 18),
                                         child: Text(
-                                          'Ø´Ø±Ù‚',
+                                          '\u0634\u0631\u0642',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -290,7 +302,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø© ${(_qiblaBearing ?? 0).toStringAsFixed(0)}Â°',
+                                '\u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0642\u0628\u0644\u0629 ${(_qiblaBearing ?? 0).toStringAsFixed(0)}\u00b0',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
@@ -298,7 +310,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                               ),
                               const SizedBox(height: 10),
                               const Text(
-                                'Ù„Ù Ø§Ù„Ù‡Ø§ØªÙ Ø­ØªÙ‰ ÙŠØ³ØªÙ‚Ø± Ø§Ù„Ø³Ù‡Ù… Ø«Ù… Ø§Ø³ØªÙ‚Ø¨Ù„ Ø§Ù„Ù‚Ø¨Ù„Ø©.',
+                                '\u0644\u0641 \u0627\u0644\u0647\u0627\u062a\u0641 \u062d\u062a\u0649 \u064a\u0633\u062a\u0642\u0631 \u0627\u0644\u0633\u0647\u0645 \u062b\u0645 \u0627\u0633\u062a\u0642\u0628\u0644 \u0627\u0644\u0642\u0628\u0644\u0629.',
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -351,10 +363,7 @@ class _KaabaMark extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF0F0F0F),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF3E2A16),
-                width: 1.2,
-              ),
+              border: Border.all(color: const Color(0xFF3E2A16), width: 1.2),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x33000000),
@@ -393,5 +402,4 @@ class _KaabaMark extends StatelessWidget {
     );
   }
 }
-
 

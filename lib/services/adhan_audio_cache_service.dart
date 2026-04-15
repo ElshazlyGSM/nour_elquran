@@ -57,8 +57,10 @@ class AdhanAudioCacheService {
   bool supportsProfile(String profile) => _sources.containsKey(profile);
 
   Future<Directory> _rootDirectory() async {
-    final baseDir = await getApplicationDocumentsDirectory();
-    final dir = Directory('${baseDir.path}${Platform.pathSeparator}adhan_audio');
+    final baseDir = await getApplicationSupportDirectory();
+    final dir = Directory(
+      '${baseDir.path}${Platform.pathSeparator}adhan_audio',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -125,7 +127,11 @@ class AdhanAudioCacheService {
     final source = _sources[profile];
     final destination = await fileForProfile(profile);
     if (source == null || destination == null) {
-      throw ArgumentError.value(profile, 'profile', 'Unsupported adhan profile');
+      throw ArgumentError.value(
+        profile,
+        'profile',
+        'Unsupported adhan profile',
+      );
     }
 
     http.ClientException? lastError;
@@ -178,18 +184,15 @@ class AdhanAudioCacheService {
       }
     }
 
-    throw lastError ?? http.ClientException('Failed to download adhan audio for $profile');
+    throw lastError ??
+        http.ClientException('Failed to download adhan audio for $profile');
   }
 }
 
 class _AdhanAudioSource {
-  const _AdhanAudioSource({
-    required this.fileName,
-    required this.urls,
-  });
+  const _AdhanAudioSource({required this.fileName, required this.urls});
 
   final String fileName;
   final List<String> urls;
 }
-
 
