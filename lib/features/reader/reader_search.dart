@@ -178,6 +178,11 @@ class _ReaderSearchResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF18242A) : Colors.white;
+    final surahTitleColor = isDark ? const Color(0xFFF2ECDF) : const Color(0xFF163C2D);
+    final verseNumberColor = isDark ? const Color(0xFFE6D8B7) : const Color(0xFF3A2D14);
+    final dividerColor = isDark ? const Color(0xFF314047) : const Color(0x22000000);
     final normalizedQuery = _normalizeReaderSearch(query);
     if (normalizedQuery.isEmpty) {
       return const Center(
@@ -220,6 +225,8 @@ class _ReaderSearchResults extends StatelessWidget {
         final surahMatches = groupedMatches[surahNumber]!;
         final surahName = surahMatches.first.surahName;
         return Card(
+          color: cardColor,
+          surfaceTintColor: Colors.transparent,
           margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -233,7 +240,7 @@ class _ReaderSearchResults extends StatelessWidget {
                   ).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
-                    color: const Color(0xFF163C2D),
+                    color: surahTitleColor,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -243,8 +250,8 @@ class _ReaderSearchResults extends StatelessWidget {
                     onTap: () => onOpenResult(result),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
+                        horizontal: 8,
+                        vertical: 8,
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,13 +262,14 @@ class _ReaderSearchResults extends StatelessWidget {
                                 ?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14,
-                                  color: const Color(0xFF3A2D14),
+                                  letterSpacing: 0.2,
+                                  color: verseNumberColor,
                                 ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: RichText(
-                              maxLines: 2,
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               textDirection: TextDirection.rtl,
                               text: _highlightedReaderSearchSnippet(
@@ -276,7 +284,7 @@ class _ReaderSearchResults extends StatelessWidget {
                     ),
                   ),
                   if (result != surahMatches.last)
-                    const Divider(height: 8, thickness: 0.6),
+                    Divider(height: 8, thickness: 0.6, color: dividerColor),
                 ],
               ],
             ),
@@ -335,24 +343,27 @@ TextSpan _highlightedReaderSearchSnippet(
   String verseText,
   String query,
 ) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-        fontSize: 15.5,
-        height: 1.8,
-        wordSpacing: 1.0,
-        color: const Color(0xFF1E241F),
-        fontWeight: FontWeight.w600,
+        fontFamily: 'UthmanicNeo',
+        fontSize: 18,
+        height: 1,
+        
+        color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF1E241F),
+        fontWeight: FontWeight.w700,
       ) ??
-      const TextStyle(
-        fontSize: 15.5,
-        height: 1.8,
-        wordSpacing: 1.0,
-        color: Color(0xFF1E241F),
-        fontWeight: FontWeight.w600,
+      TextStyle(
+        fontFamily: 'UthmanicNeo',
+        fontSize: 18,
+        height: 1.9,
+        wordSpacing: 2.4,
+        color: isDark ? Color(0xFFF2ECDF) : Color(0xFF1E241F),
+        fontWeight: FontWeight.w700,
       );
   final highlightStyle = baseStyle.copyWith(
-    backgroundColor: const Color(0xFFF6E3A8),
+    backgroundColor: isDark ? const Color(0xFF6B5A2A) : const Color(0xFFF6E3A8),
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF143A2A),
+    color: isDark ? const Color(0xFFFFF4D6) : const Color(0xFF143A2A),
   );
 
   final normalizedQuery = _normalizeReaderSearch(query);
@@ -364,14 +375,22 @@ TextSpan _highlightedReaderSearchSnippet(
   final spans = <InlineSpan>[];
   for (final part in words) {
     if (part.trim().isEmpty) {
-      spans.add(TextSpan(text: part, style: baseStyle));
       continue;
     }
     final style = _normalizeReaderSearch(part).contains(normalizedQuery)
         ? highlightStyle
         : baseStyle;
     spans.add(TextSpan(text: part, style: style));
+    spans.add(const WidgetSpan(child: SizedBox(width: 8))); 
+  }
+  if (spans.isNotEmpty) {
+    spans.removeLast();
   }
   return TextSpan(children: spans, style: baseStyle);
 }
+
+
+
+
+
 
