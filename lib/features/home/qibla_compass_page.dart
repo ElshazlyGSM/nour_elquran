@@ -1,8 +1,10 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_compass_v2/flutter_compass_v2.dart';
 import 'package:geolocator/geolocator.dart';
+
+import '../../services/location_permission_prompt.dart';
 
 class QiblaCompassPage extends StatefulWidget {
   const QiblaCompassPage({super.key});
@@ -37,10 +39,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
         throw Exception('خدمة الموقع متوقفة');
       }
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      var permission = await LocationPermissionPrompt.ensurePermission();
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
@@ -97,7 +96,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('اتجاه القبلة'),
+        title: const Text('Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø©'),
         backgroundColor: const Color(0xFF143A2A),
         foregroundColor: Colors.white,
       ),
@@ -124,7 +123,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 14),
-                          Text('جارٍ تحديد اتجاه القبلة...'),
+                          Text('Ø¬Ø§Ø±Ù ØªØ­Ø¯ÙŠØ¯ Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø©...'),
                         ],
                       )
                     : _error != null
@@ -148,7 +147,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: _loadQiblaBearing,
-                            child: const Text('إعادة المحاولة'),
+                            child: const Text('Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©'),
                           ),
                         ],
                       )
@@ -159,7 +158,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                             return const _CompassMessage(
                               icon: Icons.sync_problem_rounded,
                               text:
-                                  'البوصلة تحتاج تشغيل التطبيق من جديد تشغيلًا كاملًا، وليس Hot Reload.',
+                                  'Ø§Ù„Ø¨ÙˆØµÙ„Ø© ØªØ­ØªØ§Ø¬ ØªØ´ØºÙŠÙ„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ù…Ù† Ø¬Ø¯ÙŠØ¯ ØªØ´ØºÙŠÙ„Ù‹Ø§ ÙƒØ§Ù…Ù„Ù‹Ø§ØŒ ÙˆÙ„ÙŠØ³ Hot Reload.',
                             );
                           }
 
@@ -171,12 +170,12 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                 _CompassMessage(
                                   icon: Icons.explore_off_rounded,
                                   text:
-                                      'هذا الجهاز لا يوفّر حساس اتجاه مناسبًا الآن.\nاتجاه القبلة التقريبي: ${(_qiblaBearing ?? 0).toStringAsFixed(0)}°',
+                                      'Ù‡Ø°Ø§ Ø§Ù„Ø¬Ù‡Ø§Ø² Ù„Ø§ ÙŠÙˆÙÙ‘Ø± Ø­Ø³Ø§Ø³ Ø§ØªØ¬Ø§Ù‡ Ù…Ù†Ø§Ø³Ø¨Ù‹Ø§ Ø§Ù„Ø¢Ù†.\nØ§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø© Ø§Ù„ØªÙ‚Ø±ÙŠØ¨ÙŠ: ${(_qiblaBearing ?? 0).toStringAsFixed(0)}Â°',
                                 ),
                                 const SizedBox(height: 16),
                                 FilledButton(
                                   onPressed: _loadQiblaBearing,
-                                  child: const Text('إعادة المحاولة'),
+                                  child: const Text('Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©'),
                                 ),
                               ],
                             );
@@ -227,7 +226,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(top: 18),
                                         child: Text(
-                                          'شمال',
+                                          'Ø´Ù…Ø§Ù„',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -240,7 +239,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(bottom: 18),
                                         child: Text(
-                                          'جنوب',
+                                          'Ø¬Ù†ÙˆØ¨',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -253,7 +252,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(left: 18),
                                         child: Text(
-                                          'غرب',
+                                          'ØºØ±Ø¨',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -266,7 +265,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                                       child: Padding(
                                         padding: EdgeInsets.only(right: 18),
                                         child: Text(
-                                          'شرق',
+                                          'Ø´Ø±Ù‚',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w800,
                                             color: Color(0xFF143A2A),
@@ -291,7 +290,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'اتجاه القبلة ${(_qiblaBearing ?? 0).toStringAsFixed(0)}°',
+                                'Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø¨Ù„Ø© ${(_qiblaBearing ?? 0).toStringAsFixed(0)}Â°',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
@@ -299,7 +298,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
                               ),
                               const SizedBox(height: 10),
                               const Text(
-                                'لف الهاتف حتى يستقر السهم ثم استقبل القبلة.',
+                                'Ù„Ù Ø§Ù„Ù‡Ø§ØªÙ Ø­ØªÙ‰ ÙŠØ³ØªÙ‚Ø± Ø§Ù„Ø³Ù‡Ù… Ø«Ù… Ø§Ø³ØªÙ‚Ø¨Ù„ Ø§Ù„Ù‚Ø¨Ù„Ø©.',
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -394,3 +393,5 @@ class _KaabaMark extends StatelessWidget {
     );
   }
 }
+
+

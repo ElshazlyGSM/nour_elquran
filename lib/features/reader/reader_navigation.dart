@@ -2,6 +2,11 @@
 
 extension _ReaderNavigation on _ReaderPageState {
   static const int _maxInitialStandardPositionAttempts = 8;
+  static const Duration _playbackPageScrollDuration = Duration(milliseconds: 1420);
+  static const Duration _playbackVerseCenterDuration = Duration(milliseconds: 1340);
+  static const Duration _playbackRetryDelay = Duration(milliseconds: 1220);
+  static const Curve _playbackScrollCurve = Curves.easeInOutCubic;
+
   static const List<Color> _bookmarkColors = [
     Color(0xFF2F6A53),
     Color(0xFF2E5AAC),
@@ -268,14 +273,14 @@ extension _ReaderNavigation on _ReaderPageState {
           if (isPlaybackScroll) {
             _standardItemScrollController.scrollTo(
               index: targetPage - 1,
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
+              duration: _playbackPageScrollDuration,
+              curve: _playbackScrollCurve,
               alignment: 0,
             );
           } else {
             _standardItemScrollController.jumpTo(index: targetPage - 1);
           }
-          Future.delayed(const Duration(milliseconds: 140), () {
+          Future.delayed(_playbackRetryDelay, () {
             if (!mounted) {
               return;
             }
@@ -296,9 +301,9 @@ extension _ReaderNavigation on _ReaderPageState {
         targetContext,
         alignment: alignment ?? 0.28,
         duration: isPlaybackScroll
-            ? const Duration(milliseconds: 180)
+            ? _playbackVerseCenterDuration
             : Duration.zero,
-        curve: Curves.easeOutCubic,
+        curve: _playbackScrollCurve,
       );
     });
   }
@@ -445,8 +450,8 @@ extension _ReaderNavigation on _ReaderPageState {
         Scrollable.ensureVisible(
           verseContext,
           alignment: widget.initialVerseAlignment,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
+          duration: _playbackPageScrollDuration,
+          curve: _playbackScrollCurve,
         );
         _updateState(() {
           _isInitialStandardPositioning = false;
@@ -588,6 +593,9 @@ extension _ReaderNavigation on _ReaderPageState {
     );
   }
 }
+
+
+
 
 
 

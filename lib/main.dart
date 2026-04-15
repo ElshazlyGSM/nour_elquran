@@ -11,6 +11,7 @@ import 'features/notifications/salawat/salawat_notification_service.dart';
 import 'services/app_update_service.dart';
 import 'services/current_quran_text_source.dart';
 import 'services/daily_quran_reminder_service.dart';
+import 'services/location_permission_prompt.dart';
 import 'services/quran_store.dart';
 
 Future<void> main() async {
@@ -136,10 +137,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     if (!await Geolocator.isLocationServiceEnabled()) {
       return;
     }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+    var permission = await LocationPermissionPrompt.ensurePermission();
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       return;
     }
@@ -226,3 +224,6 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
+
+
+

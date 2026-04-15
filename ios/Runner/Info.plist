@@ -26,9 +26,9 @@
 	<true/>
 	
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>يستخدم التطبيق الموقع لتحديد مواقيت الصلاة بدقة ومعرفة اتجاه القبلة واختيار أقرب مدينة.</string>
+	<string>يستخدم نور القرآن موقعك لتحديد مواقيت الصلاة بدقة، ومعرفة اتجاه القبلة، واختيار أقرب مدينة تلقائيًا.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>يستخدم التطبيق الموقع لتحديد مواقيت الصلاة بدقة ومعرفة اتجاه القبلة واختيار أقرب مدينة.</string>
+	<string>يستخدم نور القرآن موقعك لتحديد مواقيت الصلاة بدقة، ومعرفة اتجاه القبلة، واختيار أقرب مدينة تلقائيًا.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -71,5 +71,6 @@
 	</array>
 </dict>
 </plist>
+
 
 

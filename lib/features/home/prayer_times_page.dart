@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import '../../core/utils/arabic_numbers.dart';
 import '../../data/egypt_prayer_cities.dart';
 import '../notifications/adhan/adhan_notification_settings_page.dart';
 import '../notifications/adhan/prayer_notification_service.dart';
+import '../../services/location_permission_prompt.dart';
 import '../../services/quran_store.dart';
 import 'qibla_compass_page.dart';
 
@@ -282,7 +283,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                     if (hasAnyEnabledAdhan)
                       const _HeaderChip(
                         icon: Icons.notifications_active_rounded,
-                        label: 'الأذان مفعل',
+                        label: 'Ø§Ù„Ø£Ø°Ø§Ù† Ù…ÙØ¹Ù„',
                         ),
                   ],
                 ),
@@ -492,10 +493,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
           '\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0648\u0642\u0639 \u0645\u062a\u0648\u0642\u0641\u0629',
         );
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      var permission = await LocationPermissionPrompt.ensurePermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         throw Exception(
@@ -715,3 +713,6 @@ class _PrayerEntry {
   final String key;
   final bool isPrayer;
 }
+
+
+
