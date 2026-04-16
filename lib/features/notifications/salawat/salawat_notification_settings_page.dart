@@ -60,6 +60,18 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
     });
   }
 
+  void _onEnabledChanged(bool value) {
+    final wasEnabled = _enabled;
+    _mutate(() => _enabled = value);
+    if (!wasEnabled && value) {
+      unawaited(
+        SalawatNotificationService.instance.showInstantReminder(
+          vibrationEnabled: _vibrationEnabled,
+        ),
+      );
+    }
+  }
+
   Future<void> _flushPendingSave() async {
     if (_dirty) {
       await _saveSettings(showSuccess: false);
@@ -104,7 +116,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                         SwitchListTile.adaptive(
                           value: _enabled,
                           contentPadding: EdgeInsets.zero,
-                          onChanged: (value) => _mutate(() => _enabled = value),
+                          onChanged: _onEnabledChanged,
                           title: const Text(
                             'تفعيل التذكير',
                             style: TextStyle(fontWeight: FontWeight.w800),
@@ -386,6 +398,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                 ),
               );
           }
+
           await SalawatNotificationService.instance.reschedule(
             enabled: _enabled,
             intervalMinutes: _intervalMinutes,
@@ -398,7 +411,6 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
             city: city,
             prayerOffsets: widget.store.savedPrayerOffsets,
           );
-
           if (showSuccess && mounted) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
@@ -487,6 +499,8 @@ class _TimeBox extends StatelessWidget {
     );
   }
 }
+
+
 
 
 

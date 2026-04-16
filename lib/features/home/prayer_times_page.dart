@@ -407,6 +407,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                       color: isDark ? Colors.white : const Color(0xFF143A2A),
                     ),
                   ),
+                  onTap: _showPrayerSettings,
                 ),
               ),
           ],
@@ -720,3 +721,6 @@ class _PrayerEntry {
   final String key;
   final bool isPrayer;
 }
+
+
+

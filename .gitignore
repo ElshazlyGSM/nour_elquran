@@ -90,3 +90,12 @@ vendor/quran_library/pubspec.lock
 vendor/quran_library/example/**/ephemeral/
 vendor/quran_library/example/**/build/
 vendor/quran_library/example/pubspec.lock
+
+# Local diagnostics and UI captures
+device_screen.png
+device_screen2.png
+medina_now.png
+medina_ss.png
+medina_ui.xml
+ui.xml
+ui_live.xml

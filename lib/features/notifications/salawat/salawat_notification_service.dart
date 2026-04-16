@@ -19,6 +19,7 @@ class SalawatNotificationService {
       SalawatNotificationService._();
 
   static const _scheduledBaseId = 90000;
+  static const _instantNotificationId = 89999;
   // Keep a safety margin under the historical ~500 alarms ceiling while
   // extending the rolling window so reminders do not stop quickly on
   // short intervals unless the app is reopened.
@@ -147,6 +148,30 @@ class SalawatNotificationService {
         )
         .length;
     _log('Reschedule: pendingCount=$pendingCount');
+  }
+
+  Future<void> showInstantReminder({
+    required bool vibrationEnabled,
+  }) async {
+    await initialize();
+    final notificationId =
+        _instantNotificationId + (DateTime.now().millisecondsSinceEpoch % 9000);
+    try {
+      await _notifications.show(
+        notificationId,
+        _title,
+        _body,
+        _instantNotificationDetails(vibrationEnabled),
+      );
+    } on PlatformException catch (_) {
+      _log('Instant reminder failed. Falling back.');
+      await _notifications.show(
+        notificationId,
+        _title,
+        _body,
+        _fallbackNotificationDetails(vibrationEnabled),
+      );
+    }
   }
 
   Future<void> cancelAll() async {
@@ -378,6 +403,26 @@ class SalawatNotificationService {
     ),
   );
 
+  NotificationDetails _instantNotificationDetails(bool vibrationEnabled) =>
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'salawat_activation_channel_v1_${vibrationEnabled ? 'vib' : 'silent'}',
+          'تأكيد تشغيل الصلاة والسلام',
+          channelDescription: 'إشعار فوري عند تفعيل الخدمة',
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('saly'),
+          enableVibration: vibrationEnabled,
+          vibrationPattern: vibrationEnabled
+              ? Int64List.fromList([0, 250, 160, 420])
+              : null,
+          timeoutAfter: 30000,
+          onlyAlertOnce: false,
+          category: AndroidNotificationCategory.reminder,
+          audioAttributesUsage: AudioAttributesUsage.notification,
+        ),
+      );
   NotificationDetails _fallbackNotificationDetails(bool vibrationEnabled) =>
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -402,4 +447,6 @@ class SalawatNotificationService {
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
+
+
 
