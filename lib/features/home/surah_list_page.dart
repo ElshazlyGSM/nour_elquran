@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as legacy_quran;
 
 import '../../core/utils/arabic_numbers.dart';
@@ -300,7 +300,7 @@ class _SurahListPageState extends State<SurahListPage> {
                         ),
                       );
                     },
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
                   ),
                 ),
               ],
@@ -726,7 +726,14 @@ class _SurahTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('سورة $title', style: theme.textTheme.titleLarge),
+                    Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontFamily: 'SurahNames-font',
+                        fontSize: 22,
+                        height: 1.15,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(subtitle, style: theme.textTheme.bodyMedium),
                   ],

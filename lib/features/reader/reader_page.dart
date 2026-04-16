@@ -28,6 +28,7 @@ import '../../services/current_quran_text_source.dart';
 import '../../services/medina_fonts_download_config.dart';
 import '../../services/medina_fonts_download_service.dart';
 import '../../services/mp3quran_recitation_service.dart';
+import '../../services/juz_names_service.dart';
 import '../../services/quran_store.dart';
 import '../../services/recitation_cache_service.dart';
 import '../../services/shamarly_pages_download_config.dart';
@@ -103,7 +104,7 @@ extension on _ReaderAppearance {
 
   Color get appBarColor => switch (this) {
     _ReaderAppearance.classic => const Color(0xFF143A2A),
-    _ReaderAppearance.golden => const Color(0xFF7B5B18),
+    _ReaderAppearance.golden => const Color(0xFF8C6A1F),
     _ReaderAppearance.tajweed => const Color(0xFF0F5C63),
     _ReaderAppearance.night => const Color(0xFF16262D),
     _ReaderAppearance.nightTajweed => const Color(0xFF10232A),
@@ -587,6 +588,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     return currentJuz.clamp(1, currentQuranTotalJuzCount);
   }
 
+  String _juzJumpLabel(int juzNumber) {
+    return JuzNamesService.labelFor(juzNumber);
+  }
+
   int _resolveShamarlyPage(int surahNumber, int verseNumber) {
     final map = _shamarlyPageMap;
     if (map != null) {
@@ -1031,6 +1036,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     final displayedJuzNumber = _isShamarlyPagesMode
         ? _currentShamarlyJuzNumberFromPage(displayedPageNumber)
         : _currentJuzNumberFromPage(displayedPageNumber);
+    final surahJumpLabel = surahName;
+    final juzJumpLabel = _juzJumpLabel(displayedJuzNumber);
 
     return AnimatedBuilder(
       animation: widget.store,
@@ -1042,24 +1049,29 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               ? AppBar(
                   backgroundColor: _appearance.appBarColor,
                   foregroundColor: Colors.white,
-                  titleSpacing: 8,
+                  titleSpacing: 10,
                   title: Row(
                     children: [
-                      _ReaderTopJumpButton(
-                        label: 'السور',
-                        onTap: () => _openQuranChooser(0),
-                      ),
-                      const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          '$surahName - جزء ${toArabicNumber(displayedJuzNumber)}',
-                          textAlign: TextAlign.center,
+                        child: _ReaderTopJumpButton(
+                          label: surahJumpLabel,
+                          fontFamily: 'SurahNames-font',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          textColor: _appearance.appBarColor,
+                          onTap: () => _openQuranChooser(0),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      _ReaderTopJumpButton(
-                        label: 'الأجزاء',
-                        onTap: () => _openQuranChooser(1),
+                      const SizedBox(width: 35),
+                      Expanded(
+                        child: _ReaderTopJumpButton(
+                          label: juzJumpLabel,
+                          fontFamily: 'Ajzaa-ALQuran-font',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          textColor: _appearance.appBarColor,
+                          onTap: () => _openQuranChooser(1),
+                        ),
                       ),
                     ],
                   ),
@@ -1625,26 +1637,46 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
 }
 
 class _ReaderTopJumpButton extends StatelessWidget {
-  const _ReaderTopJumpButton({required this.label, required this.onTap});
+  const _ReaderTopJumpButton({
+    required this.label,
+    required this.onTap,
+    this.fontFamily,
+    this.fontSize = 20,
+    this.fontWeight= FontWeight.w800,
+    this.textColor = const Color(0xFF143A2A),
+  });
 
   final String label;
   final VoidCallback onTap;
+  final String? fontFamily;
+  final double fontSize;
+  final Color textColor;
+  final FontWeight? fontWeight;
 
   @override
   Widget build(BuildContext context) {
     return FilledButton.tonal(
       style: FilledButton.styleFrom(
-        foregroundColor: const Color(0xFF143A2A),
+        foregroundColor: textColor,
         backgroundColor: Colors.white.withValues(alpha: 0.9),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        minimumSize: const Size(0, 33),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        minimumSize: const Size(0, 22),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       onPressed: onTap,
-      child: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            fontWeight: fontWeight,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+          ),
+        ),
       ),
     );
   }

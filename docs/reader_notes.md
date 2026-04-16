@@ -107,6 +107,83 @@
     - `lib/features/notifications/salawat/salawat_notification_service.dart`
     - `lib/features/notifications/adhan/prayer_notification_service.dart`
 
+## 34. تحديثات أسماء السور/الأجزاء والخطوط (مهم)
+
+### الهدف
+- توحيد وتحسين عرض أسماء السور والأجزاء في:
+  - شريط القارئ العلوي (`AppBar`)
+  - قائمة السور
+  - قائمة الأجزاء
+  - عنوان السورة داخل المصحف (قبل البسملة)
+
+### أسماء الأجزاء من JSON
+- تمت إضافة ملف:
+  - `assets/quran/juz_names.json`
+- تمت إضافة خدمة تحميل:
+  - `lib/services/juz_names_service.dart`
+- الخدمة تدعم شكلين في JSON:
+  - `names` (أسماء مباشرة)
+  - `numbers` (أرقام مثل 1..30)
+- في حالة `numbers`:
+  - يتم تحويل الرقم تلقائيًا إلى اسمه العربي:
+    - `5` => `الجزء الخامس`
+- التحميل يتم عند بدء التطبيق:
+  - `lib/main.dart`
+  - الاستدعاء: `await JuzNamesService.ensureLoaded();`
+
+### أين تُستخدم أسماء الأجزاء
+- عنوان الجزء في قائمة الأجزاء:
+  - `lib/models/reading_reference.dart`
+  - `JuzReference.title = JuzNamesService.labelFor(index)`
+- عنوان الجزء في AppBar القارئ:
+  - `lib/features/reader/reader_page.dart`
+  - `_juzJumpLabel(...)` يرجع من `JuzNamesService`
+
+### الخطوط المستخدمة حاليًا
+- أسماء السور:
+  - الخط: `SurahNames-font`
+  - أماكن الاستخدام:
+    - `lib/features/reader/reader_page.dart` (زر السورة في AppBar)
+    - `lib/features/home/surah_list_page.dart` (قائمة السور)
+    - `lib/features/reader/reader_widgets.dart` (عنوان السورة داخل المصحف)
+- أسماء/عناوين الأجزاء:
+  - الخط: `Ajzaa-ALQuran-font`
+  - أماكن الاستخدام:
+    - `lib/features/reader/reader_page.dart` (زر الجزء في AppBar)
+    - `lib/features/home/index_page.dart` (قائمة الأجزاء)
+
+### تحسينات شريط AppBar (السورة/الجزء)
+- فصل التحكم بين زر السورة وزر الجزء:
+  - حجم خط مستقل
+  - وزن خط مستقل (`FontWeight`)
+- تقليل مشكلة قص النصوص الطويلة:
+  - تعديل توزيع المساحة بين الزرين
+  - استخدام `FittedBox(scaleDown)` داخل الزر
+  - ضبط `padding/minimumSize` للزر
+- ملاحظة مهمة:
+  - لو ظهر قص في أسماء طويلة (مثل: `الجزء السادس عشر`) يتم تعديل:
+    - `fontSize`
+    - `fontWeight`
+    - `padding/minimumSize`
+  - من الكلاس:
+    - `_ReaderTopJumpButton` داخل `lib/features/reader/reader_page.dart`
+
+### تقليل المسافات بين عناصر القوائم
+- تم تقليل المسافة بين كروت قائمة السور:
+  - `lib/features/home/surah_list_page.dart`
+  - `separatorBuilder` من `12` إلى `6`
+- وتم نفس الشيء في قائمة الأجزاء:
+  - `lib/features/home/index_page.dart`
+  - `separatorBuilder` من `12` إلى `6`
+
+### مصدر أسماء السور لمن يريد التعديل
+- المصدر الأساسي:
+  - `assets/quran/data.json`
+  - داخل `surahs[].nameArabic`
+- القراءة في الكود:
+  - `lib/services/local_json_quran_source.dart`
+  - الدالة: `getSurahNameArabic(int surahNumber)`
+
 ## 1. أوضاع القارئ والمصاحف
 
 ### أوضاع المصحف

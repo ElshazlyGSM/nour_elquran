@@ -6,11 +6,7 @@ import '../../services/quran_store.dart';
 import '../reader/reader_page.dart';
 
 class IndexPage extends StatefulWidget {
-  const IndexPage({
-    super.key,
-    required this.store,
-    this.initialJuzNumber,
-  });
+  const IndexPage({super.key, required this.store, this.initialJuzNumber});
 
   final QuranStore store;
   final int? initialJuzNumber;
@@ -32,13 +28,12 @@ class _IndexPageState extends State<IndexPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('\u0627\u0644\u0623\u062c\u0632\u0627\u0621',
-                    style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 6),
                 Text(
-                  '\u0627\u062e\u062a\u0631 \u0627\u0644\u062c\u0632\u0621 \u0627\u0644\u0630\u064a \u062a\u0631\u064a\u062f\u0647 \u0648\u0633\u064a\u062a\u0645 \u0627\u0644\u0627\u0646\u062a\u0642\u0627\u0644 \u0645\u0628\u0627\u0634\u0631\u0629 \u0625\u0644\u0649 \u0628\u062f\u0627\u064a\u062a\u0647.',
-                  style: theme.textTheme.bodyMedium,
+                  'الأجزاء',
+                  style: theme.textTheme.headlineSmall,
                 ),
+              
+                
               ],
             ),
           ),
@@ -101,9 +96,7 @@ class _ReferenceListState extends State<_ReferenceList> {
     if (targetContext == null) {
       final estimatedOffset = target * 98.0;
       final maxExtent = _scrollController.position.maxScrollExtent;
-      _scrollController.jumpTo(
-        estimatedOffset.clamp(0.0, maxExtent),
-      );
+      _scrollController.jumpTo(estimatedOffset.clamp(0.0, maxExtent));
       Future<void>.delayed(
         const Duration(milliseconds: 80),
         _jumpToInitialIndex,
@@ -140,7 +133,7 @@ class _ReferenceListState extends State<_ReferenceList> {
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       itemCount: widget.references.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 2),
       itemBuilder: (context, index) {
         final reference = widget.references[index];
 
@@ -193,7 +186,12 @@ class _ReferenceListState extends State<_ReferenceList> {
                       children: [
                         Text(
                           reference.title,
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontFamily: 'Ajzaa-ALQuran-font',
+                                fontSize: 28,
+                                
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(

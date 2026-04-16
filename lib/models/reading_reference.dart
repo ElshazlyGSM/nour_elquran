@@ -1,5 +1,6 @@
 import '../core/utils/arabic_numbers.dart';
 import '../services/current_quran_text_source.dart';
+import '../services/juz_names_service.dart';
 
 const readingReferenceQuranSource = currentQuranTextSource;
 
@@ -27,7 +28,7 @@ class JuzReference extends ReadingReference {
   JuzReference(int index, int surahNumber, int verseNumber)
     : super(
         index: index,
-        title: 'الجزء ${toArabicNumber(index)}',
+        title: JuzNamesService.labelFor(index),
         surahNumber: surahNumber,
         verseNumber: verseNumber,
       );

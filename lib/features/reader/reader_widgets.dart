@@ -341,6 +341,7 @@ class _ShamarlyPages extends StatefulWidget {
   @override
   State<_ShamarlyPages> createState() => _ShamarlyPagesState();
 }
+
 class _GentlePageScrollPhysics extends PageScrollPhysics {
   const _GentlePageScrollPhysics({super.parent});
 
@@ -350,13 +351,9 @@ class _GentlePageScrollPhysics extends PageScrollPhysics {
   }
 
   @override
-  SpringDescription get spring => const SpringDescription(
-    mass: 1,
-    stiffness: 80,
-    damping: 18,
-  );
+  SpringDescription get spring =>
+      const SpringDescription(mass: 1, stiffness: 80, damping: 18);
 }
-
 
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
   late final PageController _controller;
@@ -708,12 +705,22 @@ class _SurahMarker extends StatelessWidget {
   final double fontSize;
 
   String? get _headerFontFamily => switch (appearance) {
-    //خط المصحف المستخدم في العناوين
+    //خط البسملة في المصحف
     _ReaderAppearance.classic ||
     _ReaderAppearance.golden ||
     _ReaderAppearance.night => 'Uthmani_Hafs_Am9li9',
     _ReaderAppearance.tajweed ||
     _ReaderAppearance.nightTajweed => 'ScheherazadeNew',
+    _ReaderAppearance.medinaPages => null,
+    _ReaderAppearance.shamarlyPages => null,
+  };
+
+  String? get _surahNameFontFamily => switch (appearance) {
+    _ReaderAppearance.classic ||
+    _ReaderAppearance.golden ||
+    _ReaderAppearance.night => 'SurahNames-font',
+    _ReaderAppearance.tajweed ||
+    _ReaderAppearance.nightTajweed => 'SurahNames-font',
     _ReaderAppearance.medinaPages => null,
     _ReaderAppearance.shamarlyPages => null,
   };
@@ -730,7 +737,7 @@ class _SurahMarker extends StatelessWidget {
 
     final showBasmala = surahNumber != 9;
     //حجم خط اسم السورة
-    final titleFontSize = (fontSize * 0.7);
+    final titleFontSize = (fontSize * 0.82);
     //حجم خط البسملة
     final basmalaFontSize = (fontSize * 0.85);
 
@@ -743,9 +750,9 @@ class _SurahMarker extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
-            '\u0633\u0648\u0631\u0629 ${_readerQuranSource.getSurahNameArabic(surahNumber)}',
+            _readerQuranSource.getSurahNameArabic(surahNumber),
             style: TextStyle(
-              fontFamily: _headerFontFamily,
+              fontFamily: _surahNameFontFamily,
               package: _headerFontPackage,
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -764,8 +771,12 @@ class _SurahMarker extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: appearance.quarterMarkerBorderColor.withValues(
-                          alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.92 : 0.55,
-                        ),
+                  alpha:
+                      appearance == _ReaderAppearance.night ||
+                          appearance == _ReaderAppearance.nightTajweed
+                      ? 0.92
+                      : 0.55,
+                ),
               ),
             ),
             child: Text(
@@ -1035,12 +1046,20 @@ class _VerseWrap extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: appearance.quarterMarkerFillColor.withValues(
-                        alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.88 : 0.42,
+                        alpha:
+                            appearance == _ReaderAppearance.night ||
+                                appearance == _ReaderAppearance.nightTajweed
+                            ? 0.88
+                            : 0.42,
                       ),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: appearance.quarterMarkerBorderColor.withValues(
-                          alpha: appearance == _ReaderAppearance.night || appearance == _ReaderAppearance.nightTajweed ? 0.92 : 0.55,
+                          alpha:
+                              appearance == _ReaderAppearance.night ||
+                                  appearance == _ReaderAppearance.nightTajweed
+                              ? 0.92
+                              : 0.55,
                         ),
                       ),
                     ),
@@ -2067,4 +2086,3 @@ class _KhatmDuaButton extends StatelessWidget {
     );
   }
 }
-

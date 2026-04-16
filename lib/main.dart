@@ -12,6 +12,7 @@ import 'services/app_update_service.dart';
 import 'services/current_quran_text_source.dart';
 import 'services/daily_quran_reminder_service.dart';
 import 'services/location_permission_prompt.dart';
+import 'services/juz_names_service.dart';
 import 'services/quran_store.dart';
 
 Future<void> main() async {
@@ -99,6 +100,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     QuranLibrary.initWordAudio();
     final store = await QuranStore.create();
     await ensureCurrentQuranTextSourceInitialized();
+    await JuzNamesService.ensureLoaded();
     if (!mounted) {
       return;
     }
@@ -232,4 +234,3 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
-
