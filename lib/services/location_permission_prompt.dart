@@ -11,9 +11,12 @@ class LocationPermissionPrompt {
   static Future<LocationPermission> ensurePermission() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      final shouldContinue = await _showPrePermissionDialog();
-      if (!shouldContinue) {
-        return permission;
+      // Android: skip custom pre-permission dialog and show system prompt directly.
+      if (!Platform.isAndroid) {
+        final shouldContinue = await _showPrePermissionDialog();
+        if (!shouldContinue) {
+          return permission;
+        }
       }
       permission = await Geolocator.requestPermission();
     }
@@ -93,3 +96,4 @@ class LocationPermissionPrompt {
     );
   }
 }
+

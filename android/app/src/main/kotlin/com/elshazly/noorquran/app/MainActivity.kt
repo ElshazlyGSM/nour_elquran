@@ -44,6 +44,14 @@ class MainActivity : AudioServiceActivity() {
                         }
                     }
 
+                    "openNotificationSettings" -> {
+                        try {
+                            result.success(openNotificationSettings())
+                        } catch (t: Throwable) {
+                            result.error("open_notification_settings_failed", t.message, null)
+                        }
+                    }
+
                     else -> result.notImplemented()
                 }
             }
@@ -59,11 +67,47 @@ class MainActivity : AudioServiceActivity() {
                         }
                     }
 
+                    "openNotificationSettings" -> {
+                        try {
+                            result.success(openNotificationSettings())
+                        } catch (t: Throwable) {
+                            result.error("open_notification_settings_failed", t.message, null)
+                        }
+                    }
+
                     else -> result.notImplemented()
                 }
             }
     }
 
+
+    private fun openNotificationSettings(): Boolean {
+        val packageUri = Uri.parse("package:$packageName")
+        val intents = mutableListOf<Intent>()
+
+        intents += Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            putExtra("app_package", packageName)
+            putExtra("app_uid", applicationInfo.uid)
+        }
+
+        intents += Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = packageUri
+        }
+
+        intents += Intent(Settings.ACTION_SETTINGS)
+
+        for (intent in intents) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val resolved = intent.resolveActivity(packageManager)
+            if (resolved != null) {
+                startActivity(intent)
+                return true
+            }
+        }
+
+        return false
+    }
     private fun openBackgroundSettings(): Boolean {
         val intents = mutableListOf<Intent>()
         val packageUri = Uri.parse("package:$packageName")
@@ -177,3 +221,5 @@ class MainActivity : AudioServiceActivity() {
         return uri.toString()
     }
 }
+
+

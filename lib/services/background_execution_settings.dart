@@ -26,4 +26,23 @@ class BackgroundExecutionSettings {
       return false;
     }
   }
+
+  static Future<bool> openNotificationSettings() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('openNotificationSettings');
+      if (result == true) {
+        return true;
+      }
+    } on MissingPluginException {
+      // Fall back to app settings below.
+    } on PlatformException {
+      // Fall back to app settings below.
+    }
+
+    try {
+      return await Geolocator.openAppSettings();
+    } catch (_) {
+      return false;
+    }
+  }
 }

@@ -60,10 +60,26 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
     });
   }
 
-  void _onEnabledChanged(bool value) {
+  void _onEnabledChanged(bool value) async {
+    if (!value) {
+      _mutate(() => _enabled = false);
+      return;
+    }
+
+    final granted = await SalawatNotificationService.instance
+        .ensureNotificationPermissionForToggle();
+    if (!mounted) {
+      return;
+    }
+    if (!granted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      await BackgroundExecutionSettings.openNotificationSettings();
+      return;
+    }
+
     final wasEnabled = _enabled;
-    _mutate(() => _enabled = value);
-    if (!wasEnabled && value) {
+    _mutate(() => _enabled = true);
+    if (!wasEnabled) {
       unawaited(
         SalawatNotificationService.instance.showInstantReminder(
           vibrationEnabled: _vibrationEnabled,
@@ -499,6 +515,13 @@ class _TimeBox extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
 
 
 

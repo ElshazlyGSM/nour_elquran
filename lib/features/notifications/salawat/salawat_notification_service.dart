@@ -1,4 +1,5 @@
 ﻿import 'dart:developer' as developer;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -62,7 +63,11 @@ class SalawatNotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const settings = InitializationSettings(android: androidSettings);
+    const darwinSettings = DarwinInitializationSettings();
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+    );
     await _notifications.initialize(settings);
 
     tz.initializeTimeZones();
@@ -100,7 +105,51 @@ class SalawatNotificationService {
     _log('Initialized. canScheduleExact=$_canScheduleExactAlarms');
     _initialized = true;
   }
+  Future<bool> ensureNotificationPermissionForToggle() async {
+    await initialize();
 
+    if (Platform.isAndroid) {
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final enabledBefore = await android?.areNotificationsEnabled() ?? true;
+      if (!enabledBefore) {
+        try {
+          await android?.requestNotificationsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
+        }
+      }
+      final enabledAfter = await android?.areNotificationsEnabled() ?? false;
+      if (!enabledAfter) {
+        return false;
+      }
+      try {
+        await android?.requestExactAlarmsPermission();
+      } on PlatformException catch (error) {
+        if (error.code != 'permissionRequestInProgress') {
+          rethrow;
+        }
+      }
+      _canScheduleExactAlarms =
+          await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
+      return true;
+    }
+
+    if (Platform.isIOS) {
+      final ios = _notifications.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      return await ios?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
+    }
+
+    return true;
+  }
   Future<void> reschedule({
     required bool enabled,
     required int intervalMinutes,
@@ -447,6 +496,8 @@ class SalawatNotificationService {
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
+
+
 
 
 

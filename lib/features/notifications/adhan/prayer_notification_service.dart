@@ -94,7 +94,51 @@ class PrayerNotificationService {
 
     _initialized = true;
   }
+  Future<bool> ensureNotificationPermissionForToggle() async {
+    await initialize();
 
+    if (Platform.isAndroid) {
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final enabledBefore = await android?.areNotificationsEnabled() ?? true;
+      if (!enabledBefore) {
+        try {
+          await android?.requestNotificationsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
+        }
+      }
+      final enabledAfter = await android?.areNotificationsEnabled() ?? false;
+      if (!enabledAfter) {
+        return false;
+      }
+      try {
+        await android?.requestExactAlarmsPermission();
+      } on PlatformException catch (error) {
+        if (error.code != 'permissionRequestInProgress') {
+          rethrow;
+        }
+      }
+      _canScheduleExactAlarms =
+          await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
+      return true;
+    }
+
+    if (Platform.isIOS) {
+      final ios = _notifications.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      return await ios?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
+    }
+
+    return true;
+  }
   Future<void> reschedulePrayerNotifications({
     required PrayerCity city,
     required Map<String, int> prayerOffsets,
@@ -535,6 +579,7 @@ class _ScheduledPrayer {
   final DateTime time;
   final int idSeed;
 }
+
 
 
 

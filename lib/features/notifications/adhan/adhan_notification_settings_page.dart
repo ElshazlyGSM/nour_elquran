@@ -5,6 +5,8 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../../core/utils/arabic_numbers.dart';
 import '../../../services/adhan_audio_cache_service.dart';
+import '../../../services/background_execution_settings.dart';
+import 'prayer_notification_service.dart';
 
 class PrayerSettingsResult {
   const PrayerSettingsResult({
@@ -803,8 +805,25 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                     SwitchListTile.adaptive(
                       value: _adhanEnabled,
                       contentPadding: EdgeInsets.zero,
-                      onChanged: (value) =>
-                          _mutate(() => _adhanEnabled = value),
+                      onChanged: (value) async {
+                        if (!value) {
+                          _mutate(() => _adhanEnabled = false);
+                          return;
+                        }
+                        final messenger = ScaffoldMessenger.of(context);
+                        final granted = await PrayerNotificationService
+                            .instance
+                            .ensureNotificationPermissionForToggle();
+                        if (!mounted) {
+                          return;
+                        }
+                        if (!granted) {
+                          messenger.hideCurrentSnackBar();
+                          await BackgroundExecutionSettings.openNotificationSettings();
+                          return;
+                        }
+                        _mutate(() => _adhanEnabled = true);
+                      },
                       title: const Text(
                         'تفعيل إشعارات الصلاة',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -971,3 +990,10 @@ class _PrayerSettingBox extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
