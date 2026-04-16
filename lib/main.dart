@@ -52,7 +52,9 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       }
       await _syncPrayerCityFromLocation(store);
       await _reschedulePrayerNotifications(store);
-      // Keep resume lightweight; salawat is refreshed on startup and settings save.
+      try {
+        await _rescheduleSalawat(store);
+      } catch (_) {}
       unawaited(_refreshAndRescheduleDailyReminder(store));
     },
   );

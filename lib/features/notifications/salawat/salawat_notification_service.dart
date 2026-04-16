@@ -130,6 +130,7 @@ class SalawatNotificationService {
     await _scheduleSimpleRollingNotifications(
       intervalMinutes: safeInterval,
       details: _notificationDetails(vibrationEnabled),
+      vibrationEnabled: vibrationEnabled,
       pauseAtPrayer: pauseAtPrayer,
       prayerPauseMinutes: prayerPauseMinutes,
       windowEnabled: windowEnabled,
@@ -161,6 +162,7 @@ class SalawatNotificationService {
   Future<void> _scheduleSimpleRollingNotifications({
     required int intervalMinutes,
     required NotificationDetails details,
+    required bool vibrationEnabled,
     required bool pauseAtPrayer,
     required int prayerPauseMinutes,
     required bool windowEnabled,
@@ -222,7 +224,24 @@ class SalawatNotificationService {
           break;
         }
         if (preferredMode == AndroidScheduleMode.inexactAllowWhileIdle) {
-          rethrow;
+          try {
+            await _notifications.zonedSchedule(
+              nextId,
+              _title,
+              _body,
+              nextTime,
+              _fallbackNotificationDetails(vibrationEnabled),
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            );
+          } catch (fallbackError) {
+            _log('Fallback(inexact) failed id=$nextId: $fallbackError');
+            nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+            continue;
+          }
+          nextId++;
+          scheduledCount++;
+          nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+          continue;
         }
         _canScheduleExactAlarms = false;
         try {
@@ -242,7 +261,20 @@ class SalawatNotificationService {
           if (fallbackMessage.contains('Maximum limit of concurrent alarms')) {
             break;
           }
-          rethrow;
+          try {
+            await _notifications.zonedSchedule(
+              nextId,
+              _title,
+              _body,
+              nextTime,
+              _fallbackNotificationDetails(vibrationEnabled),
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            );
+          } catch (lastError) {
+            _log('Fallback(secondary) failed id=$nextId: $lastError');
+            nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+            continue;
+          }
         }
       }
 
@@ -345,6 +377,26 @@ class SalawatNotificationService {
       audioAttributesUsage: AudioAttributesUsage.notification,
     ),
   );
+
+  NotificationDetails _fallbackNotificationDetails(bool vibrationEnabled) =>
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'salawat_reminders_channel_fallback_${vibrationEnabled ? 'vib' : 'silent'}',
+          'تذكير الصلاة على النبي',
+          channelDescription: 'قناة احتياطية لضمان وصول التذكير',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: vibrationEnabled,
+          vibrationPattern: vibrationEnabled
+              ? Int64List.fromList([0, 250, 160, 420])
+              : null,
+          timeoutAfter: 60000,
+          onlyAlertOnce: false,
+          category: AndroidNotificationCategory.reminder,
+          audioAttributesUsage: AudioAttributesUsage.notification,
+        ),
+      );
 
   String get _title => 'الصلاة والسلام على سيدنا النبي';
 
