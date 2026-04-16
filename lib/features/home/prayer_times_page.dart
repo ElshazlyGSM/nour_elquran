@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +43,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   static const _adhanProfiles = [
     ('default', 'نغمة النظام'),
-    ('allah_akbar', 'الله أكبر'),
+    ('allah_akbar', 'تكبير فقط'),
     ('__full_adhans__', 'أذانات كاملة'),
     ('nsr_elden', 'نصر الدين طوبار'),
     ('egypt', 'عبد الباسط'),

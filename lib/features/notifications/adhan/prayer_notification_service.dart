@@ -349,7 +349,7 @@ class PrayerNotificationService {
         };
     final channelName = channelNameOverride ??
         switch (normalizedProfile) {
-          'allah_akbar' => 'تنبيهات الصلاة - الله أكبر',
+          'allah_akbar' => 'تنبيهات الصلاة - تكبير فقط',
           'nsr_elden' => 'تنبيهات الصلاة - نصر الدين طوبار',
           'egypt' => 'تنبيهات الصلاة - عبد الباسط',
           'mnshawy' => 'تنبيهات الصلاة - المنشاوي',
