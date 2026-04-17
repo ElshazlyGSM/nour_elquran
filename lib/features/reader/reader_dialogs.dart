@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderDialogs on _ReaderPageState {
   Future<void> _refreshDownloadedTafsirIds() async {
@@ -788,8 +788,8 @@ extension _ReaderDialogs on _ReaderPageState {
 
   Future<_ReaderAppearance?> _showContinuousMushafPicker() {
     const options = [
-      _ReaderAppearance.golden,
       _ReaderAppearance.classic,
+      _ReaderAppearance.golden,
       _ReaderAppearance.tajweed,
       _ReaderAppearance.night,
       _ReaderAppearance.nightTajweed,
@@ -1026,5 +1026,4 @@ class _TajweedLegendItem {
   final Color color;
   final String label;
 }
-
 

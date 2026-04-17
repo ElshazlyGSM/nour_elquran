@@ -240,6 +240,9 @@ extension _ReaderAudio on _ReaderPageState {
       await _stopAudio();
       return;
     }
+    if (_isPreparingAudio) {
+      return;
+    }
     if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
       return;
     }
@@ -253,11 +256,11 @@ extension _ReaderAudio on _ReaderPageState {
     required int surahNumber,
     required int verseNumber,
   }) async {
+    final requestId = ++_audioPlayRequestId;
     _updateState(() {
       _audioError = null;
-      _isPreparingAudio = false;
+      _isPreparingAudio = true;
       _isPlayingAudio = false;
-      _currentPlaybackUsesNetwork = false;
       _suspendPlaylistIndexSelectionSync = true;
       _selectedSurahNumber = surahNumber;
       _selectedVerseNumber = verseNumber;
@@ -270,6 +273,7 @@ extension _ReaderAudio on _ReaderPageState {
       await _audioPlayer.stop();
       if (_selectedReciter.isMp3Quran) {
         await _playFromVerseWithMp3Quran(
+          requestId: requestId,
           surahNumber: surahNumber,
           verseNumber: verseNumber,
         );
@@ -337,14 +341,9 @@ extension _ReaderAudio on _ReaderPageState {
           ),
         );
       }
-      if (!allLocal && mounted) {
+      if (!allLocal && mounted && requestId == _audioPlayRequestId) {
         _updateState(() {
-          _currentPlaybackUsesNetwork = true;
           _isPreparingAudio = true;
-        });
-      } else if (mounted) {
-        _updateState(() {
-          _currentPlaybackUsesNetwork = false;
         });
       }
       unawaited(
@@ -353,10 +352,10 @@ extension _ReaderAudio on _ReaderPageState {
           verseNumbers: _playlistVerseNumbers,
         ),
       );
-      if (allLocal && mounted) {
+      if (allLocal && mounted && requestId == _audioPlayRequestId) {
         _updateState(() {
-          _isPreparingAudio = false;
-          _isPlayingAudio = true;
+          _isPreparingAudio = true;
+          _isPlayingAudio = false;
         });
       }
       await _audioPlayer.setAudioSources(
@@ -364,8 +363,11 @@ extension _ReaderAudio on _ReaderPageState {
         initialIndex: 0,
         initialPosition: Duration.zero,
       );
+      if (requestId != _audioPlayRequestId) {
+        return;
+      }
       await _audioPlayer.play();
-      if (mounted) {
+      if (mounted && requestId == _audioPlayRequestId) {
         _updateState(() {
           _isPreparingAudio = false;
           _isPlayingAudio = true;
@@ -374,6 +376,9 @@ extension _ReaderAudio on _ReaderPageState {
         });
       }
     } catch (_) {
+      if (requestId != _audioPlayRequestId) {
+        return;
+      }
       _updateState(() {
         _audioError = _isAdvancingToNextSurah
             ? null
@@ -385,7 +390,7 @@ extension _ReaderAudio on _ReaderPageState {
       return;
     }
 
-    if (mounted) {
+    if (mounted && requestId == _audioPlayRequestId) {
       _updateState(() {
         _isPreparingAudio = false;
       });
@@ -393,6 +398,7 @@ extension _ReaderAudio on _ReaderPageState {
   }
 
   Future<void> _playFromVerseWithMp3Quran({
+    required int requestId,
     required int surahNumber,
     required int verseNumber,
   }) async {
@@ -420,22 +426,20 @@ extension _ReaderAudio on _ReaderPageState {
     _playbackStartVerse = verseNumber;
     _playlistVerseNumbers = [verseNumber];
     _playbackResumeVerseAfterChunk = null;
-    if (localPath != null) {
-      if (mounted) {
-        _updateState(() {
-          _currentPlaybackUsesNetwork = false;
-          _isPreparingAudio = false;
-          _isPlayingAudio = true;
-        });
-      }
+      if (localPath != null) {
+        if (mounted && requestId == _audioPlayRequestId) {
+          _updateState(() {
+            _isPreparingAudio = true;
+            _isPlayingAudio = false;
+          });
+        }
       await _audioPlayer.setFilePath(localPath);
-    } else {
-      if (mounted) {
-        _updateState(() {
-          _currentPlaybackUsesNetwork = true;
-          _isPreparingAudio = true;
-        });
-      }
+      } else {
+        if (mounted && requestId == _audioPlayRequestId) {
+          _updateState(() {
+            _isPreparingAudio = true;
+          });
+        }
       await _audioPlayer.setUrl(url);
       unawaited(() async {
         try {
@@ -450,11 +454,13 @@ extension _ReaderAudio on _ReaderPageState {
         }
       }());
     }
+    if (requestId != _audioPlayRequestId) {
+      return;
+    }
     await _audioPlayer.seek(Duration(milliseconds: timing.startTimeMs));
     await _audioPlayer.play();
-    if (mounted) {
+    if (mounted && requestId == _audioPlayRequestId) {
       _updateState(() {
-        _currentPlaybackUsesNetwork = false;
         _isPreparingAudio = false;
         _isPlayingAudio = true;
         _suspendPlaylistIndexSelectionSync = false;
@@ -464,6 +470,7 @@ extension _ReaderAudio on _ReaderPageState {
   }
 
   Future<void> _stopAudio() async {
+    _audioPlayRequestId++;
     _playlistVerseNumbers = const [];
     _currentMp3QuranTimings = const [];
     _playbackResumeVerseAfterChunk = null;
@@ -475,7 +482,6 @@ extension _ReaderAudio on _ReaderPageState {
     }
     if (mounted) {
       _updateState(() {
-        _currentPlaybackUsesNetwork = false;
         _isPreparingAudio = false;
         _isPlayingAudio = false;
         _suspendPlaylistIndexSelectionSync = false;

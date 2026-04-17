@@ -155,7 +155,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = (_fontSize + 2).clamp(14.0, 42.0);
+      _fontSize = (_fontSize + 1).clamp(14.0, 42.0);
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();
@@ -180,7 +180,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = (_fontSize - 2).clamp(14.0, 42.0);
+      _fontSize = (_fontSize - 1).clamp(14.0, 42.0);
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();

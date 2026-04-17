@@ -251,11 +251,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   ReaderReciter _selectedReciter = defaultReaderReciter;
   TafsirOption _selectedTafsir = TafsirOption.muyassar;
   int _selectedRepeatCount = 1;
-  double _fontSize = 28;
+  double _fontSize = 24;
   double _readingSpeed = 1.0;
   double _lastContinuousFontSize = 28;
   //نوع المصحف الى البرنامج حيفتح عليه
-  _ReaderAppearance _appearance = _ReaderAppearance.golden;
+  _ReaderAppearance _appearance = _ReaderAppearance.classic;
 
   Timer? _autoScrollTimer;
   Timer? _controlBarHideTimer;
@@ -270,7 +270,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   bool _showBottomBar = false;
   bool _isPlayingAudio = false;
   bool _isPreparingAudio = false;
-  bool _currentPlaybackUsesNetwork = false;
+  int _audioPlayRequestId = 0;
   bool _suspendPlaylistIndexSelectionSync = false;
   bool _isAdvancingToNextSurah = false;
   bool _isInitialStandardPositioning = false;
@@ -290,7 +290,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       !ShamarlyPagesDownloadConfig.enableOnDemandDownload;
   bool _isDownloadingShamarlyPages = false;
   bool _cancelShamarlyPagesDownload = false;
-  _ReaderAppearance _lastContinuousAppearance = _ReaderAppearance.golden;
+  _ReaderAppearance _lastContinuousAppearance = _ReaderAppearance.classic;
   double _shamarlyPagesDownloadProgress = 0;
   String? _shamarlyPagesDownloadStatus;
   String? _shamarlyPagesDownloadError;
@@ -797,7 +797,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             state.processingState == ProcessingState.buffering ||
             (_isPreparingAudio &&
                 state.processingState == ProcessingState.ready)) {
-          _isPreparingAudio = _currentPlaybackUsesNetwork;
+          // Keep showing loading until playback actually starts.
+          _isPreparingAudio = true;
         } else if (state.processingState == ProcessingState.idle &&
             !_isPreparingAudio) {
           _isPreparingAudio = false;
