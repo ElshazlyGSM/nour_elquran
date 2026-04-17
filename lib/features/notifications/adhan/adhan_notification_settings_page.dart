@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -206,8 +206,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   Future<void> _loadDownloadStates() async {
     final downloaded = <String>{};
     for (final profile in widget.adhanProfiles) {
-      if (!AdhanAudioCacheService.instance.supportsProfile(profile.$1))
+      if (!AdhanAudioCacheService.instance.supportsProfile(profile.$1)) {
         continue;
+      }
       if (await AdhanAudioCacheService.instance.isDownloaded(profile.$1)) {
         downloaded.add(profile.$1);
       }
@@ -790,119 +791,126 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
       child: Scaffold(
         appBar: AppBar(title: const Text('إعدادات مواقيت الصلاة')),
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  children: [
-                    SwitchListTile.adaptive(
-                      value: _adhanEnabled,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) async {
-                        if (!value) {
-                          _mutate(() => _adhanEnabled = false);
-                          return;
-                        }
-                        final messenger = ScaffoldMessenger.of(context);
-                        final granted = await PrayerNotificationService
-                            .instance
-                            .ensureNotificationPermissionForToggle();
-                        if (!mounted) {
-                          return;
-                        }
-                        if (!granted) {
-                          messenger.hideCurrentSnackBar();
-                          await BackgroundExecutionSettings.openNotificationSettings();
-                          return;
-                        }
-                        _mutate(() => _adhanEnabled = true);
-                      },
-                      title: const Text(
-                        'تفعيل إشعارات الصلاة',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: const Text(
-                        'يمكنك إيقاف صوت الأذان مع بقاء تذكيرات ما قبل الموعد مفعلة',
-                      ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderColor),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildAdhanProfilesCard(
-                surfaceColor,
-                borderColor,
-                titleColor,
-                mutedColor,
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'تعديل التاريخ الهجري',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => _mutate(
-                        () => _hijriOffset = (_hijriOffset - 1).clamp(-3, 3),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 32,
-                        height: 32,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.remove_rounded),
-                    ),
-                    SizedBox(
-                      width: 72,
-                      child: Text(
-                        _formatHijriOffset(_hijriOffset),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: titleColor,
+                    child: Column(
+                      children: [
+                        SwitchListTile.adaptive(
+                          value: _adhanEnabled,
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: (value) async {
+                            if (!value) {
+                              _mutate(() => _adhanEnabled = false);
+                              return;
+                            }
+                            final messenger = ScaffoldMessenger.of(context);
+                            final granted = await PrayerNotificationService
+                                .instance
+                                .ensureNotificationPermissionForToggle();
+                            if (!mounted) {
+                              return;
+                            }
+                            if (!granted) {
+                              messenger.hideCurrentSnackBar();
+                              await BackgroundExecutionSettings.openNotificationSettings();
+                              return;
+                            }
+                            _mutate(() => _adhanEnabled = true);
+                          },
+                          title: const Text(
+                            'تفعيل إشعارات الصلاة',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          subtitle: const Text(
+                            'يمكنك إيقاف صوت الأذان مع بقاء تذكيرات ما قبل الموعد مفعلة',
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: () => _mutate(
-                        () => _hijriOffset = (_hijriOffset + 1).clamp(-3, 3),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 32,
-                        height: 32,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.add_rounded),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildAdhanProfilesCard(
+                    surfaceColor,
+                    borderColor,
+                    titleColor,
+                    mutedColor,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
                     ),
-                  ],
-                ),
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'تعديل التاريخ الهجري',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _mutate(
+                            () =>
+                                _hijriOffset = (_hijriOffset - 1).clamp(-3, 3),
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 32,
+                            height: 32,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.remove_rounded),
+                        ),
+                        SizedBox(
+                          width: 72,
+                          child: Text(
+                            _formatHijriOffset(_hijriOffset),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: titleColor,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _mutate(
+                            () =>
+                                _hijriOffset = (_hijriOffset + 1).clamp(-3, 3),
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 32,
+                            height: 32,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.add_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final key in widget.prayerKeys) _buildPrayerTile(key),
+                ],
               ),
-              const SizedBox(height: 12),
-              for (final key in widget.prayerKeys) _buildPrayerTile(key),
-            ],
+            ),
           ),
         ),
       ),
@@ -990,10 +998,4 @@ class _PrayerSettingBox extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
 

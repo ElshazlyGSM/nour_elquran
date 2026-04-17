@@ -57,114 +57,119 @@ class _ProphetBiographyPageState extends State<ProphetBiographyPage> {
           });
 
           final bottomPadding = MediaQuery.of(context).padding.bottom;
-          return ScrollablePositionedList.separated(
-            itemScrollController: _itemScrollController,
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomPadding),
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              final episode = episodes[index];
-              final isRead = _readEpisodes.contains(episode.id);
-              return InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () async {
-                  final completed = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute<bool>(
-                      builder: (_) => _SirahEpisodeDetailsPage(
-                        title: episode.title,
-                        assetPath: episode.assetPath,
-                      ),
-                    ),
-                  );
-                  if (completed != true) {
-                    return;
-                  }
-                  await widget.store.markSirahEpisodeRead(episode.id);
-                  if (!mounted) {
-                    return;
-                  }
-                  setState(() {
-                    _readEpisodes = widget.store.savedReadSirahEpisodeIds;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF152127)
-                        : const Color(0xFFF8F3E7),
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: ScrollablePositionedList.separated(
+                itemScrollController: _itemScrollController,
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomPadding),
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final episode = episodes[index];
+                  final isRead = _readEpisodes.contains(episode.id);
+                  return InkWell(
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isRead
-                          ? const Color(0xFF7BA86F)
-                          : (isDark
-                                ? const Color(0xFF26343B)
-                                : const Color(0xFFE3D6B8)),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              episode.title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? const Color(0xFFF2ECDF)
-                                    : const Color(0xFF143A2A),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              episode.preview,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 15,
-                                height: 1.7,
-                                color: isDark
-                                    ? const Color(0xFFD5D0C6)
-                                    : const Color(0xFF2F3A33),
-                              ),
-                            ),
-                          ],
+                    onTap: () async {
+                      final completed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => _SirahEpisodeDetailsPage(
+                            title: episode.title,
+                            assetPath: episode.assetPath,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                      );
+                      if (completed != true) {
+                        return;
+                      }
+                      await widget.store.markSirahEpisodeRead(episode.id);
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() {
+                        _readEpisodes = widget.store.savedReadSirahEpisodeIds;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF152127)
+                            : const Color(0xFFF8F3E7),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
                           color: isRead
                               ? const Color(0xFF7BA86F)
                               : (isDark
-                                    ? const Color(0xFF18242A)
-                                    : Colors.white),
-                          border: Border.all(
-                            color: isRead
-                                ? const Color(0xFF7BA86F)
-                                : const Color(0xFFCBBE9F),
-                          ),
+                                    ? const Color(0xFF26343B)
+                                    : const Color(0xFFE3D6B8)),
                         ),
-                        child: isRead
-                            ? const Icon(
-                                Icons.check_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              )
-                            : null,
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemCount: episodes.length,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  episode.title,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark
+                                        ? const Color(0xFFF2ECDF)
+                                        : const Color(0xFF143A2A),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  episode.preview,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    height: 1.7,
+                                    color: isDark
+                                        ? const Color(0xFFD5D0C6)
+                                        : const Color(0xFF2F3A33),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: isRead
+                                  ? const Color(0xFF7BA86F)
+                                  : (isDark
+                                        ? const Color(0xFF18242A)
+                                        : Colors.white),
+                              border: Border.all(
+                                color: isRead
+                                    ? const Color(0xFF7BA86F)
+                                    : const Color(0xFFCBBE9F),
+                              ),
+                            ),
+                            child: isRead
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    size: 18,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemCount: episodes.length,
+              ),
+            ),
           );
         },
       ),
@@ -261,35 +266,40 @@ class _SirahEpisodeDetailsPageState extends State<_SirahEpisodeDetailsPage> {
               (_) => _handleScroll(),
             );
 
-            return ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF152127)
-                        : const Color(0xFFF8F3E7),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF26343B)
-                          : const Color(0xFFE3D6B8),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 920),
+                child: ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF152127)
+                            : const Color(0xFFF8F3E7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF26343B)
+                              : const Color(0xFFE3D6B8),
+                        ),
+                      ),
+                      child: Text(
+                        details.body,
+                        style: TextStyle(
+                          fontSize: 18,
+                          height: 2,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFFE2DDD4)
+                              : const Color(0xFF2F3A33),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    details.body,
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 2,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFFE2DDD4)
-                          : const Color(0xFF2F3A33),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         ),

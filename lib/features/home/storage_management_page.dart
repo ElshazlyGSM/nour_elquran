@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -68,20 +68,25 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
         key: 'shamarly',
         title: 'مصحف الشمرلي',
         description: 'صور الشمرلي التي تم تنزيلها للقراءة بدون إنترنت.',
-        bytes: await _directoryBytes(ShamarlyPagesDownloadConfig.localFolderName),
-        onClear: () => _deleteDirectory(ShamarlyPagesDownloadConfig.localFolderName),
+        bytes: await _directoryBytes(
+          ShamarlyPagesDownloadConfig.localFolderName,
+        ),
+        onClear: () =>
+            _deleteDirectory(ShamarlyPagesDownloadConfig.localFolderName),
       ),
       _StorageEntry(
         key: 'medina',
         title: 'مصحف المدينة',
-        description: 'ملفات مصحف المدينة التي تم تنزيلها لعرض المصحف بدون إنترنت.',
+        description:
+            'ملفات مصحف المدينة التي تم تنزيلها لعرض المصحف بدون إنترنت.',
         bytes: await _directoryBytes('quran_fonts_cache'),
         onClear: () => _deleteDirectory('quran_fonts_cache'),
       ),
       _StorageEntry(
         key: 'tafsir',
         title: 'التفاسير المحملة',
-        description: 'ملفات التفاسير التي تم تنزيلها للقراءة السريعة بدون إنترنت.',
+        description:
+            'ملفات التفاسير التي تم تنزيلها للقراءة السريعة بدون إنترنت.',
         bytes: await _directoryBytes('tafsir_cache'),
         onClear: () => _deleteDirectory('tafsir_cache'),
       ),
@@ -153,9 +158,9 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر حذف ${entry.title} حاليًا')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر حذف ${entry.title} حاليًا')));
       setState(() {
         _busyKey = null;
       });
@@ -196,111 +201,120 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF6F0E2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'المساحة المستخدمة داخل التطبيق',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 920),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F0E2),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatBytes(totalBytes),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF143A2A),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'المساحة المستخدمة داخل التطبيق',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatBytes(totalBytes),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF143A2A),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'يمكنك حذف أي ملفات محفوظة من هنا لتوفير مساحة، وسيظل بإمكانك تنزيلها مرة أخرى عند الحاجة.',
+                            style: TextStyle(height: 1.5),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'يمكنك حذف أي ملفات محفوظة من هنا لتوفير مساحة، وسيظل بإمكانك تنزيلها مرة أخرى عند الحاجة.',
-                        style: TextStyle(height: 1.5),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ..._entries.map((entry) {
-                  final isBusy = _busyKey == entry.key;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                    ),
+                    const SizedBox(height: 14),
+                    ..._entries.map((entry) {
+                      final isBusy = _busyKey == entry.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    entry.title,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        entry.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    Text(
+                                      _formatBytes(entry.bytes),
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF143A2A),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 8),
                                 Text(
-                                  _formatBytes(entry.bytes),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF143A2A),
+                                  entry.description,
+                                  style: const TextStyle(height: 1.5),
+                                ),
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: isBusy || entry.bytes == 0
+                                        ? null
+                                        : () => _clearEntry(entry),
+                                    icon: isBusy
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.delete_outline_rounded,
+                                          ),
+                                    label: Text(
+                                      entry.bytes == 0
+                                          ? 'فارغ'
+                                          : 'حذف هذه الملفات',
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              entry.description,
-                              style: const TextStyle(height: 1.5),
-                            ),
-                            const SizedBox(height: 12),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: FilledButton.tonalIcon(
-                                onPressed: isBusy || entry.bytes == 0
-                                    ? null
-                                    : () => _clearEntry(entry),
-                                icon: isBusy
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.delete_outline_rounded),
-                                label: Text(
-                                  entry.bytes == 0 ? 'فارغ' : 'حذف هذه الملفات',
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ),
     );
   }

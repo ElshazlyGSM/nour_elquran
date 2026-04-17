@@ -70,7 +70,9 @@ class _TasbihPageState extends State<TasbihPage> {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.topCenter,
                 child: SizedBox(
-                  width: constraints.maxWidth,
+                  width: constraints.maxWidth > 920
+                      ? 920
+                      : constraints.maxWidth,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 16, 18, 22),
                     child: Column(

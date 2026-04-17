@@ -21,30 +21,30 @@ class _IndexPageState extends State<IndexPage> {
     final theme = Theme.of(context);
 
     return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'الأجزاء',
-                  style: theme.textTheme.headlineSmall,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الأجزاء', style: theme.textTheme.headlineSmall),
+                  ],
                 ),
-              
-                
-              ],
-            ),
+              ),
+              Expanded(
+                child: _ReferenceList(
+                  references: _buildJuzReferences(),
+                  store: widget.store,
+                  initialIndex: (widget.initialJuzNumber ?? 1) - 1,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: _ReferenceList(
-              references: _buildJuzReferences(),
-              store: widget.store,
-              initialIndex: (widget.initialJuzNumber ?? 1) - 1,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -190,7 +190,6 @@ class _ReferenceListState extends State<_ReferenceList> {
                               ?.copyWith(
                                 fontFamily: 'Ajzaa-ALQuran-font',
                                 fontSize: 28,
-                                
                               ),
                         ),
                         const SizedBox(height: 4),

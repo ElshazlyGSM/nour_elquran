@@ -27,43 +27,48 @@ class KhatmQuranDoaPage extends StatelessWidget {
         backgroundColor: const Color(0xFF143A2A),
         foregroundColor: Colors.white,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9F6EE),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE6D8B7)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF143A2A),
-                  ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9F6EE),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFE6D8B7)),
                 ),
-                const SizedBox(height: 16),
-                for (final paragraph in paragraphs) ...[
-                  Text(
-                    paragraph,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      height: 2.0,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E241F),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF143A2A),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ],
-            ),
+                    const SizedBox(height: 16),
+                    for (final paragraph in paragraphs) ...[
+                      Text(
+                        paragraph,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          height: 2.0,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E241F),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

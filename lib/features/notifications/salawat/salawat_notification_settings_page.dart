@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -99,11 +99,21 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF152127) : const Color(0xFFF8F3E7);
-    final borderColor = isDark ? const Color(0xFF26343B) : const Color(0xFFE3D6B8);
-    final textColor = isDark ? const Color(0xFFF2ECDF) : const Color(0xFF143A2A);
-    final mutedTextColor = isDark ? const Color(0xFFBAC3BE) : const Color(0xFF4F5A53);
-    final disabledTextColor = isDark ? const Color(0xFF7B8782) : const Color(0xFF8F9B95);
+    final surfaceColor = isDark
+        ? const Color(0xFF152127)
+        : const Color(0xFFF8F3E7);
+    final borderColor = isDark
+        ? const Color(0xFF26343B)
+        : const Color(0xFFE3D6B8);
+    final textColor = isDark
+        ? const Color(0xFFF2ECDF)
+        : const Color(0xFF143A2A);
+    final mutedTextColor = isDark
+        ? const Color(0xFFBAC3BE)
+        : const Color(0xFF4F5A53);
+    final disabledTextColor = isDark
+        ? const Color(0xFF7B8782)
+        : const Color(0xFF8F9B95);
 
     return PopScope(
       canPop: true,
@@ -115,7 +125,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
         body: SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
+              constraints: const BoxConstraints(maxWidth: 900),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -163,10 +173,15 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                                   ChoiceChip(
                                     label: Text(
                                       _intervalLabel(minutes),
-                                      style: TextStyle(fontSize: 12, color: textColor),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: textColor,
+                                      ),
                                     ),
                                     selected: _intervalMinutes == minutes,
-                                    onSelected: (_) => _mutate(() => _intervalMinutes = minutes),
+                                    onSelected: (_) => _mutate(
+                                      () => _intervalMinutes = minutes,
+                                    ),
                                   ),
                               ],
                             ),
@@ -176,7 +191,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                         SwitchListTile.adaptive(
                           value: _pauseAtPrayer,
                           contentPadding: EdgeInsets.zero,
-                          onChanged: _enabled ? (value) => _mutate(() => _pauseAtPrayer = value) : null,
+                          onChanged: _enabled
+                              ? (value) => _mutate(() => _pauseAtPrayer = value)
+                              : null,
                           title: Text(
                             'إيقاف التذكير وقت الصلاة',
                             style: TextStyle(
@@ -187,7 +204,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                           subtitle: Text(
                             'يتوقف قبل الفرض بخمس دقائق ثم يعود بعد الوقت المحدد',
                             style: TextStyle(
-                              color: _enabled ? mutedTextColor : disabledTextColor,
+                              color: _enabled
+                                  ? mutedTextColor
+                                  : disabledTextColor,
                             ),
                           ),
                         ),
@@ -201,10 +220,15 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                                 ChoiceChip(
                                   label: Text(
                                     'بعد الصلاة بـ $minutes دقيقة',
-                                    style: TextStyle(fontSize: 12, color: textColor),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: textColor,
+                                    ),
                                   ),
                                   selected: _prayerPauseMinutes == minutes,
-                                  onSelected: (_) => _mutate(() => _prayerPauseMinutes = minutes),
+                                  onSelected: (_) => _mutate(
+                                    () => _prayerPauseMinutes = minutes,
+                                  ),
                                 ),
                             ],
                           ),
@@ -213,7 +237,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                         SwitchListTile.adaptive(
                           value: _windowEnabled,
                           contentPadding: EdgeInsets.zero,
-                          onChanged: _enabled ? (value) => _mutate(() => _windowEnabled = value) : null,
+                          onChanged: _enabled
+                              ? (value) => _mutate(() => _windowEnabled = value)
+                              : null,
                           title: Text(
                             'تحديد فترة التشغيل',
                             style: TextStyle(
@@ -224,7 +250,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                           subtitle: Text(
                             'مثال: يعمل نهارًا ويتوقف ليلًا',
                             style: TextStyle(
-                              color: _enabled ? mutedTextColor : disabledTextColor,
+                              color: _enabled
+                                  ? mutedTextColor
+                                  : disabledTextColor,
                             ),
                           ),
                         ),
@@ -238,7 +266,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                                   children: [
                                     _TimeBox(
                                       label: 'من',
-                                      value: _formatMinutes(_windowStartMinutes),
+                                      value: _formatMinutes(
+                                        _windowStartMinutes,
+                                      ),
                                       onTap: () => _pickTime(true),
                                     ),
                                     const SizedBox(height: 10),
@@ -255,7 +285,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                                   Expanded(
                                     child: _TimeBox(
                                       label: 'من',
-                                      value: _formatMinutes(_windowStartMinutes),
+                                      value: _formatMinutes(
+                                        _windowStartMinutes,
+                                      ),
                                       onTap: () => _pickTime(true),
                                     ),
                                   ),
@@ -276,7 +308,10 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                         SwitchListTile.adaptive(
                           value: _vibrationEnabled,
                           contentPadding: EdgeInsets.zero,
-                          onChanged: _enabled ? (value) => _mutate(() => _vibrationEnabled = value) : null,
+                          onChanged: _enabled
+                              ? (value) =>
+                                    _mutate(() => _vibrationEnabled = value)
+                              : null,
                           title: Text(
                             'تشغيل الاهتزاز مع الإشعار',
                             style: TextStyle(
@@ -303,12 +338,18 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1A252A) : Colors.white.withValues(alpha: 0.78),
+                            color: isDark
+                                ? const Color(0xFF1A252A)
+                                : Colors.white.withValues(alpha: 0.78),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
                             _summaryText,
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: mutedTextColor),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: mutedTextColor,
+                            ),
                           ),
                         ),
                         if (_saving) ...[
@@ -318,12 +359,17 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                               const SizedBox(
                                 width: 14,
                                 height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'جارٍ حفظ التغييرات...',
-                                style: TextStyle(color: mutedTextColor, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: mutedTextColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ],
                           ),
@@ -350,7 +396,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
       _vibrationEnabled ? 'مع الاهتزاز' : 'بدون اهتزاز',
     ];
     if (_windowEnabled) {
-      parts.add('من ${_formatMinutes(_windowStartMinutes)} إلى ${_formatMinutes(_windowEndMinutes)}');
+      parts.add(
+        'من ${_formatMinutes(_windowStartMinutes)} إلى ${_formatMinutes(_windowEndMinutes)}',
+      );
     }
     if (_pauseAtPrayer) {
       parts.add('يتوقف وقت الصلاة ويعود بعدها بـ $_prayerPauseMinutes دقيقة');
@@ -385,13 +433,13 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
           enabled: _enabled,
           intervalMinutes: _intervalMinutes,
           pauseAtPrayer: _pauseAtPrayer,
-        prayerPauseMinutes: _prayerPauseMinutes,
-        windowEnabled: _windowEnabled,
-        windowStartMinutes: _windowStartMinutes,
-        windowEndMinutes: _windowEndMinutes,
-        vibrationEnabled: _vibrationEnabled,
-        unlockEnabled: false,
-      );
+          prayerPauseMinutes: _prayerPauseMinutes,
+          windowEnabled: _windowEnabled,
+          windowStartMinutes: _windowStartMinutes,
+          windowEndMinutes: _windowEndMinutes,
+          vibrationEnabled: _vibrationEnabled,
+          unlockEnabled: false,
+        );
 
         if (mounted) {
           setState(() {
@@ -403,13 +451,16 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
         unawaited(() async {
           final city = _resolvePrayerCity(widget.store.savedPrayerCityName);
           await SalawatNotificationService.instance.initialize();
-          final canExact = SalawatNotificationService.instance.canScheduleExactAlarms;
+          final canExact =
+              SalawatNotificationService.instance.canScheduleExactAlarms;
           if (_enabled && !canExact && mounted) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(
                 const SnackBar(
-                  content: Text('ملاحظة: الجهاز قد يؤخر بعض الإشعارات الدقيقة عند قفل الشاشة.'),
+                  content: Text(
+                    'ملاحظة: الجهاز قد يؤخر بعض الإشعارات الدقيقة عند قفل الشاشة.',
+                  ),
                   duration: Duration(seconds: 3),
                 ),
               );
@@ -480,8 +531,12 @@ class _TimeBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark ? const Color(0xFF152127) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF26343B) : const Color(0xFFE3D6B8);
-    final textColor = isDark ? const Color(0xFFF2ECDF) : const Color(0xFF143A2A);
+    final borderColor = isDark
+        ? const Color(0xFF26343B)
+        : const Color(0xFFE3D6B8);
+    final textColor = isDark
+        ? const Color(0xFFF2ECDF)
+        : const Color(0xFF143A2A);
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -498,14 +553,22 @@ class _TimeBox extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textColor),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: textColor,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 value,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
               ),
             ),
             Icon(Icons.schedule_rounded, color: textColor),
@@ -515,17 +578,3 @@ class _TimeBox extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

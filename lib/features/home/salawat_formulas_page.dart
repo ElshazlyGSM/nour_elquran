@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../data/salawat_formulas.dart';
 import '../../services/quran_store.dart';
@@ -118,59 +118,64 @@ class _SalawatFormulasPageState extends State<SalawatFormulasPage> {
               snapshot.data == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => SalawatFormulaDetailPage(
-                        store: widget.store,
-                        formula: item,
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SalawatFormulaDetailPage(
+                            store: widget.store,
+                            formula: item,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF18242A) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF26343B)
+                              : const Color(0xFFE3D6B8),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? const Color(0xFFF2ECDF)
+                                    : const Color(0xFF143A2A),
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 16,
+                            color: Color(0xFF8C6A1F),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF18242A) : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF26343B)
-                          : const Color(0xFFE3D6B8),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.title,
-                          style: TextStyle(
-                  fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? const Color(0xFFF2ECDF)
-                                : const Color(0xFF143A2A),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 16,
-                        color: Color(0xFF8C6A1F),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+              ),
+            ),
           );
         },
       ),
@@ -189,7 +194,8 @@ class SalawatFormulaDetailPage extends StatefulWidget {
   final SalawatFormula formula;
 
   @override
-  State<SalawatFormulaDetailPage> createState() => _SalawatFormulaDetailPageState();
+  State<SalawatFormulaDetailPage> createState() =>
+      _SalawatFormulaDetailPageState();
 }
 
 class _SalawatFormulaDetailPageState extends State<SalawatFormulaDetailPage> {
@@ -243,10 +249,7 @@ class _SalawatFormulaDetailPageState extends State<SalawatFormulaDetailPage> {
     }
 
     setState(() => _count = 0);
-    await widget.store.saveSalawatFormulaCount(
-      formulaId: _formulaId,
-      count: 0,
-    );
+    await widget.store.saveSalawatFormulaCount(formulaId: _formulaId, count: 0);
   }
 
   @override
@@ -254,107 +257,112 @@ class _SalawatFormulaDetailPageState extends State<SalawatFormulaDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: Text(widget.formula.title)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: _incrementCount,
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF152127) : const Color(0xFFF9F6EE),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+            children: [
+              InkWell(
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF26343B)
-                      : const Color(0xFFE6D8B7),
+                onTap: _incrementCount,
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF152127)
+                        : const Color(0xFFF9F6EE),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF26343B)
+                          : const Color(0xFFE6D8B7),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.formula.text,
+                        style: TextStyle(
+                          fontSize: 20,
+                          height: 1.8,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? const Color(0xFFF2ECDF)
+                              : const Color(0xFF143A2A),
+                        ),
+                      ),
+                      if (widget.formula.note != null &&
+                          widget.formula.note!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          widget.formula.note!,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.6,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFBAC3BE)
+                                : const Color(0xFF4F5A53),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.formula.text,
+              const SizedBox(height: 14),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF18242A) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF26343B)
+                          : const Color(0xFFE6D8B7),
+                    ),
+                  ),
+                  child: Text(
+                    'عدد تكرار الذكر: $_count',
                     style: TextStyle(
-                      fontSize: 20,
-                      height: 1.8,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
                       color: isDark
                           ? const Color(0xFFF2ECDF)
                           : const Color(0xFF143A2A),
                     ),
                   ),
-                  if (widget.formula.note != null &&
-                      widget.formula.note!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.formula.note!,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.6,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? const Color(0xFFBAC3BE)
-                            : const Color(0xFF4F5A53),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF18242A) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF26343B)
-                      : const Color(0xFFE6D8B7),
                 ),
               ),
-              child: Text(
-                'عدد تكرار الذكر: $_count',
+              const SizedBox(height: 12),
+              Center(
+                child: OutlinedButton.icon(
+                  onPressed: _count == 0 ? null : _resetCount,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: const Text('تصفير العداد'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'اضغط على مربع الصيغة لزيادة العداد.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
                   color: isDark
-                      ? const Color(0xFFF2ECDF)
-                      : const Color(0xFF143A2A),
+                      ? const Color(0xFFBAC3BE)
+                      : const Color(0xFF4F5A53),
                 ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: OutlinedButton.icon(
-              onPressed: _count == 0 ? null : _resetCount,
-              icon: const Icon(Icons.restart_alt_rounded),
-              label: const Text('تصفير العداد'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'اضغط على مربع الصيغة لزيادة العداد.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark
-                  ? const Color(0xFFBAC3BE)
-                  : const Color(0xFF4F5A53),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_compass_v2/flutter_compass_v2.dart';
@@ -121,6 +121,7 @@ class _QiblaCompassPageState extends State<QiblaCompassPage> {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: constraints.maxHeight - 48,
+                maxWidth: 920,
               ),
               child: Center(
                 child: _isLoading
@@ -402,4 +403,3 @@ class _KaabaMark extends StatelessWidget {
     );
   }
 }
-

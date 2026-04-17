@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as legacy_quran;
 
 import '../../core/utils/arabic_numbers.dart';
@@ -209,6 +209,10 @@ class _SurahListPageState extends State<SurahListPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = screenWidth > 920
+        ? ((screenWidth - 920) / 2) + 20
+        : 20.0;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -229,7 +233,12 @@ class _SurahListPageState extends State<SurahListPage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      16,
+                      horizontalPadding,
+                      18,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -275,7 +284,12 @@ class _SurahListPageState extends State<SurahListPage> {
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    0,
+                    horizontalPadding,
+                    24,
+                  ),
                   sliver: SliverList.separated(
                     itemCount: _filteredSurahs.length,
                     itemBuilder: (context, index) {
@@ -576,12 +590,15 @@ class _QuranInfoPage extends StatelessWidget {
       appBar: AppBar(title: const Text('معلومات عن القرآن')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('معلومات عن القرآن', style: titleStyle),
-            const SizedBox(height: 10),
-            Text('''عدد سور القرآن الكريم = 114 سورة .
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 920),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('معلومات عن القرآن', style: titleStyle),
+                const SizedBox(height: 10),
+                Text('''عدد سور القرآن الكريم = 114 سورة .
 - عدد آيات القرآن الكريم = 6.236 آية .
 - عدد أجزاء القرآن الكريم = 30 جزءاً .
 - عدد أحزاب القرآن الكريم = 60 حزباً .
@@ -669,7 +686,9 @@ class _QuranInfoPage extends StatelessWidget {
 (الهاوية / الشّوى / اللظى / النار / السموم / الساهرة / الحُطمة / الجحيم / بئس المصير / بئس القرار / بئس المهاد / بئس الورد المورود / جهنّم / الحافرة / دار البوار / دار الفاسقينَ / السّقر / السّعير / سوء الدار) .
 أسماء الملائكة المصرّح بها في القرآن الكريم :
 (جبريل (روح الأمين)/ ميكال / مالك) .''', style: bodyStyle),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -130,32 +130,41 @@ class _AdhkarPageState extends State<AdhkarPage> {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            for (
-              var sectionIndex = 0;
-              sectionIndex < adhkarSections.length;
-              sectionIndex++
-            )
-              ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                itemCount: adhkarSections[sectionIndex].items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, itemIndex) {
-                  final item = adhkarSections[sectionIndex].items[itemIndex];
-                  return _DhikrTile(
-                    key: _tileKeyFor(sectionIndex, itemIndex),
-                    item: item,
-                    store: widget.store,
-                    remaining: _remainingFor(sectionIndex, itemIndex, item),
-                    highlightCompleted: _isJustCompleted(sectionIndex, itemIndex),
-                    onTap: () =>
-                        _decrementRemaining(sectionIndex, itemIndex, item),
-                  );
-                },
-              ),
-            const _KhatmQuranDoaTab(),
-          ],
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 920),
+            child: TabBarView(
+              children: [
+                for (
+                  var sectionIndex = 0;
+                  sectionIndex < adhkarSections.length;
+                  sectionIndex++
+                )
+                  ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                    itemCount: adhkarSections[sectionIndex].items.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, itemIndex) {
+                      final item =
+                          adhkarSections[sectionIndex].items[itemIndex];
+                      return _DhikrTile(
+                        key: _tileKeyFor(sectionIndex, itemIndex),
+                        item: item,
+                        store: widget.store,
+                        remaining: _remainingFor(sectionIndex, itemIndex, item),
+                        highlightCompleted: _isJustCompleted(
+                          sectionIndex,
+                          itemIndex,
+                        ),
+                        onTap: () =>
+                            _decrementRemaining(sectionIndex, itemIndex, item),
+                      );
+                    },
+                  ),
+                const _KhatmQuranDoaTab(),
+              ],
+            ),
+          ),
         ),
       ),
     );

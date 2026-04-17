@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../notifications/salawat/salawat_notification_settings_page.dart';
 import '../../services/quran_store.dart';
 import '../shared/prophet_biography_page.dart';
+import '../shared/prophet_lineage_names_page.dart';
 import 'salawat_formulas_page.dart';
 
 class ProphetSectionPage extends StatelessWidget {
@@ -29,7 +30,7 @@ class ProphetSectionPage extends StatelessWidget {
       appBar: AppBar(title: const Text('سيدنا النبي ﷺ')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+          constraints: const BoxConstraints(maxWidth: 1020),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
             children: [
@@ -68,14 +69,29 @@ class ProphetSectionPage extends StatelessWidget {
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final spacing = 10.0;
-                  final canShowThree = width >= 860;
-                  final cardWidth = canShowThree
-                      ? (width - spacing * 2) / 3
-                      : width;
+                  final columns = width >= 980 ? 3 : (width >= 620 ? 2 : 1);
+                  final cardWidth = (width - (columns - 1) * spacing) / columns;
                   return Wrap(
                     spacing: spacing,
                     runSpacing: spacing,
                     children: [
+                      SizedBox(
+                        width: cardWidth,
+                        child: _ProphetFeatureCard(
+                          title: 'نسب سيدنا النبي وأسماؤه',
+                          subtitle:
+                              'عرض مبسط لنسب سيدنا محمد ﷺ وأشهر أسمائه وصفاته',
+                          icon: Icons.account_tree_rounded,
+                          accent: const Color(0xFF3A6585),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const ProphetLineageNamesPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                       SizedBox(
                         width: cardWidth,
                         child: _ProphetFeatureCard(
@@ -105,7 +121,8 @@ class ProphetSectionPage extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => SalawatFormulasPage(store: store),
+                                builder: (_) =>
+                                    SalawatFormulasPage(store: store),
                               ),
                             );
                           },
@@ -236,4 +253,3 @@ class _ProphetFeatureCard extends StatelessWidget {
     );
   }
 }
-

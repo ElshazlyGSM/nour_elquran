@@ -24,85 +24,90 @@ class BookmarksPage extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      itemCount: bookmarks.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final bookmark = bookmarks[index];
-                final color = bookmark.colorValue == null
-                    ? const Color(0xFF143A2A)
-                    : Color(bookmark.colorValue!);
-                return Card(
-                  color: isDark ? const Color(0xFF152127) : null,
-                  child: InkWell(
-            borderRadius: BorderRadius.circular(28),
-            onTap: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute<void>(
-                  builder: (_) => Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: ReaderPage(
-                      store: store,
-                      surahNumber: bookmark.surahNumber,
-                      initialVerse: bookmark.verseNumber,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          itemCount: bookmarks.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final bookmark = bookmarks[index];
+            final color = bookmark.colorValue == null
+                ? const Color(0xFF143A2A)
+                : Color(bookmark.colorValue!);
+            return Card(
+              color: isDark ? const Color(0xFF152127) : null,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: ReaderPage(
+                          store: store,
+                          surahNumber: bookmark.surahNumber,
+                          initialVerse: bookmark.verseNumber,
+                        ),
+                      ),
                     ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: color,
+                        child: const Icon(
+                          Icons.bookmark_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${bookmark.surahName} \u2022 \u0622\u064a\u0629 ${toArabicNumber(bookmark.verseNumber)}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '\u062c\u0632\u0621 ${toArabicNumber(bookmark.juzNumber)} \u2022 \u0635\u0641\u062d\u0629 ${toArabicNumber(bookmark.pageNumber)}',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              (bookmark.note?.isNotEmpty ?? false)
+                                  ? bookmark.note!
+                                  : bookmark.previewText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: '\u062d\u0630\u0641',
+                        onPressed: () async {
+                          await store.removeReaderBookmark(bookmark.id);
+                        },
+                        icon: const Icon(Icons.delete_outline_rounded),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: color,
-                    child: const Icon(
-                      Icons.bookmark_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${bookmark.surahName} \u2022 \u0622\u064a\u0629 ${toArabicNumber(bookmark.verseNumber)}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '\u062c\u0632\u0621 ${toArabicNumber(bookmark.juzNumber)} \u2022 \u0635\u0641\u062d\u0629 ${toArabicNumber(bookmark.pageNumber)}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          (bookmark.note?.isNotEmpty ?? false)
-                              ? bookmark.note!
-                              : bookmark.previewText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: '\u062d\u0630\u0641',
-                    onPressed: () async {
-                      await store.removeReaderBookmark(bookmark.id);
-                    },
-                    icon: const Icon(Icons.delete_outline_rounded),
-                  ),
-                ],
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }
