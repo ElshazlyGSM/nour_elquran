@@ -68,6 +68,9 @@ class _ReferenceList extends StatefulWidget {
 class _ReferenceListState extends State<_ReferenceList> {
   late final ScrollController _scrollController;
   final Map<int, GlobalKey> _itemKeys = {};
+  bool _initialJumpDone = false;
+  int _initialJumpAttempts = 0;
+  static const int _maxInitialJumpAttempts = 12;
 
   @override
   void initState() {
@@ -82,21 +85,46 @@ class _ReferenceListState extends State<_ReferenceList> {
   }
 
   @override
+  void didUpdateWidget(covariant _ReferenceList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _initialJumpDone = false;
+      _initialJumpAttempts = 0;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _jumpToInitialIndex(),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
   void _jumpToInitialIndex() {
+    if (_initialJumpDone) {
+      return;
+    }
     final target = widget.initialIndex;
     if (target == null || !_scrollController.hasClients) {
       return;
     }
+    if (target < 0 || target >= widget.references.length) {
+      _initialJumpDone = true;
+      return;
+    }
     final targetContext = _itemKeys[target]?.currentContext;
     if (targetContext == null) {
-      final estimatedOffset = target * 98.0;
       final maxExtent = _scrollController.position.maxScrollExtent;
+      final ratio = target / (widget.references.length - 1).clamp(1, 1000);
+      final estimatedOffset = maxExtent * ratio.clamp(0.0, 1.0);
       _scrollController.jumpTo(estimatedOffset.clamp(0.0, maxExtent));
+      _initialJumpAttempts++;
+      if (_initialJumpAttempts >= _maxInitialJumpAttempts) {
+        _initialJumpDone = true;
+        return;
+      }
       Future<void>.delayed(
         const Duration(milliseconds: 80),
         _jumpToInitialIndex,
@@ -108,6 +136,7 @@ class _ReferenceListState extends State<_ReferenceList> {
       alignment: 0.24,
       duration: Duration.zero,
     );
+    _initialJumpDone = true;
     Future<void>.delayed(const Duration(milliseconds: 16), () {
       if (mounted && targetContext.mounted) {
         Scrollable.ensureVisible(

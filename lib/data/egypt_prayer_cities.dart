@@ -194,9 +194,12 @@ PrayerCity resolvePrayerCityByName(String? cityName) {
 }
 
 PrayerCity nearestPrayerCity(double latitude, double longitude) {
-  var result = prayerCities.first;
+  final scopedCities = _isLikelyInsideEgyptBounds(latitude, longitude)
+      ? egyptPrayerCities
+      : prayerCities;
+  var result = scopedCities.first;
   var minDistance = double.infinity;
-  for (final city in prayerCities) {
+  for (final city in scopedCities) {
     final distance = Geolocator.distanceBetween(
       latitude,
       longitude,
@@ -209,6 +212,17 @@ PrayerCity nearestPrayerCity(double latitude, double longitude) {
     }
   }
   return result;
+}
+
+bool _isLikelyInsideEgyptBounds(double latitude, double longitude) {
+  const minLat = 21.4;
+  const maxLat = 31.8;
+  const minLon = 24.5;
+  const maxLon = 37.2;
+  return latitude >= minLat &&
+      latitude <= maxLat &&
+      longitude >= minLon &&
+      longitude <= maxLon;
 }
 
 String _normalizePrayerCityName(String value) {

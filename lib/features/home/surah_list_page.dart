@@ -148,6 +148,9 @@ class _SurahListPageState extends State<SurahListPage> {
   late final ScrollController _scrollController;
   final Map<int, GlobalKey> _surahKeys = {};
   String _query = '';
+  bool _initialJumpDone = false;
+  int _initialJumpAttempts = 0;
+  static const int _maxInitialJumpAttempts = 12;
 
   @override
   void initState() {
@@ -166,6 +169,18 @@ class _SurahListPageState extends State<SurahListPage> {
       });
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToInitialSurah());
+  }
+
+  @override
+  void didUpdateWidget(covariant SurahListPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSurahNumber != widget.initialSurahNumber) {
+      _initialJumpDone = false;
+      _initialJumpAttempts = 0;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _jumpToInitialSurah(),
+      );
+    }
   }
 
   double _estimatedInitialOffsetForSurah(int? surahNumber) {
@@ -381,16 +396,30 @@ class _SurahListPageState extends State<SurahListPage> {
   }
 
   void _jumpToInitialSurah() {
+    if (_initialJumpDone) {
+      return;
+    }
     final target = widget.initialSurahNumber;
     if (target == null || !_scrollController.hasClients) {
       return;
     }
+    if (target < 1 || target > currentQuranTotalSurahCount) {
+      _initialJumpDone = true;
+      return;
+    }
     final targetContext = _surahKeys[target]?.currentContext;
     if (targetContext == null) {
-      final index = target - 1;
-      final estimatedOffset = 240 + (index * 104.0);
       final maxExtent = _scrollController.position.maxScrollExtent;
+      final ratio =
+          (target - 1) / (currentQuranTotalSurahCount - 1).clamp(1, 1000);
+      final estimatedOffset = maxExtent * ratio.clamp(0.0, 1.0);
       _scrollController.jumpTo(estimatedOffset.clamp(0.0, maxExtent));
+      _initialJumpAttempts++;
+      if (_initialJumpAttempts >= _maxInitialJumpAttempts) {
+        // Stop forcing scroll so user interaction does not feel blocked.
+        _initialJumpDone = true;
+        return;
+      }
       Future<void>.delayed(
         const Duration(milliseconds: 80),
         _jumpToInitialSurah,
@@ -402,6 +431,7 @@ class _SurahListPageState extends State<SurahListPage> {
       alignment: 0.24,
       duration: Duration.zero,
     );
+    _initialJumpDone = true;
     Future<void>.delayed(const Duration(milliseconds: 16), () {
       if (mounted && targetContext.mounted) {
         Scrollable.ensureVisible(

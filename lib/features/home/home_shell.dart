@@ -468,13 +468,26 @@ class _HomeUpcomingPrayerCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$prayerName • $prayerTime • $cityLabel',
+                  '$prayerName • $prayerTime',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.92),
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  cityLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
+                  softWrap: true,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.84),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
                   ),
                 ),
               ],
@@ -489,7 +502,7 @@ class _HomeUpcomingPrayerCard extends StatelessWidget {
                 'الوقت المتبقي',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),
