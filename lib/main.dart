@@ -155,6 +155,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     final position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.medium,
+        timeLimit: Duration(seconds: 4),
       ),
     );
     final nearest = nearestPrayerCity(position.latitude, position.longitude);
@@ -180,6 +181,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     return PrayerNotificationService.instance.reschedulePrayerNotifications(
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
+      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
       adhanEnabled: store.savedPrayerAdhanEnabled,
       prayerEnabledMap: store.savedPrayerEnabledMap,
       prayerReminderByPrayer: store.savedPrayerReminderByPrayer,

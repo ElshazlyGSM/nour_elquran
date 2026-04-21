@@ -1,4 +1,6 @@
-﻿import 'dart:io';
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -53,6 +55,15 @@ class AdhanAudioCacheService {
       ],
     ),
   };
+
+  static const List<String> _globalMirrors = <String>[
+    'https://raw.githubusercontent.com/ElshazlyGSM/mushaf-pages/main/adhan_audio/{file}',
+    'https://cdn.jsdelivr.net/gh/ElshazlyGSM/mushaf-pages@main/adhan_audio/{file}',
+    'https://storage.googleapis.com/nour-quran/{file}',
+    // Optional extra mirrors: if the main package host is down, try MP3Quran.
+    'https://server8.mp3quran.net/adhan/{file}',
+    'https://server7.mp3quran.net/adhan/{file}',
+  ];
 
   bool supportsProfile(String profile) => _sources.containsKey(profile);
 
@@ -135,14 +146,28 @@ class AdhanAudioCacheService {
     }
 
     http.ClientException? lastError;
-    for (final url in source.urls) {
+    for (final url in _candidateUrlsFor(source)) {
       final client = http.Client();
       try {
         final request = http.Request('GET', Uri.parse(url));
-        final response = await client.send(request);
+        final response = await client
+            .send(request)
+            .timeout(const Duration(seconds: 10));
         if (response.statusCode < 200 || response.statusCode >= 300) {
           lastError = http.ClientException(
             'Failed to download adhan audio for $profile',
+            request.url,
+          );
+          continue;
+        }
+
+        final contentType = response.headers['content-type']?.toLowerCase();
+        if (contentType != null &&
+            (contentType.contains('text/html') ||
+                contentType.contains('application/json') ||
+                contentType.contains('text/plain'))) {
+          lastError = http.ClientException(
+            'Invalid audio content type for $profile: $contentType',
             request.url,
           );
           continue;
@@ -169,6 +194,22 @@ class AdhanAudioCacheService {
           await sink.close();
         }
 
+        final expectedExtension = _fileExtension(source.fileName);
+        final validAudio = await _looksLikeValidAudio(
+          tempFile,
+          expectedExtension: expectedExtension,
+        );
+        if (!validAudio) {
+          try {
+            await tempFile.delete();
+          } catch (_) {}
+          lastError = http.ClientException(
+            'Downloaded file is not a valid audio stream for $profile',
+            request.url,
+          );
+          continue;
+        }
+
         if (await destination.exists()) {
           await destination.delete();
         }
@@ -179,6 +220,11 @@ class AdhanAudioCacheService {
         return;
       } on http.ClientException catch (error) {
         lastError = error;
+      } on TimeoutException {
+        lastError = http.ClientException(
+          'Timed out downloading adhan audio for $profile',
+          Uri.parse(url),
+        );
       } finally {
         client.close();
       }
@@ -186,6 +232,94 @@ class AdhanAudioCacheService {
 
     throw lastError ??
         http.ClientException('Failed to download adhan audio for $profile');
+  }
+
+  Iterable<String> _candidateUrlsFor(_AdhanAudioSource source) sync* {
+    final seen = <String>{};
+    for (final url in source.urls) {
+      if (seen.add(url)) {
+        yield url;
+      }
+    }
+    for (final mirror in _globalMirrors) {
+      final url = mirror.replaceAll('{file}', source.fileName);
+      if (seen.add(url)) {
+        yield url;
+      }
+    }
+  }
+
+  String _fileExtension(String fileName) {
+    final dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex == -1 || dotIndex == fileName.length - 1) {
+      return '';
+    }
+    return fileName.substring(dotIndex + 1).toLowerCase();
+  }
+
+  Future<bool> _looksLikeValidAudio(
+    File file, {
+    required String expectedExtension,
+  }) async {
+    if (!await file.exists()) {
+      return false;
+    }
+    final length = await file.length();
+    if (length < 2048) {
+      return false;
+    }
+
+    final sampleLength = length < 16 ? length : 16;
+    final sampleBuilder = await file.openRead(0, sampleLength).fold<BytesBuilder>(
+      BytesBuilder(),
+      (builder, data) => builder..add(data),
+    );
+    final bytes = sampleBuilder.takeBytes();
+    if (bytes.isEmpty) {
+      return false;
+    }
+    if (_looksLikeHtmlOrJson(bytes)) {
+      return false;
+    }
+    if (expectedExtension == 'ogg') {
+      return _isOgg(bytes);
+    }
+    if (expectedExtension == 'mp3') {
+      return _isMp3(bytes);
+    }
+    return _isOgg(bytes) || _isMp3(bytes);
+  }
+
+  bool _looksLikeHtmlOrJson(Uint8List bytes) {
+    final text = String.fromCharCodes(bytes).trimLeft().toLowerCase();
+    return text.startsWith('<!doctype') ||
+        text.startsWith('<html') ||
+        text.startsWith('{') ||
+        text.startsWith('[');
+  }
+
+  bool _isOgg(Uint8List bytes) {
+    if (bytes.length < 4) {
+      return false;
+    }
+    return bytes[0] == 0x4F &&
+        bytes[1] == 0x67 &&
+        bytes[2] == 0x67 &&
+        bytes[3] == 0x53;
+  }
+
+  bool _isMp3(Uint8List bytes) {
+    if (bytes.length < 3) {
+      return false;
+    }
+    final hasId3 = bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33;
+    if (hasId3) {
+      return true;
+    }
+    if (bytes.length < 2) {
+      return false;
+    }
+    return bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0;
   }
 }
 
@@ -195,4 +329,3 @@ class _AdhanAudioSource {
   final String fileName;
   final List<String> urls;
 }
-

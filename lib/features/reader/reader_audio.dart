@@ -1,6 +1,20 @@
 ﻿part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
+  ReaderReciter? _mp3FallbackForLegacy(ReaderReciter reciter) {
+    if (!reciter.isLegacy || reciter.legacyReciter == null) {
+      return null;
+    }
+    final direct = switch (reciter.legacyReciter!) {
+      quran.Reciter.arMinshawi => findReaderReciterById('mp3:118'),
+      _ => null,
+    };
+    if (direct != null) {
+      return direct;
+    }
+    return readerReciters.where((item) => item.isMp3Quran).firstOrNull;
+  }
+
   int get _effectiveRepeatCount =>
       _selectedRepeatCount <= 0 ? 1 : _selectedRepeatCount;
 
@@ -255,6 +269,7 @@ extension _ReaderAudio on _ReaderPageState {
   Future<void> _playFromVerse({
     required int surahNumber,
     required int verseNumber,
+    bool allowLegacyFallback = true,
   }) async {
     final requestId = ++_audioPlayRequestId;
     _updateState(() {
@@ -379,6 +394,29 @@ extension _ReaderAudio on _ReaderPageState {
       if (requestId != _audioPlayRequestId) {
         return;
       }
+      final fallbackReciter = allowLegacyFallback
+          ? _mp3FallbackForLegacy(_selectedReciter)
+          : null;
+      if (fallbackReciter != null) {
+        try {
+          if (mounted && requestId == _audioPlayRequestId) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '\u062a\u0645 \u0627\u0644\u0627\u0646\u062a\u0642\u0627\u0644 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627 \u0625\u0644\u0649 \u0645\u0635\u062f\u0631 \u0628\u062f\u064a\u0644 \u0644\u0644\u062a\u0644\u0627\u0648\u0629',
+                ),
+              ),
+            );
+          }
+          await _playFromVerseWithMp3Quran(
+            requestId: requestId,
+            surahNumber: surahNumber,
+            verseNumber: verseNumber,
+            reciterOverride: fallbackReciter,
+          );
+          return;
+        } catch (_) {}
+      }
       _updateState(() {
         _audioError = _isAdvancingToNextSurah
             ? null
@@ -401,8 +439,9 @@ extension _ReaderAudio on _ReaderPageState {
     required int requestId,
     required int surahNumber,
     required int verseNumber,
+    ReaderReciter? reciterOverride,
   }) async {
-    final reciter = _selectedReciter;
+    final reciter = reciterOverride ?? _selectedReciter;
     final timings = await _mp3QuranRecitationService.fetchAyahTimings(
       reciter: reciter,
       surahNumber: surahNumber,

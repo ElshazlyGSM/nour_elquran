@@ -16,6 +16,7 @@ class PrayerNotificationService {
   PrayerNotificationService._();
 
   static final PrayerNotificationService instance = PrayerNotificationService._();
+  static const int _scheduleWindowDays = 3;
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -142,6 +143,7 @@ class PrayerNotificationService {
   Future<void> reschedulePrayerNotifications({
     required PrayerCity city,
     required Map<String, int> prayerOffsets,
+    required bool summerTimeEnabled,
     required bool adhanEnabled,
     required Map<String, bool> prayerEnabledMap,
     required Map<String, int> prayerReminderByPrayer,
@@ -151,12 +153,13 @@ class PrayerNotificationService {
     await _cancelPrayerNotificationsOnly();
 
     final now = DateTime.now();
-    for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
+    for (var dayOffset = 0; dayOffset < _scheduleWindowDays; dayOffset++) {
       final date = DateTime(now.year, now.month, now.day + dayOffset);
       final prayerTimes = _buildPrayerTimes(
         city: city,
         date: date,
         prayerOffsets: prayerOffsets,
+        summerTimeEnabled: summerTimeEnabled,
       );
 
       final entries = <_ScheduledPrayer>[
@@ -241,7 +244,7 @@ class PrayerNotificationService {
       544,
       555,
     ];
-    for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
+    for (var dayOffset = 0; dayOffset < _scheduleWindowDays; dayOffset++) {
       final prefix = dayOffset * 1000;
       for (final seed in prayerIdSeeds) {
         await _notifications.cancel(prefix + seed);
@@ -253,15 +256,17 @@ class PrayerNotificationService {
     required PrayerCity city,
     required DateTime date,
     required Map<String, int> prayerOffsets,
+    required bool summerTimeEnabled,
   }) {
     final params = city.method.parameters;
+    final summerOffset = summerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: prayerOffsets['fajr'] ?? 0,
-      Prayer.sunrise: prayerOffsets['sunrise'] ?? 0,
-      Prayer.dhuhr: prayerOffsets['dhuhr'] ?? 0,
-      Prayer.asr: prayerOffsets['asr'] ?? 0,
-      Prayer.maghrib: prayerOffsets['maghrib'] ?? 0,
-      Prayer.isha: prayerOffsets['isha'] ?? 0,
+      Prayer.fajr: (prayerOffsets['fajr'] ?? 0) + summerOffset,
+      Prayer.sunrise: (prayerOffsets['sunrise'] ?? 0) + summerOffset,
+      Prayer.dhuhr: (prayerOffsets['dhuhr'] ?? 0) + summerOffset,
+      Prayer.asr: (prayerOffsets['asr'] ?? 0) + summerOffset,
+      Prayer.maghrib: (prayerOffsets['maghrib'] ?? 0) + summerOffset,
+      Prayer.isha: (prayerOffsets['isha'] ?? 0) + summerOffset,
     };
     return PrayerTimes(
       date: date,

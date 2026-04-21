@@ -417,6 +417,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   }
 
   Future<void> _openQuranChooser(int index) async {
+    final currentPage = _isMedinaPagesMode
+        ? QuranCtrl.instance.state.currentPageNumber.value
+        : (_isShamarlyPagesMode
+              ? _shamarlyCurrentPage.clamp(
+                  1,
+                  ShamarlyPagesDownloadConfig.totalPages,
+                )
+              : (_currentVisibleStandardPage() ??
+                    _quranSource.getPageNumber(
+                      _selectedSurahNumber ?? widget.surahNumber,
+                      _selectedVerseNumber ?? widget.initialVerse,
+                    )));
     final displayedSurahNumber = _isMedinaPagesMode
         ? ((_isPlayingAudio || _isPreparingAudio)
               ? (_selectedSurahNumber ??
@@ -426,20 +438,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                     _selectedSurahNumber ??
                     widget.surahNumber))
         : (_isShamarlyPagesMode
-              ? (_selectedSurahNumber ?? widget.surahNumber)
+              ? _currentShamarlySurahNumberFromPage(currentPage)
               : (_visibleSurahNumber ??
                     _selectedSurahNumber ??
                     widget.surahNumber));
-    final currentPage = _isMedinaPagesMode
-        ? QuranCtrl.instance.state.currentPageNumber.value
-        : (_isShamarlyPagesMode
-              ? _shamarlyCurrentPage
-              : (_currentVisibleStandardPage() ??
-                    _quranSource.getPageNumber(
-                      _selectedSurahNumber ?? widget.surahNumber,
-                      _selectedVerseNumber ?? widget.initialVerse,
-                    )));
-    final currentJuzNumber = _currentJuzNumberFromPage(currentPage);
+    final currentJuzNumber = _isShamarlyPagesMode
+        ? _currentShamarlyJuzNumberFromPage(currentPage)
+        : _currentJuzNumberFromPage(currentPage);
 
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
@@ -586,6 +591,44 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       }
     }
     return currentJuz.clamp(1, currentQuranTotalJuzCount);
+  }
+
+  int _currentShamarlySurahNumberFromPage(int pageNumber) {
+    final normalizedPage = pageNumber.clamp(
+      1,
+      ShamarlyPagesDownloadConfig.totalPages,
+    );
+    final pageToSurah = _shamarlyPageToSurahMap;
+    if (pageToSurah == null || pageToSurah.isEmpty) {
+      return _visibleSurahNumber ??
+          _selectedSurahNumber ??
+          widget.surahNumber;
+    }
+
+    final direct = pageToSurah[normalizedPage];
+    if (direct != null) {
+      return direct;
+    }
+
+    for (var page = normalizedPage - 1; page >= 1; page--) {
+      final fallback = pageToSurah[page];
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+
+    for (var page = normalizedPage + 1;
+        page <= ShamarlyPagesDownloadConfig.totalPages;
+        page++) {
+      final fallback = pageToSurah[page];
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+
+    return _visibleSurahNumber ??
+        _selectedSurahNumber ??
+        widget.surahNumber;
   }
 
   String _juzJumpLabel(int juzNumber) {
@@ -1011,6 +1054,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final displayedPageNumber = _isMedinaPagesMode
+        ? QuranCtrl.instance.state.currentPageNumber.value
+        : (_isShamarlyPagesMode
+              ? _shamarlyCurrentPage.clamp(
+                  1,
+                  ShamarlyPagesDownloadConfig.totalPages,
+                )
+              : (_visibleStandardPageNumber ??
+                    _quranSource.getPageNumber(
+                    _selectedSurahNumber ?? widget.surahNumber,
+                    _selectedVerseNumber ?? widget.initialVerse,
+                    )));
     final displayedSurahNumber = _isMedinaPagesMode
         ? ((_isPlayingAudio || _isPreparingAudio)
               ? (_selectedSurahNumber ??
@@ -1020,20 +1075,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                     _selectedSurahNumber ??
                     widget.surahNumber))
         : (_isShamarlyPagesMode
-              ? (_selectedSurahNumber ?? widget.surahNumber)
+              ? _currentShamarlySurahNumberFromPage(displayedPageNumber)
               : (_visibleSurahNumber ??
                     _selectedSurahNumber ??
                     widget.surahNumber));
     final surahName = _quranSource.getSurahNameArabic(displayedSurahNumber);
-    final displayedPageNumber = _isMedinaPagesMode
-        ? QuranCtrl.instance.state.currentPageNumber.value
-        : (_isShamarlyPagesMode
-              ? _shamarlyCurrentPage
-              : (_visibleStandardPageNumber ??
-                    _quranSource.getPageNumber(
-                      _selectedSurahNumber ?? widget.surahNumber,
-                      _selectedVerseNumber ?? widget.initialVerse,
-                    )));
     final displayedJuzNumber = _isShamarlyPagesMode
         ? _currentShamarlyJuzNumberFromPage(displayedPageNumber)
         : _currentJuzNumberFromPage(displayedPageNumber);

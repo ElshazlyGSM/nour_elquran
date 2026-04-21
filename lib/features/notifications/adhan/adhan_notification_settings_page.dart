@@ -11,6 +11,7 @@ import 'prayer_notification_service.dart';
 class PrayerSettingsResult {
   const PrayerSettingsResult({
     required this.adhanEnabled,
+    required this.summerTimeEnabled,
     required this.hijriOffset,
     required this.prayerOffsets,
     required this.prayerEnabledMap,
@@ -19,6 +20,7 @@ class PrayerSettingsResult {
   });
 
   final bool adhanEnabled;
+  final bool summerTimeEnabled;
   final int hijriOffset;
   final Map<String, int> prayerOffsets;
   final Map<String, bool> prayerEnabledMap;
@@ -33,6 +35,7 @@ class PrayerSettingsPage extends StatefulWidget {
     required this.prayerNames,
     required this.prayerTimes,
     required this.initialAdhanEnabled,
+    required this.initialSummerTimeEnabled,
     required this.initialHijriOffset,
     required this.initialPrayerOffsets,
     required this.initialPrayerEnabledMap,
@@ -46,6 +49,7 @@ class PrayerSettingsPage extends StatefulWidget {
   final Map<String, String> prayerNames;
   final Map<String, DateTime> prayerTimes;
   final bool initialAdhanEnabled;
+  final bool initialSummerTimeEnabled;
   final int initialHijriOffset;
   final Map<String, int> initialPrayerOffsets;
   final Map<String, bool> initialPrayerEnabledMap;
@@ -59,7 +63,10 @@ class PrayerSettingsPage extends StatefulWidget {
 }
 
 class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
+  static const double _uniformFontSize = 15;
+
   late bool _adhanEnabled;
+  late bool _summerTimeEnabled;
   late int _hijriOffset;
   late Map<String, int> _prayerOffsets;
   late Map<String, bool> _prayerEnabledMap;
@@ -84,6 +91,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   void initState() {
     super.initState();
     _adhanEnabled = widget.initialAdhanEnabled;
+    _summerTimeEnabled = widget.initialSummerTimeEnabled;
     _hijriOffset = widget.initialHijriOffset;
     _prayerOffsets = {
       for (final entry in widget.initialPrayerOffsets.entries)
@@ -141,6 +149,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   PrayerSettingsResult _buildResult() {
     return PrayerSettingsResult(
       adhanEnabled: _adhanEnabled,
+      summerTimeEnabled: _summerTimeEnabled,
       hijriOffset: _hijriOffset,
       prayerOffsets: Map<String, int>.from(_prayerOffsets),
       prayerEnabledMap: Map<String, bool>.from(_prayerEnabledMap),
@@ -183,7 +192,8 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     final baseTime = widget.prayerTimes[key];
     if (baseTime == null) return null;
     final offset = _prayerOffsets[key] ?? 0;
-    return baseTime.add(Duration(minutes: offset));
+    final summerOffset = _summerTimeEnabled ? 60 : 0;
+    return baseTime.add(Duration(minutes: offset + summerOffset));
   }
 
   String _toArabicDigits(String input) {
@@ -513,13 +523,13 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
         leading: const Icon(Icons.music_note_rounded),
         title: const Text(
           'نغمة الأذان',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: _uniformFontSize),
         ),
         subtitle: Text(
           widget.adhanProfiles
               .firstWhere((profile) => profile.$1 == _adhanProfile)
               .$2,
-          style: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
+          style: TextStyle(color: mutedColor, fontWeight: FontWeight.w700, fontSize: _uniformFontSize),
         ),
         children: [
           ListTile(
@@ -527,11 +537,11 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
             leading: const Icon(Icons.wb_twilight_rounded),
             title: const Text(
               'تنبيه الشروق',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: _uniformFontSize),
             ),
             subtitle: Text(
               'يعمل مع الشروق فقط',
-              style: TextStyle(color: mutedColor),
+              style: TextStyle(color: mutedColor, fontSize: _uniformFontSize),
             ),
             trailing: IconButton(
               onPressed: _previewSunriseTone,
@@ -559,6 +569,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                             style: TextStyle(
                               color: mutedColor,
                               fontWeight: FontWeight.w800,
+                              fontSize: _uniformFontSize,
                             ),
                           ),
                         ),
@@ -591,11 +602,12 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: canSelect ? titleColor : mutedColor,
+                      fontSize: _uniformFontSize,
                     ),
                   ),
                   subtitle: subtitle == null
                       ? null
-                      : Text(subtitle, style: TextStyle(color: mutedColor)),
+                      : Text(subtitle, style: TextStyle(color: mutedColor, fontSize: _uniformFontSize)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -695,7 +707,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                         color: isDark
                             ? const Color(0xFFF2ECDF)
                             : const Color(0xFF143A2A),
-                        fontSize: 12.5,
+                        fontSize: _uniformFontSize,
                       ),
                     ),
                   ),
@@ -830,10 +842,11 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                           },
                           title: const Text(
                             'تفعيل إشعارات الصلاة',
-                            style: TextStyle(fontWeight: FontWeight.w800),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: _uniformFontSize),
                           ),
                           subtitle: const Text(
                             'يمكنك إيقاف صوت الأذان مع بقاء تذكيرات ما قبل الموعد مفعلة',
+                            style: TextStyle(fontSize: _uniformFontSize),
                           ),
                         ),
                       ],
@@ -862,7 +875,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                         const Expanded(
                           child: Text(
                             'تعديل التاريخ الهجري',
-                            style: TextStyle(fontWeight: FontWeight.w800),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: _uniformFontSize),
                           ),
                         ),
                         IconButton(
@@ -886,6 +899,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
+                              fontSize: _uniformFontSize,
                               color: titleColor,
                             ),
                           ),
@@ -902,6 +916,39 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                           ),
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(Icons.add_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text('تعديل التوقيت الصيفى',                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: _uniformFontSize,
+                            ),
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: _summerTimeEnabled,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (value) {
+                            _mutate(() => _summerTimeEnabled = value);
+                          },
                         ),
                       ],
                     ),
@@ -949,7 +996,7 @@ class _PrayerSettingBox extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 12.5,
+              fontSize: _PrayerSettingsPageState._uniformFontSize,
               color: isDark ? const Color(0xFFF2ECDF) : null,
             ),
           ),
@@ -973,7 +1020,7 @@ class _PrayerSettingBox extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: _PrayerSettingsPageState._uniformFontSize,
                     fontWeight: FontWeight.w800,
                     color: isDark
                         ? const Color(0xFFF2ECDF)
@@ -998,4 +1045,6 @@ class _PrayerSettingBox extends StatelessWidget {
     );
   }
 }
+
+
 

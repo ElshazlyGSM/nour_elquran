@@ -15,7 +15,6 @@ class SalawatFormulasPage extends StatefulWidget {
 
 class _SalawatFormulasPageState extends State<SalawatFormulasPage> {
   late Future<List<SalawatFormula>> _future;
-  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -23,92 +22,12 @@ class _SalawatFormulasPageState extends State<SalawatFormulasPage> {
     _future = SalawatFormulasService.instance.loadFormulas();
   }
 
-  Future<void> _refresh() async {
-    if (_isRefreshing) {
-      return;
-    }
-    setState(() => _isRefreshing = true);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('جارٍ التحقق من التحديث...')),
-      );
-    try {
-      final result = await SalawatFormulasService.instance.refreshNow();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _future = SalawatFormulasService.instance.loadFormulas();
-      });
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              result == SalawatFormulasRefreshResult.updated
-                  ? 'تم تحديث الصيغ'
-                  : result == SalawatFormulasRefreshResult.noChange
-                  ? 'لا يوجد تحديث جديد'
-                  : 'تعذر تحديث الصيغ',
-            ),
-          ),
-        );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('تعذر تحديث الصيغ')));
-    } finally {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('صيغ الصلاة والسلام'),
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              if (_isRefreshing) {
-                return;
-              }
-              _refresh();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              textStyle: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: _isRefreshing
-                  ? SizedBox(
-                      key: const ValueKey('loading'),
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          IconTheme.of(context).color ?? Colors.white,
-                        ),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.refresh_rounded,
-                      size: 18,
-                      key: ValueKey('refresh'),
-                    ),
-            ),
-            label: const Text('تحديث'),
-          ),
-        ],
+        title: const Text('\u0635\u064a\u063a \u0627\u0644\u0635\u0644\u0627\u0629 \u0648\u0627\u0644\u0633\u0644\u0627\u0645'),
       ),
       body: FutureBuilder<List<SalawatFormula>>(
         future: _future,
@@ -366,3 +285,4 @@ class _SalawatFormulaDetailPageState extends State<SalawatFormulaDetailPage> {
     );
   }
 }
+

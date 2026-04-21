@@ -56,6 +56,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   late PrayerCity _selectedCity;
   late bool _autoDetectLocation;
   late bool _adhanEnabled;
+  late bool _summerTimeEnabled;
   late int _hijriOffset;
   late Map<String, int> _prayerOffsets;
   late Map<String, bool> _prayerEnabledMap;
@@ -65,6 +66,8 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   Timer? _countdownTimer;
   DateTime _now = DateTime.now();
   String? _locationStatus;
+  bool _isReschedulingNotifications = false;
+  bool _pendingRescheduleNotifications = false;
 
   @override
   void initState() {
@@ -72,6 +75,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     _selectedCity = _resolveSavedCity();
     _autoDetectLocation = widget.store?.savedPrayerAutoDetect ?? true;
     _adhanEnabled = widget.store?.savedPrayerAdhanEnabled ?? false;
+    _summerTimeEnabled = widget.store?.savedPrayerSummerTimeEnabled ?? false;
     _hijriOffset = widget.store?.savedPrayerHijriOffset ?? 0;
     _prayerOffsets = Map<String, int>.from(
       widget.store?.savedPrayerOffsets ??
@@ -116,7 +120,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       if (!mounted) {
         return;
       }
-      await _rescheduleNotifications();
+      await _triggerRescheduleNotifications();
       if (!mounted) {
         return;
       }
@@ -426,13 +430,14 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   PrayerTimes _buildPrayerTimes(DateTime date) {
     final params = _selectedCity.method.parameters;
+    final summerOffset = _summerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: _prayerOffsets['fajr'] ?? 0,
-      Prayer.sunrise: _prayerOffsets['sunrise'] ?? 0,
-      Prayer.dhuhr: _prayerOffsets['dhuhr'] ?? 0,
-      Prayer.asr: _prayerOffsets['asr'] ?? 0,
-      Prayer.maghrib: _prayerOffsets['maghrib'] ?? 0,
-      Prayer.isha: _prayerOffsets['isha'] ?? 0,
+      Prayer.fajr: (_prayerOffsets['fajr'] ?? 0) + summerOffset,
+      Prayer.sunrise: (_prayerOffsets['sunrise'] ?? 0) + summerOffset,
+      Prayer.dhuhr: (_prayerOffsets['dhuhr'] ?? 0) + summerOffset,
+      Prayer.asr: (_prayerOffsets['asr'] ?? 0) + summerOffset,
+      Prayer.maghrib: (_prayerOffsets['maghrib'] ?? 0) + summerOffset,
+      Prayer.isha: (_prayerOffsets['isha'] ?? 0) + summerOffset,
     };
     return PrayerTimes(
       date: DateTime(date.year, date.month, date.day),
@@ -566,6 +571,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             prayerNames: _prayerNames,
             prayerTimes: prayerTimes,
             initialAdhanEnabled: _adhanEnabled,
+            initialSummerTimeEnabled: _summerTimeEnabled,
             initialHijriOffset: _hijriOffset,
             initialPrayerOffsets: _prayerOffsets,
             initialPrayerEnabledMap: _prayerEnabledMap,
@@ -584,6 +590,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               }
               setState(() {
                 _adhanEnabled = result.adhanEnabled;
+                _summerTimeEnabled = result.summerTimeEnabled;
                 _hijriOffset = result.hijriOffset;
                 _prayerOffsets = normalizedPrayerOffsets;
                 _prayerEnabledMap = Map<String, bool>.from(
@@ -614,6 +621,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         autoDetect: _autoDetectLocation,
         hijriOffset: _hijriOffset,
         prayerOffsets: normalizedPrayerOffsets,
+        summerTimeEnabled: _summerTimeEnabled,
         adhanEnabled: _adhanEnabled,
         reminderMinutes: 0,
         prayerEnabledMap: _prayerEnabledMap,
@@ -621,7 +629,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         adhanProfile: _adhanProfile,
       );
     }
-    await _rescheduleNotifications();
+    unawaited(_triggerRescheduleNotifications());
   }
 
   Map<String, int> _normalizePrayerOffsets(Map<String, int> source) => {
@@ -636,11 +644,40 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     return PrayerNotificationService.instance.reschedulePrayerNotifications(
       city: _selectedCity,
       prayerOffsets: _prayerOffsets,
+      summerTimeEnabled: _summerTimeEnabled,
       adhanEnabled: _adhanEnabled,
       prayerEnabledMap: _prayerEnabledMap,
       prayerReminderByPrayer: _prayerReminderByPrayer,
       adhanProfile: _adhanProfile,
     );
+  }
+
+  Future<void> _triggerRescheduleNotifications() async {
+    if (_isReschedulingNotifications) {
+      _pendingRescheduleNotifications = true;
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _isReschedulingNotifications = true;
+      });
+    } else {
+      _isReschedulingNotifications = true;
+    }
+    try {
+      do {
+        _pendingRescheduleNotifications = false;
+        await _rescheduleNotifications();
+      } while (_pendingRescheduleNotifications);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isReschedulingNotifications = false;
+        });
+      } else {
+        _isReschedulingNotifications = false;
+      }
+    }
   }
 
   String _formatReminderShort(String key) {

@@ -43,6 +43,22 @@ class SalawatFormulasService {
     return _downloadAndCache(prefs, now, force: true);
   }
 
+  Future<void> refreshIfStaleBeforeOpen({
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    await _ensureSeeded();
+    final prefs = await SharedPreferences.getInstance();
+    final lastMillis = prefs.getInt(_prefsLastFetchKey) ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final elapsed = Duration(milliseconds: now - lastMillis);
+    if (elapsed < salawatFormulasRefreshInterval) {
+      return;
+    }
+    try {
+      await _downloadAndCache(prefs, now).timeout(timeout);
+    } catch (_) {}
+  }
+
   Future<void> _refreshIfStale() async {
     final prefs = await SharedPreferences.getInstance();
     final lastMillis = prefs.getInt(_prefsLastFetchKey) ?? 0;

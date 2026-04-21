@@ -42,6 +42,7 @@ class QuranStore extends ChangeNotifier {
   static const _prayerMaghribReminderKey = 'prayer_maghrib_reminder';
   static const _prayerIshaReminderKey = 'prayer_isha_reminder';
   static const _prayerAdhanProfileKey = 'prayer_adhan_profile';
+  static const _prayerSummerTimeEnabledKey = 'prayer_summer_time_enabled';
   static const _tasbihPhraseKey = 'tasbih_phrase';
   static const _tasbihCustomPhrasesKey = 'tasbih_custom_phrases';
   static const _tasbihTargetKey = 'tasbih_target';
@@ -113,6 +114,8 @@ class QuranStore extends ChangeNotifier {
   };
   String get savedPrayerAdhanProfile =>
       _prefs.getString(_prayerAdhanProfileKey) ?? 'default';
+  bool get savedPrayerSummerTimeEnabled =>
+      _prefs.getBool(_prayerSummerTimeEnabledKey) ?? false;
   String? get savedTasbihPhrase => _prefs.getString(_tasbihPhraseKey);
   List<String> get savedTasbihCustomPhrases =>
       _prefs.getStringList(_tasbihCustomPhrasesKey) ?? const <String>[];
@@ -235,6 +238,7 @@ class QuranStore extends ChangeNotifier {
     required bool autoDetect,
     required int hijriOffset,
     required Map<String, int> prayerOffsets,
+    bool? summerTimeEnabled,
     required bool adhanEnabled,
     required int reminderMinutes,
     required Map<String, bool> prayerEnabledMap,
@@ -335,6 +339,14 @@ class QuranStore extends ChangeNotifier {
       normalizedPrayerReminders['isha']!,
     );
     await _prefs.setString(_prayerAdhanProfileKey, adhanProfile);
+    if (summerTimeEnabled != null) {
+      await _prefs.setBool(_prayerSummerTimeEnabledKey, summerTimeEnabled);
+    }
+    notifyListeners();
+  }
+
+  Future<void> savePrayerSummerTimeEnabled(bool enabled) async {
+    await _prefs.setBool(_prayerSummerTimeEnabledKey, enabled);
     notifyListeners();
   }
 

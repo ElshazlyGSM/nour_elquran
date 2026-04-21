@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../notifications/salawat/salawat_notification_settings_page.dart';
 import '../../services/quran_store.dart';
+import '../../services/salawat_formulas_service.dart';
 import '../shared/prophet_biography_page.dart';
 import '../shared/prophet_lineage_names_page.dart';
 import 'salawat_formulas_page.dart';
@@ -119,12 +122,19 @@ class ProphetSectionPage extends StatelessWidget {
                           icon: Icons.auto_stories_rounded,
                           accent: const Color(0xFF6B4E9A),
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    SalawatFormulasPage(store: store),
-                              ),
-                            );
+                            unawaited(() async {
+                              await SalawatFormulasService.instance
+                                  .refreshIfStaleBeforeOpen();
+                              if (!context.mounted) {
+                                return;
+                              }
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      SalawatFormulasPage(store: store),
+                                ),
+                              );
+                            }());
                           },
                         ),
                       ),
