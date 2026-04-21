@@ -1,6 +1,7 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:quran_library/quran_library.dart';
 
@@ -17,6 +18,14 @@ import 'services/quran_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
   runApp(const _BootstrapApp());
 }
 
@@ -82,7 +91,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                   color: Colors.white,
                 ),
                 Text(
-                  'نور القرآن',
+                  '??? ??????',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 50,
@@ -238,3 +247,4 @@ class _BootstrapLifecycleObserver with WidgetsBindingObserver {
     }
   }
 }
+

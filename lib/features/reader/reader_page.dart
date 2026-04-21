@@ -1502,6 +1502,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (_isDownloadingMedinaFonts || !_useMedinaOnDemandDownload) {
       return;
     }
+    if (_isDownloadingShamarlyPages) {
+      _updateState(() {
+        _medinaFontsDownloadError =
+            'أوقف تنزيل مصحف الشمرلي أولًا ثم ابدأ تنزيل مصحف المدينة.';
+      });
+      return;
+    }
     _cancelMedinaFontsDownload = false;
     _updateState(() {
       _isDownloadingMedinaFonts = true;
@@ -1616,6 +1623,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   Future<void> _startShamarlyPagesDownload() async {
     if (_isDownloadingShamarlyPages ||
         !ShamarlyPagesDownloadConfig.enableOnDemandDownload) {
+      return;
+    }
+    if (_isDownloadingMedinaFonts) {
+      _updateState(() {
+        _shamarlyPagesDownloadError =
+            'أوقف تنزيل مصحف المدينة أولًا ثم ابدأ تنزيل مصحف الشمرلي.';
+      });
       return;
     }
     _cancelShamarlyPagesDownload = false;
