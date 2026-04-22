@@ -299,13 +299,14 @@ class _HomeShellState extends State<HomeShell> {
     final city = _resolveSavedCity();
     final params = city.method.parameters;
     final offsets = widget.store.savedPrayerOffsets;
+    final summerOffset = widget.store.savedPrayerSummerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: offsets['fajr'] ?? 0,
-      Prayer.sunrise: offsets['sunrise'] ?? 0,
-      Prayer.dhuhr: offsets['dhuhr'] ?? 0,
-      Prayer.asr: offsets['asr'] ?? 0,
-      Prayer.maghrib: offsets['maghrib'] ?? 0,
-      Prayer.isha: offsets['isha'] ?? 0,
+      Prayer.fajr: (offsets['fajr'] ?? 0) + summerOffset,
+      Prayer.sunrise: (offsets['sunrise'] ?? 0) + summerOffset,
+      Prayer.dhuhr: (offsets['dhuhr'] ?? 0) + summerOffset,
+      Prayer.asr: (offsets['asr'] ?? 0) + summerOffset,
+      Prayer.maghrib: (offsets['maghrib'] ?? 0) + summerOffset,
+      Prayer.isha: (offsets['isha'] ?? 0) + summerOffset,
     };
     return PrayerTimes(
       date: DateTime(date.year, date.month, date.day),

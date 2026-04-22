@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -91,7 +91,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                   color: Colors.white,
                 ),
                 Text(
-                  '??? ??????',
+                  'نور القرآن',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 50,
@@ -211,6 +211,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       vibrationEnabled: store.savedSalawatVibrationEnabled,
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
+      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
     );
   }
 

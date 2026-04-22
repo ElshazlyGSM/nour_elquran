@@ -477,6 +477,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
             vibrationEnabled: _vibrationEnabled,
             city: city,
             prayerOffsets: widget.store.savedPrayerOffsets,
+            summerTimeEnabled: widget.store.savedPrayerSummerTimeEnabled,
           );
           if (showSuccess && mounted) {
             ScaffoldMessenger.of(context)

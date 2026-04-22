@@ -161,6 +161,7 @@ class SalawatNotificationService {
     required bool vibrationEnabled,
     PrayerCity? city,
     Map<String, int> prayerOffsets = const {},
+    bool summerTimeEnabled = false,
   }) async {
     await initialize();
     await cancelAll();
@@ -188,6 +189,7 @@ class SalawatNotificationService {
       windowEndMinutes: windowEndMinutes,
       city: city,
       prayerOffsets: prayerOffsets,
+      summerTimeEnabled: summerTimeEnabled,
     );
     final pending = await _notifications.pendingNotificationRequests();
     final pendingCount = pending
@@ -244,6 +246,7 @@ class SalawatNotificationService {
     required int windowEndMinutes,
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
+    required bool summerTimeEnabled,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
     var nextTime = now.add(Duration(minutes: intervalMinutes));
@@ -263,6 +266,7 @@ class SalawatNotificationService {
         nextTime,
         city: city,
         prayerOffsets: prayerOffsets,
+        summerTimeEnabled: summerTimeEnabled,
         pauseAtPrayer: pauseAtPrayer,
         pauseDuration: pauseDuration,
       );
@@ -386,6 +390,7 @@ class SalawatNotificationService {
     DateTime time, {
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
+    required bool summerTimeEnabled,
     required bool pauseAtPrayer,
     required Duration pauseDuration,
   }) {
@@ -393,14 +398,15 @@ class SalawatNotificationService {
       return false;
     }
 
+    final summerOffset = summerTimeEnabled ? 60 : 0;
     final params = city.method.parameters;
     params.adjustments = {
-      Prayer.fajr: prayerOffsets['fajr'] ?? 0,
-      Prayer.sunrise: prayerOffsets['sunrise'] ?? 0,
-      Prayer.dhuhr: prayerOffsets['dhuhr'] ?? 0,
-      Prayer.asr: prayerOffsets['asr'] ?? 0,
-      Prayer.maghrib: prayerOffsets['maghrib'] ?? 0,
-      Prayer.isha: prayerOffsets['isha'] ?? 0,
+      Prayer.fajr: (prayerOffsets['fajr'] ?? 0) + summerOffset,
+      Prayer.sunrise: (prayerOffsets['sunrise'] ?? 0) + summerOffset,
+      Prayer.dhuhr: (prayerOffsets['dhuhr'] ?? 0) + summerOffset,
+      Prayer.asr: (prayerOffsets['asr'] ?? 0) + summerOffset,
+      Prayer.maghrib: (prayerOffsets['maghrib'] ?? 0) + summerOffset,
+      Prayer.isha: (prayerOffsets['isha'] ?? 0) + summerOffset,
     };
 
     final prayerTimes = PrayerTimes(
