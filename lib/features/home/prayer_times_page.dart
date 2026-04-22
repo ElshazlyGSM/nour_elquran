@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +9,9 @@ import '../../core/utils/arabic_numbers.dart';
 import '../../data/egypt_prayer_cities.dart';
 import '../notifications/adhan/adhan_notification_settings_page.dart';
 import '../notifications/adhan/prayer_notification_service.dart';
+import '../../services/background_execution_settings.dart';
 import '../../services/location_permission_prompt.dart';
+import '../../services/prayer_times_widget_service.dart';
 import '../../services/quran_store.dart';
 import 'qibla_compass_page.dart';
 
@@ -110,7 +112,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             'isha': 0,
           },
     );
-    _adhanProfile = widget.store?.savedPrayerAdhanProfile ?? 'default';
+    _adhanProfile = widget.store?.savedPrayerAdhanProfile ?? 'allah_akbar';
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -185,6 +187,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               );
             },
             icon: const Icon(Icons.explore_rounded),
+          ),
+          IconButton(
+            onPressed: _showWidgetSetupDialog,
+            icon: const Icon(Icons.widgets_rounded),
           ),
           IconButton(
             onPressed: _showPrayerSettings,
@@ -628,8 +634,111 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         prayerReminderByPrayer: normalizedPrayerReminders,
         adhanProfile: _adhanProfile,
       );
+      await PrayerTimesWidgetService.instance.updateFromStore(store);
     }
     unawaited(_triggerRescheduleNotifications());
+  }
+
+  Future<void> _showWidgetSetupDialog() async {
+    final nextPrayer = _buildUpcomingPrayer();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          title: const Text('إضافة ويدجت المواقيت'),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('هذا شكل مصغر للودجت على الشاشة الرئيسية.'),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF101A1E) : const Color(0xFF143A2A),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'مواقيت الصلاة',
+                        style: TextStyle(
+                          color: Color(0xFFE6C16A),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'القادمة: ${nextPrayer.name} • ${_formatTime(nextPrayer.time)}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'المتبقي ${_formatCountdown(nextPrayer.time.difference(_now))}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('لا'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('موافق'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (accepted != true) {
+      return;
+    }
+
+    final alreadyAdded = await BackgroundExecutionSettings.hasPrayerWidget();
+    if (!mounted) {
+      return;
+    }
+    if (alreadyAdded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('الودجت مضافة بالفعل على الشاشة الرئيسية.'),
+        ),
+      );
+      return;
+    }
+
+    final store = widget.store;
+    if (store != null) {
+      await PrayerTimesWidgetService.instance.updateFromStore(store);
+    }
+    final pinned = await BackgroundExecutionSettings.requestPinPrayerWidget();
+    if (!mounted) {
+      return;
+    }
+    if (!pinned) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'لم يدعم اللانشر الإضافة المباشرة. أضفها يدويًا من قائمة Widgets.',
+          ),
+        ),
+      );
+    }
   }
 
   Map<String, int> _normalizePrayerOffsets(Map<String, int> source) => {

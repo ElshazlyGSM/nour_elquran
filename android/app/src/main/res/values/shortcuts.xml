@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_prayer_short">مواقيت الصلاة</string>
+    <string name="shortcut_prayer_long">فتح مواقيت الصلاة</string>
+    <string name="shortcut_adhkar_short">الأذكار</string>
+    <string name="shortcut_adhkar_long">فتح صفحة الأذكار</string>
+    <string name="shortcut_tasbih_short">السبحة</string>
+    <string name="shortcut_tasbih_long">فتح السبحة</string>
+    <string name="shortcut_continue_short">متابعة القراءة</string>
+    <string name="shortcut_continue_long">الرجوع لآخر موضع قراءة</string>
+    <string name="shortcut_disabled">الاختصار غير متاح الآن</string>
+    <string name="widget_prayer_times_label">ويدجت مواقيت الصلاة</string>
+</resources>

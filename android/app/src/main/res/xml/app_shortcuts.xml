@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_continue"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_continue_short"
+        android:shortcutLongLabel="@string/shortcut_continue_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.elshazly.noorquran.app.MainActivity"
+            android:data="noorquran://open/continue" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_prayer"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_prayer_short"
+        android:shortcutLongLabel="@string/shortcut_prayer_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.elshazly.noorquran.app.MainActivity"
+            android:data="noorquran://open/prayer" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_adhkar"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_adhkar_short"
+        android:shortcutLongLabel="@string/shortcut_adhkar_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.elshazly.noorquran.app.MainActivity"
+            android:data="noorquran://open/adhkar" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_tasbih"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_tasbih_short"
+        android:shortcutLongLabel="@string/shortcut_tasbih_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.elshazly.noorquran.app.MainActivity"
+            android:data="noorquran://open/tasbih" />
+    </shortcut>
+</shortcuts>

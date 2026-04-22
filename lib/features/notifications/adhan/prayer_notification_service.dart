@@ -22,6 +22,7 @@ class PrayerNotificationService {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static const _prayerNotificationMaxId = 30000;
+  static const _volumePreviewNotificationId = 30098;
 
   bool _initialized = false;
   bool _canScheduleExactAlarms = true;
@@ -413,6 +414,36 @@ class PrayerNotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     _canScheduleExactAlarms =
         await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
+  }
+
+  Future<void> showInstantPrayerPreview({
+    required String adhanProfile,
+    bool isSunriseTone = false,
+  }) async {
+    await initialize();
+    final title = isSunriseTone ? 'معاينة صوت الشروق' : 'معاينة صوت الأذان';
+    const body = 'يتم تشغيل هذا الصوت لتجربة مستوى صوت الإشعارات';
+    try {
+      final details = await _notificationDetailsForProfile(
+        adhanProfile,
+        isPrayerTimeAlarm: true,
+        soundOverride: isSunriseTone ? 'shoro2' : null,
+        channelSuffixOverride: isSunriseTone ? 'sunrise_preview' : 'preview',
+        channelNameOverride: isSunriseTone ? 'معاينة الشروق' : 'معاينة الأذان',
+      );
+      await _notifications.show(_volumePreviewNotificationId, title, body, details);
+    } catch (_) {
+      await _notifications.show(
+        _volumePreviewNotificationId,
+        title,
+        body,
+        _fallbackNotificationDetails(
+          isPrayerTimeAlarm: true,
+          channelSuffixOverride: isSunriseTone ? 'sunrise_preview' : 'preview',
+          channelNameOverride: isSunriseTone ? 'معاينة الشروق' : 'معاينة الأذان',
+        ),
+      );
+    }
   }
 
   NotificationDetails _fallbackNotificationDetails({

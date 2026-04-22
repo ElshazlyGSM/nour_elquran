@@ -113,7 +113,7 @@ class QuranStore extends ChangeNotifier {
     'isha': (_prefs.getInt(_prayerIshaReminderKey) ?? 0).clamp(0, 60),
   };
   String get savedPrayerAdhanProfile =>
-      _prefs.getString(_prayerAdhanProfileKey) ?? 'default';
+      _prefs.getString(_prayerAdhanProfileKey) ?? 'allah_akbar';
   bool get savedPrayerSummerTimeEnabled =>
       _prefs.getBool(_prayerSummerTimeEnabledKey) ?? false;
   String? get savedTasbihPhrase => _prefs.getString(_tasbihPhraseKey);

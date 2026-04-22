@@ -86,6 +86,9 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   bool _downloadStatesLoaded = false;
   Future<void> _saveFuture = Future<void>.value();
   bool _dirty = false;
+  int? _notificationVolume;
+  int _notificationMaxVolume = 0;
+  DateTime? _lastVolumePreviewAt;
 
   @override
   void initState() {
@@ -137,6 +140,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     });
 
     unawaited(_loadDownloadStates());
+    unawaited(_loadNotificationVolume());
   }
 
   @override
@@ -349,6 +353,41 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   bool _isDividerProfile(String profile) => profile == '__full_adhans__';
 
   bool _isBundledProfile(String profile) => profile == 'allah_akbar';
+
+  Future<void> _loadNotificationVolume() async {
+    final current = await BackgroundExecutionSettings.getNotificationVolume();
+    final max = await BackgroundExecutionSettings.getNotificationMaxVolume();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _notificationVolume = current != null && current >= 0 ? current : null;
+      _notificationMaxVolume = max != null && max > 0 ? max : 0;
+    });
+  }
+
+  Future<void> _setNotificationVolume(double value) async {
+    if (_notificationMaxVolume <= 0) {
+      return;
+    }
+    final next = value.round().clamp(0, _notificationMaxVolume);
+    setState(() => _notificationVolume = next);
+    await BackgroundExecutionSettings.setNotificationVolume(next);
+  }
+
+  Future<void> _previewNotificationVolumeSample() async {
+    final now = DateTime.now();
+    final last = _lastVolumePreviewAt;
+    if (last != null && now.difference(last).inMilliseconds < 700) {
+      return;
+    }
+    _lastVolumePreviewAt = now;
+    try {
+      await PrayerNotificationService.instance.showInstantPrayerPreview(
+        adhanProfile: _adhanProfile,
+      );
+    } catch (_) {}
+  }
 
   String? _profileSubtitle(String profile) {
     if (_isDividerProfile(profile)) {
@@ -838,7 +877,12 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                               await BackgroundExecutionSettings.openNotificationSettings();
                               return;
                             }
-                            _mutate(() => _adhanEnabled = true);
+                            _mutate(() {
+                              _adhanEnabled = true;
+                              if (_adhanProfile == 'default') {
+                                _adhanProfile = 'allah_akbar';
+                              }
+                            });
                           },
                           title: const Text(
                             'تفعيل إشعارات الصلاة',
@@ -849,6 +893,36 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                             style: TextStyle(fontSize: _uniformFontSize),
                           ),
                         ),
+                        if (_notificationVolume != null &&
+                            _notificationMaxVolume > 0) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Icon(Icons.volume_mute_rounded, size: 18),
+                              Expanded(
+                                child: Slider(
+                                  min: 0,
+                                  max: _notificationMaxVolume.toDouble(),
+                                  divisions: _notificationMaxVolume,
+                                  value: (_notificationVolume ?? 0).toDouble(),
+                                  onChanged: _setNotificationVolume,
+                                  onChangeEnd: (_) {
+                                    unawaited(_previewNotificationVolumeSample());
+                                  },
+                                ),
+                              ),
+                              const Icon(Icons.volume_up_rounded, size: 18),
+                            ],
+                          ),
+                          Text(
+                            'مستوى صوت إشعارات الجهاز: ${toArabicNumber(_notificationVolume ?? 0)} / ${toArabicNumber(_notificationMaxVolume)}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: mutedColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

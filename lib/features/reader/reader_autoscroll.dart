@@ -142,7 +142,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
       final currentScale = QuranCtrl.instance.state.scaleFactor.value;
       final nextScale = currentScale < 1.3
           ? 1.35
-          : (currentScale + 0.15).clamp(1.0, 2.0);
+          : (currentScale + 0.10).clamp(1.0, 2.0);
       _updateState(() {
         _fontSize = ((nextScale - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
       });
@@ -167,7 +167,7 @@ extension _ReaderAutoScroll on _ReaderPageState {
       final currentScale = QuranCtrl.instance.state.scaleFactor.value;
       final nextScale = currentScale <= 1.35
           ? 1.0
-          : (currentScale - 0.15).clamp(1.0, 2.0);
+          : (currentScale - 0.10).clamp(1.0, 2.0);
       _updateState(() {
         _fontSize = ((nextScale - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
       });

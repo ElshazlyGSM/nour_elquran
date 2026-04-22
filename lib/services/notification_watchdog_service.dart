@@ -5,6 +5,7 @@ import '../data/egypt_prayer_cities.dart';
 import '../features/notifications/adhan/prayer_notification_service.dart';
 import '../features/notifications/salawat/salawat_notification_service.dart';
 import 'daily_quran_reminder_service.dart';
+import 'prayer_times_widget_service.dart';
 import 'quran_store.dart';
 import 'white_days_reminder_service.dart';
 
@@ -62,6 +63,10 @@ void notificationWatchdogDispatcher() {
         await WhiteDaysReminderService.instance.reschedule(
           hijriOffset: store.savedPrayerHijriOffset,
         );
+      } catch (_) {}
+
+      try {
+        await PrayerTimesWidgetService.instance.updateFromStore(store);
       } catch (_) {}
     } catch (_) {
       return false;

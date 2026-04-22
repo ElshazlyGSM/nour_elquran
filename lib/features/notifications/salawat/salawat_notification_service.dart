@@ -28,6 +28,7 @@ class SalawatNotificationService {
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
+  static const _firstReminderWarmupMinutes = 1;
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -261,7 +262,7 @@ class SalawatNotificationService {
     required bool summerTimeEnabled,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
-    var nextTime = now.add(Duration(minutes: intervalMinutes));
+    var nextTime = now.add(const Duration(minutes: _firstReminderWarmupMinutes));
     var nextId = _scheduledBaseId;
     final pauseDuration = Duration(minutes: prayerPauseMinutes.clamp(5, 180));
     var scheduledCount = 0;

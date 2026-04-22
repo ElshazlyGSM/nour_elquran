@@ -7,6 +7,11 @@ import 'package:quran_library/quran_library.dart';
 
 import 'app/quran_app.dart';
 import 'data/egypt_prayer_cities.dart';
+import 'features/home/adhkar_page.dart';
+import 'features/home/prayer_times_page.dart';
+import 'features/home/quran_section_shell.dart';
+import 'features/home/tasbih_page.dart';
+import 'features/reader/reader_page.dart';
 import 'features/notifications/adhan/prayer_notification_service.dart';
 import 'features/notifications/salawat/salawat_notification_service.dart';
 import 'services/app_update_service.dart';
@@ -14,6 +19,8 @@ import 'services/current_quran_text_source.dart';
 import 'services/daily_quran_reminder_service.dart';
 import 'services/location_permission_prompt.dart';
 import 'services/notification_watchdog_service.dart';
+import 'services/prayer_times_widget_service.dart';
+import 'services/background_execution_settings.dart';
 import 'services/juz_names_service.dart';
 import 'services/quran_store.dart';
 
@@ -60,12 +67,16 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       if (store == null) {
         return;
       }
-      await _syncPrayerCityFromLocation(store);
-      await _reschedulePrayerNotifications(store);
-      try {
-        await _rescheduleSalawat(store);
-      } catch (_) {}
+      unawaited(_handleLaunchTarget(store));
+      unawaited(_syncPrayerCityFromLocation(store));
+      unawaited(_reschedulePrayerNotifications(store));
+      unawaited(() async {
+        try {
+          await _rescheduleSalawat(store);
+        } catch (_) {}
+      }());
       unawaited(_refreshAndRescheduleDailyReminder(store));
+      unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
     },
   );
 
@@ -129,6 +140,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<void> _postBootstrapSetup(QuranStore store) async {
+    unawaited(_handleLaunchTarget(store));
+
     try {
       await _syncPrayerCityFromLocation(store);
     } catch (_) {}
@@ -151,6 +164,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
 
     unawaited(_refreshAndRescheduleDailyReminder(store));
     unawaited(NotificationWatchdogService.instance.enqueueRepair());
+    unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
   }
 
   Future<void> _syncPrayerCityFromLocation(QuranStore store) async {
@@ -166,12 +180,19 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return;
     }
 
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.medium,
-        timeLimit: Duration(seconds: 4),
-      ),
-    );
+    Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 4),
+        ),
+      );
+    } on TimeoutException {
+      return;
+    } catch (_) {
+      return;
+    }
     final nearest = nearestPrayerCity(position.latitude, position.longitude);
     if (nearest.name == store.savedPrayerCityName) {
       return;
@@ -231,6 +252,61 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     } catch (_) {
       // This reminder is secondary and must never interfere with core notifications.
     }
+  }
+
+  Future<void> _handleLaunchTarget(QuranStore store) async {
+    final target = await BackgroundExecutionSettings.consumeLaunchTarget();
+    if (target == null || target.trim().isEmpty) {
+      return;
+    }
+
+    var navigatorState = AppUpdateService.navigatorKey.currentState;
+    if (navigatorState == null) {
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+        navigatorState = AppUpdateService.navigatorKey.currentState;
+        if (navigatorState != null) {
+          break;
+        }
+      }
+    }
+    if (navigatorState == null) {
+      return;
+    }
+
+    final normalized = target.trim().toLowerCase();
+    final page = switch (normalized) {
+      'prayer' => PrayerTimesPage(store: store),
+      'adhkar' => AdhkarPage(store: store),
+      'tasbih' => TasbihPage(store: store),
+      'continue' => store.lastRead == null
+          ? QuranSectionShell(store: store)
+          : ReaderPage(
+              store: store,
+              surahNumber: store.lastRead!.surahNumber,
+              initialVerse: store.lastRead!.verseNumber,
+            ),
+      _ => null,
+    };
+    if (page == null) {
+      return;
+    }
+
+    final context = navigatorState.overlay?.context;
+    if (context == null) {
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
+    await navigatorState.push(
+      MaterialPageRoute<void>(
+        builder: (_) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: page,
+        ),
+      ),
+    );
   }
 
   String _todayIsoDate() {
