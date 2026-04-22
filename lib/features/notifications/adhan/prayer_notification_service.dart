@@ -16,11 +16,12 @@ class PrayerNotificationService {
   PrayerNotificationService._();
 
   static final PrayerNotificationService instance = PrayerNotificationService._();
-  static const int _scheduleWindowDays = 3;
+  // Keep two+ weeks of upcoming alarms so missed app opens do not cause gaps.
+  static const int _scheduleWindowDays = 30;
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
-  static const _prayerNotificationMaxId = 5000;
+  static const _prayerNotificationMaxId = 30000;
 
   bool _initialized = false;
   bool _canScheduleExactAlarms = true;
@@ -150,6 +151,7 @@ class PrayerNotificationService {
     required String adhanProfile,
   }) async {
     await initialize();
+    await _refreshExactAlarmCapability();
     await _cancelPrayerNotificationsOnly();
 
     final now = DateTime.now();
@@ -331,7 +333,7 @@ class PrayerNotificationService {
       return;
     }
 
-    final preferredMode = _canScheduleExactAlarms && isPrayerTimeAlarm
+    final preferredMode = _canScheduleExactAlarms
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
     try {
@@ -400,6 +402,17 @@ class PrayerNotificationService {
           }
         }
       }
+  }
+
+  Future<void> _refreshExactAlarmCapability() async {
+    if (!Platform.isAndroid) {
+      _canScheduleExactAlarms = true;
+      return;
+    }
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    _canScheduleExactAlarms =
+        await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
   }
 
   NotificationDetails _fallbackNotificationDetails({

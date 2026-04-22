@@ -13,6 +13,7 @@ import 'services/app_update_service.dart';
 import 'services/current_quran_text_source.dart';
 import 'services/daily_quran_reminder_service.dart';
 import 'services/location_permission_prompt.dart';
+import 'services/notification_watchdog_service.dart';
 import 'services/juz_names_service.dart';
 import 'services/quran_store.dart';
 
@@ -112,6 +113,9 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     final store = await QuranStore.create();
     await ensureCurrentQuranTextSourceInitialized();
     await JuzNamesService.ensureLoaded();
+    try {
+      await NotificationWatchdogService.instance.ensureScheduled();
+    } catch (_) {}
     if (!mounted) {
       return;
     }
@@ -146,6 +150,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     );
 
     unawaited(_refreshAndRescheduleDailyReminder(store));
+    unawaited(NotificationWatchdogService.instance.enqueueRepair());
   }
 
   Future<void> _syncPrayerCityFromLocation(QuranStore store) async {

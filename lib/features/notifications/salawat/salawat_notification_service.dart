@@ -24,7 +24,7 @@ class SalawatNotificationService {
   // Keep a safety margin under the historical ~500 alarms ceiling while
   // extending the rolling window so reminders do not stop quickly on
   // short intervals unless the app is reopened.
-  static const _maxScheduledNotifications = 180;
+  static const _maxScheduledNotifications = 300;
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
@@ -164,6 +164,7 @@ class SalawatNotificationService {
     bool summerTimeEnabled = false,
   }) async {
     await initialize();
+    await _refreshExactAlarmCapability();
     await cancelAll();
 
     if (!enabled) {
@@ -199,6 +200,17 @@ class SalawatNotificationService {
         )
         .length;
     _log('Reschedule: pendingCount=$pendingCount');
+  }
+
+  Future<void> _refreshExactAlarmCapability() async {
+    if (!Platform.isAndroid) {
+      _canScheduleExactAlarms = true;
+      return;
+    }
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    _canScheduleExactAlarms =
+        await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
   }
 
   Future<void> showInstantReminder({

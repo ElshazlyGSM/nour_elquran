@@ -48,6 +48,7 @@ dependencies:
   hijri: ^3.0.0
   vibration: ^3.1.8
   flutter_local_notifications: ^19.4.2
+  workmanager: ^0.7.0
   in_app_update: ^4.2.3
   timezone: ^0.10.1
   flutter_timezone: ^4.1.1
