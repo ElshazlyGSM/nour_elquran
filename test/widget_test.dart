@@ -13,7 +13,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('المصحف'), findsOneWidget);
-    expect(find.text('مواعيد الصلاة'), findsOneWidget);
+    expect(find.text('مواقيت الصلاة'), findsOneWidget);
     expect(find.text('الأذكار'), findsOneWidget);
   });
 }

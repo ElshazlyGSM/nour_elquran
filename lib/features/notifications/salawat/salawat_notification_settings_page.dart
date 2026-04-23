@@ -60,8 +60,19 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
   void _mutate(VoidCallback action) {
     setState(() {
       action();
-      _dirty = true;
+      _dirty = _hasEffectiveChanges();
     });
+  }
+
+  bool _hasEffectiveChanges() {
+    return _enabled != widget.store.savedSalawatReminderEnabled ||
+        _intervalMinutes != widget.store.savedSalawatReminderIntervalMinutes ||
+        _pauseAtPrayer != widget.store.savedSalawatPauseAtPrayer ||
+        _prayerPauseMinutes != widget.store.savedSalawatPrayerPauseMinutes ||
+        _windowEnabled != widget.store.savedSalawatWindowEnabled ||
+        _windowStartMinutes != widget.store.savedSalawatWindowStartMinutes ||
+        _windowEndMinutes != widget.store.savedSalawatWindowEndMinutes ||
+        _vibrationEnabled != widget.store.savedSalawatVibrationEnabled;
   }
 
   Future<void> _loadNotificationVolume() async {
@@ -102,6 +113,8 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
   void _onEnabledChanged(bool value) async {
     if (!value) {
       _mutate(() => _enabled = false);
+      await SalawatNotificationService.instance.cancelAll();
+      unawaited(_saveSettings(showSuccess: false));
       return;
     }
 
@@ -204,7 +217,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                                   value: (_notificationVolume ?? 0).toDouble(),
                                   onChanged: _setNotificationVolume,
                                   onChangeEnd: (_) {
-                                    unawaited(_previewNotificationVolumeSample());
+                                    unawaited(
+                                      _previewNotificationVolumeSample(),
+                                    );
                                   },
                                 ),
                               ),

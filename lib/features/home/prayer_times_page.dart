@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +66,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   late String _adhanProfile;
 
   Timer? _countdownTimer;
+  final GlobalKey _widgetButtonKey = GlobalKey();
   DateTime _now = DateTime.now();
   String? _locationStatus;
   bool _isReschedulingNotifications = false;
@@ -122,6 +123,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       if (!mounted) {
         return;
       }
+      unawaited(_showWidgetCoachmarkIfNeeded());
       await _triggerRescheduleNotifications();
       if (!mounted) {
         return;
@@ -189,6 +191,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             icon: const Icon(Icons.explore_rounded),
           ),
           IconButton(
+            key: _widgetButtonKey,
             onPressed: _showWidgetSetupDialog,
             icon: const Icon(Icons.widgets_rounded),
           ),
@@ -640,75 +643,6 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   }
 
   Future<void> _showWidgetSetupDialog() async {
-    final nextPrayer = _buildUpcomingPrayer();
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          title: const Text('إضافة ويدجت المواقيت'),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('هذا شكل مصغر للودجت على الشاشة الرئيسية.'),
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF101A1E) : const Color(0xFF143A2A),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'مواقيت الصلاة',
-                        style: TextStyle(
-                          color: Color(0xFFE6C16A),
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'القادمة: ${nextPrayer.name} • ${_formatTime(nextPrayer.time)}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'المتبقي ${_formatCountdown(nextPrayer.time.difference(_now))}',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.88),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('لا'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('موافق'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (accepted != true) {
-      return;
-    }
-
     final alreadyAdded = await BackgroundExecutionSettings.hasPrayerWidget();
     if (!mounted) {
       return;
@@ -739,6 +673,269 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         ),
       );
     }
+  }
+
+  Rect? _widgetButtonRect() {
+    final context = _widgetButtonKey.currentContext;
+    if (context == null) {
+      return null;
+    }
+    final renderBox = context.findRenderObject();
+    if (renderBox is! RenderBox || !renderBox.hasSize) {
+      return null;
+    }
+    final offset = renderBox.localToGlobal(Offset.zero);
+    return offset & renderBox.size;
+  }
+
+  Future<void> _showWidgetCoachmarkIfNeeded() async {
+    final store = widget.store;
+    if (store == null || store.savedPrayerWidgetCoachmarkSeen || !mounted) {
+      return;
+    }
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
+
+    final targetRect = _widgetButtonRect();
+    final previewTimes = _buildPrayerTimes(_now);
+    final previewEntries = _buildEntries(
+      previewTimes,
+    ).where((entry) => entry.key != 'sunrise').toList(growable: false);
+    final nextPrayer = _buildUpcomingPrayer();
+    HijriCalendar.setLocal('ar');
+    final previewHijri = HijriCalendar.fromDate(
+      DateTime(
+        _now.year,
+        _now.month,
+        _now.day,
+      ).add(Duration(days: _hijriOffset)),
+    );
+    final previewHijriText =
+        '${toArabicNumber(previewHijri.hDay)} ${previewHijri.longMonthName} ${toArabicNumber(previewHijri.hYear)}';
+    final previewSunrise = _formatTime(previewTimes.sunrise.toLocal());
+
+    final acknowledged = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'widget_coachmark',
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      pageBuilder: (context, _, unused2) {
+        final media = MediaQuery.of(context).size;
+        final arrowLeft =
+            (targetRect == null
+                    ? media.width - 64.0
+                    : (targetRect.center.dx - 14).clamp(8.0, media.width - 36))
+                .toDouble();
+        final arrowTop =
+            (targetRect == null
+                    ? 72.0
+                    : (targetRect.bottom + 4).clamp(56.0, media.height - 120))
+                .toDouble();
+        return Stack(
+          children: [
+            Positioned(
+              top: arrowTop,
+              left: arrowLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: const [
+                  Icon(
+                    Icons.arrow_upward_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'زر الودجت هنا',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 380),
+                child: AlertDialog(
+                  title: const Text('اختصار مفيد للمواقيت'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'يمكنك إضافة ويدجت المواقيت من زر الودجت بالأعلى. هذه معاينة للشكل الحالي:',
+                      ),
+                      const SizedBox(height: 10),
+                      _buildWidgetPreviewCard(
+                        previewEntries: previewEntries,
+                        nextPrayer: nextPrayer,
+                        previewHijriText: previewHijriText,
+                        previewSunrise: previewSunrise,
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    FilledButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('فهمت'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (acknowledged == true) {
+      await store.savePrayerWidgetCoachmarkSeen(true);
+    }
+  }
+
+  Widget _buildWidgetPreviewCard({
+    required List<_PrayerEntry> previewEntries,
+    required _PrayerEntry nextPrayer,
+    required String previewHijriText,
+    required String previewSunrise,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF143A2A),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Text(
+                  'نور القرآن  ${_selectedCity.name}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFE9C777),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: Text(
+                    'الشروق: $previewSunrise',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFD5E6DE),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      previewHijriText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFD4E7DC),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final entry in previewEntries)
+                Expanded(
+                  child: Container(
+                    height: 76,
+                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 3,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: entry.key == nextPrayer.key
+                          ? const Color(0xFFE4C170)
+                          : const Color(0xFF1B4C3A),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            entry.name,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(
+                              color: entry.key == nextPrayer.key
+                                  ? const Color(0xFF14392A)
+                                  : const Color(0xFFCEE0D8),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _formatTime(entry.time),
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(
+                              color: entry.key == nextPrayer.key
+                                  ? const Color(0xFF14392A)
+                                  : Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'يمكنك إضافتها الآن، وإن كان اللانشر لا يدعم الإضافة المباشرة ستضيفها يدويًا من Widgets.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.90),
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Map<String, int> _normalizePrayerOffsets(Map<String, int> source) => {

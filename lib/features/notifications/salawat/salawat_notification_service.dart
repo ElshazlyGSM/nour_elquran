@@ -1,4 +1,4 @@
-﻿import 'dart:developer' as developer;
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -106,12 +106,15 @@ class SalawatNotificationService {
     _log('Initialized. canScheduleExact=$_canScheduleExactAlarms');
     _initialized = true;
   }
+
   Future<bool> ensureNotificationPermissionForToggle() async {
     await initialize();
 
     if (Platform.isAndroid) {
-      final android = _notifications.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       final enabledBefore = await android?.areNotificationsEnabled() ?? true;
       if (!enabledBefore) {
         try {
@@ -134,13 +137,16 @@ class SalawatNotificationService {
         }
       }
       _canScheduleExactAlarms =
-          await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
+          await android?.canScheduleExactNotifications() ??
+          _canScheduleExactAlarms;
       return true;
     }
 
     if (Platform.isIOS) {
-      final ios = _notifications.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final ios = _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       return await ios?.requestPermissions(
             alert: true,
             badge: true,
@@ -151,6 +157,7 @@ class SalawatNotificationService {
 
     return true;
   }
+
   Future<void> reschedule({
     required bool enabled,
     required int intervalMinutes,
@@ -208,15 +215,16 @@ class SalawatNotificationService {
       _canScheduleExactAlarms = true;
       return;
     }
-    final android = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     _canScheduleExactAlarms =
-        await android?.canScheduleExactNotifications() ?? _canScheduleExactAlarms;
+        await android?.canScheduleExactNotifications() ??
+        _canScheduleExactAlarms;
   }
 
-  Future<void> showInstantReminder({
-    required bool vibrationEnabled,
-  }) async {
+  Future<void> showInstantReminder({required bool vibrationEnabled}) async {
     await initialize();
     final notificationId =
         _instantNotificationId + (DateTime.now().millisecondsSinceEpoch % 9000);
@@ -241,6 +249,9 @@ class SalawatNotificationService {
   Future<void> cancelAll() async {
     final pending = await _notifications.pendingNotificationRequests();
     _log('CancelAll: pending=${pending.length}');
+    for (var id = _scheduledBaseId; id < _scheduledCeilingId; id++) {
+      await _notifications.cancel(id);
+    }
     for (final request in pending) {
       if (request.id >= _scheduledBaseId && request.id < _scheduledCeilingId) {
         await _notifications.cancel(request.id);
@@ -262,7 +273,9 @@ class SalawatNotificationService {
     required bool summerTimeEnabled,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
-    var nextTime = now.add(const Duration(minutes: _firstReminderWarmupMinutes));
+    var nextTime = now.add(
+      const Duration(minutes: _firstReminderWarmupMinutes),
+    );
     var nextId = _scheduledBaseId;
     final pauseDuration = Duration(minutes: prayerPauseMinutes.clamp(5, 180));
     var scheduledCount = 0;
@@ -471,52 +484,49 @@ class SalawatNotificationService {
     ),
   );
 
-  NotificationDetails _instantNotificationDetails(bool vibrationEnabled) =>
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'salawat_activation_channel_v1_${vibrationEnabled ? 'vib' : 'silent'}',
-          'تأكيد تشغيل الصلاة والسلام',
-          channelDescription: 'إشعار فوري عند تفعيل الخدمة',
-          importance: Importance.max,
-          priority: Priority.max,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound('saly'),
-          enableVibration: vibrationEnabled,
-          vibrationPattern: vibrationEnabled
-              ? Int64List.fromList([0, 250, 160, 420])
-              : null,
-          timeoutAfter: 30000,
-          onlyAlertOnce: false,
-          category: AndroidNotificationCategory.reminder,
-          audioAttributesUsage: AudioAttributesUsage.notification,
-        ),
-      );
-  NotificationDetails _fallbackNotificationDetails(bool vibrationEnabled) =>
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'salawat_reminders_channel_fallback_${vibrationEnabled ? 'vib' : 'silent'}',
-          'تذكير الصلاة على النبي',
-          channelDescription: 'قناة احتياطية لضمان وصول التذكير',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: vibrationEnabled,
-          vibrationPattern: vibrationEnabled
-              ? Int64List.fromList([0, 250, 160, 420])
-              : null,
-          timeoutAfter: 60000,
-          onlyAlertOnce: false,
-          category: AndroidNotificationCategory.reminder,
-          audioAttributesUsage: AudioAttributesUsage.notification,
-        ),
-      );
+  NotificationDetails _instantNotificationDetails(
+    bool vibrationEnabled,
+  ) => NotificationDetails(
+    android: AndroidNotificationDetails(
+      'salawat_activation_channel_v1_${vibrationEnabled ? 'vib' : 'silent'}',
+      'تأكيد تشغيل الصلاة والسلام',
+      channelDescription: 'إشعار فوري عند تفعيل الخدمة',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('saly'),
+      enableVibration: vibrationEnabled,
+      vibrationPattern: vibrationEnabled
+          ? Int64List.fromList([0, 250, 160, 420])
+          : null,
+      timeoutAfter: 30000,
+      onlyAlertOnce: false,
+      category: AndroidNotificationCategory.reminder,
+      audioAttributesUsage: AudioAttributesUsage.notification,
+    ),
+  );
+  NotificationDetails _fallbackNotificationDetails(
+    bool vibrationEnabled,
+  ) => NotificationDetails(
+    android: AndroidNotificationDetails(
+      'salawat_reminders_channel_fallback_${vibrationEnabled ? 'vib' : 'silent'}',
+      'تذكير الصلاة على النبي',
+      channelDescription: 'قناة احتياطية لضمان وصول التذكير',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: vibrationEnabled,
+      vibrationPattern: vibrationEnabled
+          ? Int64List.fromList([0, 250, 160, 420])
+          : null,
+      timeoutAfter: 60000,
+      onlyAlertOnce: false,
+      category: AndroidNotificationCategory.reminder,
+      audioAttributesUsage: AudioAttributesUsage.notification,
+    ),
+  );
 
   String get _title => 'الصلاة والسلام على سيدنا النبي';
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
-
-
-
-
-

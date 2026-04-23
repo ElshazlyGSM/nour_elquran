@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +43,7 @@ class QuranStore extends ChangeNotifier {
   static const _prayerIshaReminderKey = 'prayer_isha_reminder';
   static const _prayerAdhanProfileKey = 'prayer_adhan_profile';
   static const _prayerSummerTimeEnabledKey = 'prayer_summer_time_enabled';
+  static const _prayerWidgetCoachmarkSeenKey = 'prayer_widget_coachmark_seen';
   static const _tasbihPhraseKey = 'tasbih_phrase';
   static const _tasbihCustomPhrasesKey = 'tasbih_custom_phrases';
   static const _tasbihTargetKey = 'tasbih_target';
@@ -116,6 +117,8 @@ class QuranStore extends ChangeNotifier {
       _prefs.getString(_prayerAdhanProfileKey) ?? 'allah_akbar';
   bool get savedPrayerSummerTimeEnabled =>
       _prefs.getBool(_prayerSummerTimeEnabledKey) ?? false;
+  bool get savedPrayerWidgetCoachmarkSeen =>
+      _prefs.getBool(_prayerWidgetCoachmarkSeenKey) ?? false;
   String? get savedTasbihPhrase => _prefs.getString(_tasbihPhraseKey);
   List<String> get savedTasbihCustomPhrases =>
       _prefs.getStringList(_tasbihCustomPhrasesKey) ?? const <String>[];
@@ -163,6 +166,7 @@ class QuranStore extends ChangeNotifier {
       return <String, int>{};
     }
   }
+
   Set<String> get savedReadSirahEpisodeIds =>
       _prefs.getStringList(_readSirahEpisodesKey)?.toSet() ?? <String>{};
   String? get savedLastSirahEpisodeId =>
@@ -175,6 +179,7 @@ class QuranStore extends ChangeNotifier {
     }
     return (_prefs.getBool(_darkModeEnabledKey) ?? false) ? 'dark' : 'light';
   }
+
   bool get savedDarkModeEnabled => savedThemeMode == 'dark';
 
   static Future<QuranStore> create() async {
@@ -268,10 +273,7 @@ class QuranStore extends ChangeNotifier {
         0,
         60,
       ),
-      'isha': (prayerReminderByPrayer['isha'] ?? reminderMinutes).clamp(
-        0,
-        60,
-      ),
+      'isha': (prayerReminderByPrayer['isha'] ?? reminderMinutes).clamp(0, 60),
     };
     await _prefs.setString(_prayerCityKey, cityName);
     await _prefs.setBool(_prayerAutoDetectKey, autoDetect);
@@ -348,6 +350,10 @@ class QuranStore extends ChangeNotifier {
   Future<void> savePrayerSummerTimeEnabled(bool enabled) async {
     await _prefs.setBool(_prayerSummerTimeEnabledKey, enabled);
     notifyListeners();
+  }
+
+  Future<void> savePrayerWidgetCoachmarkSeen(bool seen) async {
+    await _prefs.setBool(_prayerWidgetCoachmarkSeenKey, seen);
   }
 
   Future<void> saveTasbihPreferences({
@@ -482,7 +488,3 @@ class QuranStore extends ChangeNotifier {
     );
   }
 }
-
-
-
-

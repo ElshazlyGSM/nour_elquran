@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
   ReaderReciter? _mp3FallbackForLegacy(ReaderReciter reciter) {
@@ -257,12 +257,17 @@ extension _ReaderAudio on _ReaderPageState {
     if (_isPreparingAudio) {
       return;
     }
-    if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
+    final anchor = _effectiveActionAnchor();
+    if (anchor == null) {
       return;
     }
+    _updateState(() {
+      _selectedSurahNumber = anchor.surahNumber;
+      _selectedVerseNumber = anchor.verseNumber;
+    });
     await _playFromVerse(
-      surahNumber: _selectedSurahNumber!,
-      verseNumber: _selectedVerseNumber!,
+      surahNumber: anchor.surahNumber,
+      verseNumber: anchor.verseNumber,
     );
   }
 
@@ -465,20 +470,20 @@ extension _ReaderAudio on _ReaderPageState {
     _playbackStartVerse = verseNumber;
     _playlistVerseNumbers = [verseNumber];
     _playbackResumeVerseAfterChunk = null;
-      if (localPath != null) {
-        if (mounted && requestId == _audioPlayRequestId) {
-          _updateState(() {
-            _isPreparingAudio = true;
-            _isPlayingAudio = false;
-          });
-        }
+    if (localPath != null) {
+      if (mounted && requestId == _audioPlayRequestId) {
+        _updateState(() {
+          _isPreparingAudio = true;
+          _isPlayingAudio = false;
+        });
+      }
       await _audioPlayer.setFilePath(localPath);
-      } else {
-        if (mounted && requestId == _audioPlayRequestId) {
-          _updateState(() {
-            _isPreparingAudio = true;
-          });
-        }
+    } else {
+      if (mounted && requestId == _audioPlayRequestId) {
+        _updateState(() {
+          _isPreparingAudio = true;
+        });
+      }
       await _audioPlayer.setUrl(url);
       unawaited(() async {
         try {
@@ -578,5 +583,3 @@ extension _ReaderAudio on _ReaderPageState {
     }
   }
 }
-
-

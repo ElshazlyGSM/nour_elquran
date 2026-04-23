@@ -342,19 +342,6 @@ class _ShamarlyPages extends StatefulWidget {
   State<_ShamarlyPages> createState() => _ShamarlyPagesState();
 }
 
-class _GentlePageScrollPhysics extends PageScrollPhysics {
-  const _GentlePageScrollPhysics({super.parent});
-
-  @override
-  _GentlePageScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _GentlePageScrollPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  SpringDescription get spring =>
-      const SpringDescription(mass: 1, stiffness: 80, damping: 18);
-}
-
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
   late final PageController _controller;
 
@@ -417,8 +404,8 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
         child: InteractiveViewer(
           minScale: 1.0,
           maxScale: 4.0,
-          panEnabled: true,
-          scaleEnabled: true,
+          panEnabled: false,
+          scaleEnabled: false,
           child: LayoutBuilder(
             builder: (context, constraints) {
               const baseWidth = 400.0;
@@ -459,9 +446,10 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
         onTap: widget.onPageTap,
         child: PageView.builder(
           controller: _controller,
-          physics: const _GentlePageScrollPhysics(),
+          physics: const PageScrollPhysics(),
           reverse: false,
           clipBehavior: Clip.hardEdge,
+          allowImplicitScrolling: true,
           itemCount: ShamarlyPagesDownloadConfig.totalPages,
           onPageChanged: (index) => widget.onPageChanged(index + 1),
           itemBuilder: (context, index) {

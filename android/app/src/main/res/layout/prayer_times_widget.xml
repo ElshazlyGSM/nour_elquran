@@ -30,7 +30,7 @@
             android:id="@+id/widget_city"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
@@ -42,7 +42,8 @@
             android:id="@+id/widget_sunrise_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="16dp"
             android:textColor="#D5E6DE"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -51,7 +52,7 @@
             android:id="@+id/widget_hijri_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="8dp"
             android:textColor="#D4E7DC"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -60,7 +61,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:baselineAligned="false"
         android:orientation="horizontal"
         android:weightSum="5">

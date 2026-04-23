@@ -144,11 +144,14 @@ extension _ReaderDialogs on _ReaderPageState {
         final tafsirTextColor = isDark
             ? const Color(0xFFFFFFFF)
             : const Color(0xFF1E241F);
+        int currentSurahNumber = surahNumber;
+        int currentVerseNumber = verseNumber;
+        String currentVerseText = verseText;
         TafsirOption currentOption = _selectedTafsir;
         Future<String> currentFuture = _tafsirService.fetchTafsir(
           option: currentOption,
-          surahNumber: surahNumber,
-          verseNumber: verseNumber,
+          surahNumber: currentSurahNumber,
+          verseNumber: currentVerseNumber,
         );
 
         return StatefulBuilder(
@@ -204,6 +207,55 @@ extension _ReaderDialogs on _ReaderPageState {
               }
             }
 
+            ({int surah, int verse})? previousVerse() {
+              if (currentVerseNumber > 1) {
+                return (
+                  surah: currentSurahNumber,
+                  verse: currentVerseNumber - 1,
+                );
+              }
+              if (currentSurahNumber <= 1) {
+                return null;
+              }
+              final previousSurah = currentSurahNumber - 1;
+              final previousVerse = _quranSource.getVerseCount(previousSurah);
+              return (surah: previousSurah, verse: previousVerse);
+            }
+
+            ({int surah, int verse})? nextVerse() {
+              final verseCount = _quranSource.getVerseCount(currentSurahNumber);
+              if (currentVerseNumber < verseCount) {
+                return (
+                  surah: currentSurahNumber,
+                  verse: currentVerseNumber + 1,
+                );
+              }
+              if (currentSurahNumber >= 114) {
+                return null;
+              }
+              return (surah: currentSurahNumber + 1, verse: 1);
+            }
+
+            Future<void> shiftToVerse(({int surah, int verse}) target) async {
+              final nextText = _quranSource.getVerseText(
+                target.surah,
+                target.verse,
+              );
+              setSheetState(() {
+                currentSurahNumber = target.surah;
+                currentVerseNumber = target.verse;
+                currentVerseText = nextText;
+                currentFuture = _tafsirService.fetchTafsir(
+                  option: currentOption,
+                  surahNumber: currentSurahNumber,
+                  verseNumber: currentVerseNumber,
+                );
+              });
+            }
+
+            final previousPosition = previousVerse();
+            final nextPosition = nextVerse();
+
             return SafeArea(
               child: SizedBox(
                 height: MediaQuery.of(context).size.height * 0.82,
@@ -220,6 +272,52 @@ extension _ReaderDialogs on _ReaderPageState {
                             icon: const Icon(Icons.close_rounded),
                           ),
                           const Spacer(),
+                        ],
+                      ),
+                      Text(
+                        '${_quranSource.getSurahNameArabic(currentSurahNumber)} • الآية ${toArabicNumber(currentVerseNumber)}',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        currentVerseText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: 18,
+                          height: 1.95,
+                          color: tafsirTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.tonalIcon(
+                              onPressed: () async {
+                                final option = await _pickTafsirOption(
+                                  currentOption,
+                                );
+                                if (option == null) {
+                                  return;
+                                }
+                                _updateState(() {
+                                  _selectedTafsir = option;
+                                });
+                                setSheetState(() {
+                                  currentOption = option;
+                                  currentFuture = _tafsirService.fetchTafsir(
+                                    option: option,
+                                    surahNumber: currentSurahNumber,
+                                    verseNumber: currentVerseNumber,
+                                  );
+                                });
+                              },
+                              icon: const Icon(Icons.swap_horiz_rounded),
+                              label: Text(currentOption.name),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           FilledButton.tonalIcon(
                             onPressed: isDownloaded
                                 ? null
@@ -248,48 +346,35 @@ extension _ReaderDialogs on _ReaderPageState {
                                   : isDownloading
                                   ? 'إيقاف التحميل'
                                   : isPartial
-                                  ? 'استكمال التحميل'
-                                  : 'تحميل التفسير',
+                                  ? 'استكمال'
+                                  : 'تحميل',
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        '${_quranSource.getSurahNameArabic(surahNumber)} • الآية ${toArabicNumber(verseNumber)}',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
                       const SizedBox(height: 8),
-                      Text(
-                        verseText,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontSize: 18,
-                          height: 1.95,
-                          color: tafsirTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.tonalIcon(
-                        onPressed: () async {
-                          final option = await _pickTafsirOption(currentOption);
-                          if (option == null) {
-                            return;
-                          }
-                          _updateState(() {
-                            _selectedTafsir = option;
-                          });
-                          setSheetState(() {
-                            currentOption = option;
-                            currentFuture = _tafsirService.fetchTafsir(
-                              option: option,
-                              surahNumber: surahNumber,
-                              verseNumber: verseNumber,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.swap_horiz_rounded),
-                        label: Text(currentOption.name),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: previousPosition == null
+                                  ? null
+                                  : () => shiftToVerse(previousPosition),
+                              icon: const Icon(Icons.navigate_before_rounded),
+                              label: const Text('الآية السابقة'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: nextPosition == null
+                                  ? null
+                                  : () => shiftToVerse(nextPosition),
+                              icon: const Icon(Icons.navigate_next_rounded),
+                              label: const Text('الآية التالية'),
+                            ),
+                          ),
+                        ],
                       ),
                       if (isDownloading && progress != null) ...[
                         const SizedBox(height: 10),
@@ -1026,4 +1111,3 @@ class _TajweedLegendItem {
   final Color color;
   final String label;
 }
-

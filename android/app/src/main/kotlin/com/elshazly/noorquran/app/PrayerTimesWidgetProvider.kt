@@ -66,8 +66,6 @@ class PrayerTimesWidgetProvider : AppWidgetProvider() {
     }
 
     private fun applyHighlight(views: RemoteViews, nextKey: String) {
-        val normalBg = Color.parseColor("#1B4C3A")
-        val activeBg = Color.parseColor("#E4C170")
         val normalText = Color.parseColor("#FFFFFF")
         val normalName = Color.parseColor("#CEE0D8")
         val activeText = Color.parseColor("#14392A")
@@ -81,13 +79,13 @@ class PrayerTimesWidgetProvider : AppWidgetProvider() {
         )
 
         items.values.forEach { item ->
-            views.setInt(item.first, "setBackgroundColor", normalBg)
+            views.setInt(item.first, "setBackgroundResource", R.drawable.widget_prayer_item_bg)
             views.setTextColor(item.second, normalName)
             views.setTextColor(item.third, normalText)
         }
 
         val active = items[nextKey] ?: return
-        views.setInt(active.first, "setBackgroundColor", activeBg)
+        views.setInt(active.first, "setBackgroundResource", R.drawable.widget_prayer_item_bg_active)
         views.setTextColor(active.second, activeText)
         views.setTextColor(active.third, activeText)
     }

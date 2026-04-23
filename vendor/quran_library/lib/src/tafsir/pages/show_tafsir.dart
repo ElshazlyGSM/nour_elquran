@@ -1,8 +1,8 @@
 part of '../tafsir.dart';
-// ملاحظة هامة: يجب تضمين هذا الودجت ضمن Scaffold عند الاستدعاء حتى لا تظهر مشكلة "No Scaffold widget found"
+// Ù…Ù„Ø§Ø­Ø¸Ø© Ù‡Ø§Ù…Ø©: ÙŠØ¬Ø¨ ØªØ¶Ù…ÙŠÙ† Ù‡Ø°Ø§ Ø§Ù„ÙˆØ¯Ø¬Øª Ø¶Ù…Ù† Scaffold Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ Ø­ØªÙ‰ Ù„Ø§ ØªØ¸Ù‡Ø± Ù…Ø´ÙƒÙ„Ø© "No Scaffold widget found"
 // Important: This widget must be shown inside a Scaffold to avoid "No Scaffold widget found" error.
 
-// مثال للاستخدام الصحيح:
+// Ù…Ø«Ø§Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„ØµØ­ÙŠØ­:
 // Example for correct usage:
 // showModalBottomSheet(
 //   context: context,
@@ -33,18 +33,18 @@ class ShowTafseer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // حلّ النمط: استخدام الممرّر ثم Theme ثم الافتراضي
+    // Ø­Ù„Ù‘ Ø§Ù„Ù†Ù…Ø·: Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ù…Ù…Ø±Ù‘Ø± Ø«Ù… Theme Ø«Ù… Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ
     final TafsirStyle s = tafsirStyle ??
         (TafsirTheme.of(context)?.style ??
             TafsirStyle.defaults(isDark: isDark, context: context));
-    // شرح: نتأكد أن عناصر tafsirStyle غير فارغة لتجنب الخطأ
+    // Ø´Ø±Ø­: Ù†ØªØ£ÙƒØ¯ Ø£Ù† Ø¹Ù†Ø§ØµØ± tafsirStyle ØºÙŠØ± ÙØ§Ø±ØºØ© Ù„ØªØ¬Ù†Ø¨ Ø§Ù„Ø®Ø·Ø£
     // Explanation: Ensure tafsirStyle widgets are not null to avoid null check errors
     final tafsirNameWidget = s.tafsirNameWidget ?? const SizedBox();
     final double deviceHeight = MediaQuery.maybeOf(context)?.size.height ?? 600;
     final double deviceWidth = MediaQuery.maybeOf(context)?.size.width ?? 400;
     final double sheetHeight = s.heightOfBottomSheet ?? (deviceHeight * 0.9);
     final double sheetWidth = s.widthOfBottomSheet ?? deviceWidth;
-    // تحسين الشكل: إضافة شريط علوي أنيق مع زر إغلاق واسم التفسير
+    // ØªØ­Ø³ÙŠÙ† Ø§Ù„Ø´ÙƒÙ„: Ø¥Ø¶Ø§ÙØ© Ø´Ø±ÙŠØ· Ø¹Ù„ÙˆÙŠ Ø£Ù†ÙŠÙ‚ Ù…Ø¹ Ø²Ø± Ø¥ØºÙ„Ø§Ù‚ ÙˆØ§Ø³Ù… Ø§Ù„ØªÙØ³ÙŠØ±
     // UI Enhancement: Add a modern top bar with close button and tafsir name
     // final stored = GetStorage()
     //         .read<List<dynamic>>(quran._StorageConstants().loadedFontPages)

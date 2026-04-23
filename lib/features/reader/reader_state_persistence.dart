@@ -1,4 +1,4 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderStatePersistence on _ReaderPageState {
   _ReaderAppearance _appearanceForThemePreference(
@@ -247,6 +247,14 @@ extension _ReaderStatePersistence on _ReaderPageState {
   }
 
   Future<void> _persistCurrentPosition() async {
+    if (_isShamarlyPagesMode &&
+        (_selectedSurahNumber == null || _selectedVerseNumber == null)) {
+      final anchor = _resolveShamarlyAnchorForPage(_shamarlyCurrentPage);
+      if (anchor != null) {
+        _selectedSurahNumber = anchor.surahNumber;
+        _selectedVerseNumber = anchor.verseNumber;
+      }
+    }
     if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
       return;
     }

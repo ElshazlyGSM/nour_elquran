@@ -49,6 +49,70 @@ part 'reader_search.dart';
 const _readerQuranSource = currentQuranTextSource;
 const _tajweedQuranSource = AlfurqanQuranSource();
 
+Map<String, Object?> _parseShamarlyPageMapPayload(String rawJson) {
+  final decoded = json.decode(rawJson);
+  if (decoded is! Map<String, dynamic>) {
+    return <String, Object?>{
+      'map': <String, int>{},
+      'pageToSurah': <int, int>{},
+      'pageFirstAyah': <int, List<int>>{},
+    };
+  }
+  final mapNode = decoded['map'];
+  if (mapNode is! Map) {
+    return <String, Object?>{
+      'map': <String, int>{},
+      'pageToSurah': <int, int>{},
+      'pageFirstAyah': <int, List<int>>{},
+    };
+  }
+
+  final parsed = <String, int>{};
+  final pageToSurah = <int, int>{};
+  final pageFirstAyah = <int, List<int>>{};
+  mapNode.forEach((key, value) {
+    if (key is! String) {
+      return;
+    }
+    final page = switch (value) {
+      int v => v,
+      num v => v.toInt(),
+      _ => null,
+    };
+    if (page == null || page < 1) {
+      return;
+    }
+    parsed[key] = page;
+    final parts = key.split(':');
+    if (parts.length != 2) {
+      return;
+    }
+    final surah = int.tryParse(parts[0]);
+    final verse = int.tryParse(parts[1]);
+    if (surah == null) {
+      return;
+    }
+    final existingSurah = pageToSurah[page];
+    if (existingSurah == null || surah > existingSurah) {
+      pageToSurah[page] = surah;
+    }
+    if (verse != null && verse >= 1) {
+      final existing = pageFirstAyah[page];
+      if (existing == null ||
+          surah < existing[0] ||
+          (surah == existing[0] && verse < existing[1])) {
+        pageFirstAyah[page] = <int>[surah, verse];
+      }
+    }
+  });
+
+  return <String, Object?>{
+    'map': parsed,
+    'pageToSurah': pageToSurah,
+    'pageFirstAyah': pageFirstAyah,
+  };
+}
+
 enum _ReaderAppearance {
   classic,
   golden,
@@ -298,7 +362,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   String? _shamarlyPagesDirectoryPath;
   Map<String, int>? _shamarlyPageMap;
   Map<int, int>? _shamarlyPageToSurahMap;
+  Map<int, List<int>>? _shamarlyPageFirstAyahMap;
   List<int>? _shamarlyJuzStartPages;
+  Map<int, int>? _medinaPageToSurahMap;
+  List<int>? _medinaJuzStartPages;
   bool _isLoadingShamarlyPageMap = false;
   double? _scaleStartFontSize;
   double? _scaleStartPagedFactor;
@@ -306,6 +373,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int? _selectedSurahNumber;
   int? _selectedVerseNumber;
   int? _visibleSurahNumber;
+  int? _visiblePagedPageNumber;
   int? _visibleStandardPageNumber;
   int? _playbackSurahNumber;
   int? _playbackStartVerse;
@@ -585,29 +653,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     }
   }
 
-  int? _resolveMedinaVisibleSurahNumber(int pageNumber) {
-    if (pageNumber < 1 || pageNumber > currentQuranTotalPagesCount) {
-      return null;
+  int _normalizeMedinaPageNumberFromLibrary(int pageNumber) {
+    if (pageNumber >= 1 && pageNumber <= currentQuranTotalPagesCount) {
+      return pageNumber;
     }
+    if (pageNumber >= 0 && pageNumber < currentQuranTotalPagesCount) {
+      return pageNumber + 1;
+    }
+    return pageNumber.clamp(1, currentQuranTotalPagesCount);
+  }
 
-    final blocks = QuranCtrl.instance.getQpcLayoutBlocksForPageSync(pageNumber);
-    for (final block in blocks) {
-      if (block is QpcV4SurahHeaderBlock) {
-        return block.surahNumber;
-      }
-    }
-
-    final pageData = _quranSource.getPageData(pageNumber);
-    if (pageData.isEmpty) {
-      return null;
-    }
-    final firstSurah = pageData.first['surah'];
-    final lastSurah = pageData.last['surah'];
-    return switch ((firstSurah, lastSurah)) {
-      (int _, int last) when firstSurah != last => last,
-      (int first, _) => first,
-      _ => null,
-    };
+  int _normalizeMedinaPageNumberFromPageViewIndex(int pageIndex) {
+    return (pageIndex + 1).clamp(1, currentQuranTotalPagesCount);
   }
 
   int? _resolveShamarlyVisibleSurahNumber(int pageNumber) {
@@ -634,6 +691,82 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     return currentJuz.clamp(1, currentQuranTotalJuzCount);
   }
 
+  void _buildMedinaPageLookup() {
+    if (_medinaPageToSurahMap != null && _medinaJuzStartPages != null) {
+      return;
+    }
+    final pageToSurah = <int, int>{};
+    for (var page = 1; page <= currentQuranTotalPagesCount; page++) {
+      final pageData = _quranSource.getPageData(page);
+      if (pageData.isEmpty) {
+        continue;
+      }
+      final firstSurah = pageData.first['surah'];
+      final lastSurah = pageData.last['surah'];
+      if (lastSurah is int) {
+        pageToSurah[page] = lastSurah;
+      } else if (firstSurah is int) {
+        pageToSurah[page] = firstSurah;
+      }
+    }
+
+    final juzStarts = List<int>.generate(currentQuranTotalJuzCount, (index) {
+      final juzNumber = index + 1;
+      final juzVerses = _quranSource.getSurahAndVersesFromJuz(juzNumber);
+      final firstSurah = juzVerses.keys.first;
+      final firstVerse = juzVerses[firstSurah]!.first;
+      return _quranSource.getPageNumber(firstSurah, firstVerse);
+    });
+
+    _medinaPageToSurahMap = pageToSurah;
+    _medinaJuzStartPages = juzStarts;
+  }
+
+  int _currentMedinaJuzNumberFromPage(int pageNumber) {
+    final starts = _medinaJuzStartPages;
+    if (starts == null || starts.isEmpty) {
+      return _currentJuzNumberFromPage(pageNumber);
+    }
+    var currentJuz = 1;
+    for (var i = 0; i < starts.length; i++) {
+      if (pageNumber >= starts[i]) {
+        currentJuz = i + 1;
+      } else {
+        break;
+      }
+    }
+    return currentJuz.clamp(1, currentQuranTotalJuzCount);
+  }
+
+  int _currentMedinaSurahNumberFromPage(int pageNumber) {
+    final normalizedPage = pageNumber.clamp(1, currentQuranTotalPagesCount);
+    final pageToSurah = _medinaPageToSurahMap;
+    if (pageToSurah == null || pageToSurah.isEmpty) {
+      return _visibleSurahNumber ?? _selectedSurahNumber ?? widget.surahNumber;
+    }
+    final direct = pageToSurah[normalizedPage];
+    if (direct != null) {
+      return direct;
+    }
+    for (var page = normalizedPage - 1; page >= 1; page--) {
+      final fallback = pageToSurah[page];
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+    for (
+      var page = normalizedPage + 1;
+      page <= currentQuranTotalPagesCount;
+      page++
+    ) {
+      final fallback = pageToSurah[page];
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+    return _visibleSurahNumber ?? _selectedSurahNumber ?? widget.surahNumber;
+  }
+
   int _currentShamarlySurahNumberFromPage(int pageNumber) {
     final normalizedPage = pageNumber.clamp(
       1,
@@ -641,9 +774,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     );
     final pageToSurah = _shamarlyPageToSurahMap;
     if (pageToSurah == null || pageToSurah.isEmpty) {
-      return _visibleSurahNumber ??
-          _selectedSurahNumber ??
-          widget.surahNumber;
+      return _visibleSurahNumber ?? _selectedSurahNumber ?? widget.surahNumber;
     }
 
     final direct = pageToSurah[normalizedPage];
@@ -658,18 +789,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       }
     }
 
-    for (var page = normalizedPage + 1;
-        page <= ShamarlyPagesDownloadConfig.totalPages;
-        page++) {
+    for (
+      var page = normalizedPage + 1;
+      page <= ShamarlyPagesDownloadConfig.totalPages;
+      page++
+    ) {
       final fallback = pageToSurah[page];
       if (fallback != null) {
         return fallback;
       }
     }
 
-    return _visibleSurahNumber ??
-        _selectedSurahNumber ??
-        widget.surahNumber;
+    return _visibleSurahNumber ?? _selectedSurahNumber ?? widget.surahNumber;
   }
 
   String _juzJumpLabel(int juzNumber) {
@@ -687,6 +818,67 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     return _quranSource.getPageNumber(surahNumber, verseNumber);
   }
 
+  ({int surahNumber, int verseNumber})? _resolveShamarlyAnchorForPage(
+    int pageNumber,
+  ) {
+    final map = _shamarlyPageFirstAyahMap;
+    if (map == null || map.isEmpty) {
+      return null;
+    }
+    final normalizedPage = pageNumber.clamp(
+      1,
+      ShamarlyPagesDownloadConfig.totalPages,
+    );
+    List<int>? direct = map[normalizedPage];
+    if (direct == null) {
+      for (var page = normalizedPage - 1; page >= 1; page--) {
+        final fallback = map[page];
+        if (fallback != null) {
+          direct = fallback;
+          break;
+        }
+      }
+    }
+    if (direct == null) {
+      for (
+        var page = normalizedPage + 1;
+        page <= ShamarlyPagesDownloadConfig.totalPages;
+        page++
+      ) {
+        final fallback = map[page];
+        if (fallback != null) {
+          direct = fallback;
+          break;
+        }
+      }
+    }
+    if (direct == null || direct.length < 2) {
+      return null;
+    }
+    final surah = direct[0];
+    final verse = direct[1];
+    if (surah < 1 || verse < 1) {
+      return null;
+    }
+    return (surahNumber: surah, verseNumber: verse);
+  }
+
+  ({int surahNumber, int verseNumber})? _effectiveActionAnchor() {
+    if (_isShamarlyPagesMode) {
+      final anchor = _resolveShamarlyAnchorForPage(_shamarlyCurrentPage);
+      if (anchor != null) {
+        return anchor;
+      }
+    }
+    if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
+      return null;
+    }
+    return (
+      surahNumber: _selectedSurahNumber!,
+      verseNumber: _selectedVerseNumber!,
+    );
+  }
+
   Future<void> _ensureShamarlyPageMapReady() async {
     if (_shamarlyPageMap != null || _isLoadingShamarlyPageMap) {
       return;
@@ -696,67 +888,51 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       final raw = await rootBundle.loadString(
         'assets/quran/shamarly_page_map.json',
       );
-      final decoded = json.decode(raw);
-      if (decoded is Map<String, dynamic>) {
-        final mapNode = decoded['map'];
-        if (mapNode is Map) {
-          final parsed = <String, int>{};
-          final pageToSurah = <int, int>{};
-          mapNode.forEach((key, value) {
-            if (key is! String) {
-              return;
+      final parsedPayload = await compute(_parseShamarlyPageMapPayload, raw);
+      final parsedRaw = parsedPayload['map'];
+      final pageToSurahRaw = parsedPayload['pageToSurah'];
+      final pageFirstAyahRaw = parsedPayload['pageFirstAyah'];
+      if (parsedRaw is Map &&
+          pageToSurahRaw is Map &&
+          pageFirstAyahRaw is Map) {
+        final parsed = <String, int>{};
+        parsedRaw.forEach((key, value) {
+          if (key is String && value is int) {
+            parsed[key] = value;
+          }
+        });
+        final pageToSurah = <int, int>{};
+        pageToSurahRaw.forEach((key, value) {
+          if (key is int && value is int) {
+            pageToSurah[key] = value;
+          }
+        });
+        final pageFirstAyah = <int, List<int>>{};
+        pageFirstAyahRaw.forEach((key, value) {
+          if (key is int && value is List && value.length >= 2) {
+            final surah = value[0];
+            final verse = value[1];
+            if (surah is int && verse is int && surah >= 1 && verse >= 1) {
+              pageFirstAyah[key] = <int>[surah, verse];
             }
-            if (value is int) {
-              final page = value;
-              parsed[key] = page;
-              final parts = key.split(':');
-              if (parts.length == 2) {
-                final surah = int.tryParse(parts[0]);
-                if (surah != null && page >= 1) {
-                  final existingSurah = pageToSurah[page];
-                  if (existingSurah == null || surah > existingSurah) {
-                    pageToSurah[page] = surah;
-                  }
-                }
-              }
-            } else if (value is num) {
-              parsed[key] = value.toInt();
-              final parts = key.split(':');
-              if (parts.length == 2) {
-                final surah = int.tryParse(parts[0]);
-                final page = value.toInt();
-                if (surah != null && page >= 1) {
-                  final existingSurah = pageToSurah[page];
-                  if (existingSurah == null || surah > existingSurah) {
-                    pageToSurah[page] = surah;
-                  }
-                }
-              }
-            }
-          });
-          _shamarlyPageMap = parsed;
-          _shamarlyPageToSurahMap = pageToSurah;
-          _shamarlyJuzStartPages = List<int>.generate(
-            currentQuranTotalJuzCount,
-            (index) {
-              final juzVerses = _quranSource.getSurahAndVersesFromJuz(
-                index + 1,
-              );
-              final firstSurah = juzVerses.keys.first;
-              final firstVerse = juzVerses[firstSurah]!.first;
-              return parsed['$firstSurah:$firstVerse'] ??
-                  _quranSource.getPageNumber(firstSurah, firstVerse);
-            },
-            growable: false,
-          );
-        } else {
-          _shamarlyPageMap = <String, int>{};
-          _shamarlyPageToSurahMap = <int, int>{};
-          _shamarlyJuzStartPages = null;
-        }
+          }
+        });
+        _shamarlyPageMap = parsed;
+        _shamarlyPageToSurahMap = pageToSurah;
+        _shamarlyPageFirstAyahMap = pageFirstAyah;
+        _shamarlyJuzStartPages = List<int>.generate(currentQuranTotalJuzCount, (
+          index,
+        ) {
+          final juzVerses = _quranSource.getSurahAndVersesFromJuz(index + 1);
+          final firstSurah = juzVerses.keys.first;
+          final firstVerse = juzVerses[firstSurah]!.first;
+          return parsed['$firstSurah:$firstVerse'] ??
+              _quranSource.getPageNumber(firstSurah, firstVerse);
+        }, growable: false);
       } else {
         _shamarlyPageMap = <String, int>{};
         _shamarlyPageToSurahMap = <int, int>{};
+        _shamarlyPageFirstAyahMap = <int, List<int>>{};
         _shamarlyJuzStartPages = null;
       }
     } finally {
@@ -783,9 +959,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _selectedSurahNumber = widget.surahNumber;
     _selectedVerseNumber = widget.initialVerse;
     _visibleSurahNumber = widget.surahNumber;
+    _visiblePagedPageNumber = _startPage;
     _visibleStandardPageNumber = _startPage;
     _pagedStartPage = _startPage;
     _standardInitialPage = _startPage;
+    _buildMedinaPageLookup();
     _restoreReaderPreferences();
     _lastContinuousFontSize = _fontSize;
     if (_appearance == _ReaderAppearance.medinaPages) {
@@ -858,9 +1036,6 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
 
     unawaited(_refreshMedinaFontsAvailability());
     unawaited(_refreshShamarlyPagesAvailability());
-    if (_appearance == _ReaderAppearance.shamarlyPages) {
-      unawaited(_ensureShamarlyPageMapReady());
-    }
 
     _audioPlayer.playerStateStream.listen((state) {
       if (!mounted || _activeAudioEngine == _AudioEngine.library) {
@@ -1013,39 +1188,16 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           if (!_isPlayingAudio && !_isPreparingAudio) {
             return;
           }
-          if (pageNumber < 1 || pageNumber > currentQuranTotalPagesCount) {
-            return;
-          }
-
+          final normalizedPage = _normalizeMedinaPageNumberFromLibrary(
+            pageNumber,
+          );
           try {
-            final pageSurahNumber = _resolveMedinaVisibleSurahNumber(
-              pageNumber,
-            );
-
-            if (pageSurahNumber == null) {
+            if (_visiblePagedPageNumber == normalizedPage) {
               return;
             }
-            if (_visibleSurahNumber == pageSurahNumber) {
-              return;
-            }
-
-            _visibleSurahSyncTimer?.cancel();
-            _visibleSurahSyncTimer = Timer(
-              const Duration(milliseconds: 140),
-              () {
-                if (!mounted || !_isMedinaPagesMode) {
-                  return;
-                }
-                final settledPage =
-                    QuranCtrl.instance.state.currentPageNumber.value;
-                if (settledPage != pageNumber) {
-                  return;
-                }
-                _updateState(() {
-                  _visibleSurahNumber = pageSurahNumber;
-                });
-              },
-            );
+            _updateState(() {
+              _visiblePagedPageNumber = normalizedPage;
+            });
           } catch (_) {
             return;
           }
@@ -1096,7 +1248,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final displayedPageNumber = _isMedinaPagesMode
-        ? QuranCtrl.instance.state.currentPageNumber.value
+        ? (_visiblePagedPageNumber ??
+              _normalizeMedinaPageNumberFromLibrary(
+                QuranCtrl.instance.state.currentPageNumber.value,
+              ))
         : (_isShamarlyPagesMode
               ? _shamarlyCurrentPage.clamp(
                   1,
@@ -1104,17 +1259,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 )
               : (_visibleStandardPageNumber ??
                     _quranSource.getPageNumber(
-                    _selectedSurahNumber ?? widget.surahNumber,
-                    _selectedVerseNumber ?? widget.initialVerse,
+                      _selectedSurahNumber ?? widget.surahNumber,
+                      _selectedVerseNumber ?? widget.initialVerse,
                     )));
     final displayedSurahNumber = _isMedinaPagesMode
-        ? ((_isPlayingAudio || _isPreparingAudio)
-              ? (_selectedSurahNumber ??
-                    _visibleSurahNumber ??
-                    widget.surahNumber)
-              : (_visibleSurahNumber ??
-                    _selectedSurahNumber ??
-                    widget.surahNumber))
+        ? _currentMedinaSurahNumberFromPage(displayedPageNumber)
         : (_isShamarlyPagesMode
               ? _currentShamarlySurahNumberFromPage(displayedPageNumber)
               : (_visibleSurahNumber ??
@@ -1123,7 +1272,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     final surahName = _quranSource.getSurahNameArabic(displayedSurahNumber);
     final displayedJuzNumber = _isShamarlyPagesMode
         ? _currentShamarlyJuzNumberFromPage(displayedPageNumber)
-        : _currentJuzNumberFromPage(displayedPageNumber);
+        : (_isMedinaPagesMode
+              ? _currentMedinaJuzNumberFromPage(displayedPageNumber)
+              : _currentJuzNumberFromPage(displayedPageNumber));
     final surahJumpLabel = surahName;
     final juzJumpLabel = _juzJumpLabel(displayedJuzNumber);
 
@@ -1400,33 +1551,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             child: _LibraryMushafPages(
               startPage: _pagedStartPage ?? _startPage,
               onPageTap: _showPagedControlBar,
-              onPageChanged: (_) {
+              onPageChanged: (rawPageNumber) {
                 if (_isSwitchingToPagedMushaf) {
                   _updateState(() {
                     _isSwitchingToPagedMushaf = false;
                   });
                 }
-                _visibleSurahSyncTimer?.cancel();
-                _visibleSurahSyncTimer = Timer(
-                  const Duration(milliseconds: 80),
-                  () {
-                    if (!mounted || !_isMedinaPagesMode) {
-                      return;
-                    }
-                    final pageNumber =
-                        QuranCtrl.instance.state.currentPageNumber.value;
-                    final pageSurahNumber = _resolveMedinaVisibleSurahNumber(
-                      pageNumber,
-                    );
-                    if (pageSurahNumber == null ||
-                        _visibleSurahNumber == pageSurahNumber) {
-                      return;
-                    }
-                    _updateState(() {
-                      _visibleSurahNumber = pageSurahNumber;
-                    });
-                  },
+                final pageNumber = _normalizeMedinaPageNumberFromPageViewIndex(
+                  rawPageNumber,
                 );
+                _updateState(() {
+                  _visiblePagedPageNumber = pageNumber;
+                });
               },
               onAyahSelected: (surahNumber, verseNumber) {
                 final ayahUq = _quranSource.getAyahUqBySurahAndAyah(
@@ -1495,10 +1631,16 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 }
                 _updateState(() {
                   _shamarlyCurrentPage = pageNumber;
+                  final anchor = _resolveShamarlyAnchorForPage(pageNumber);
+                  if (anchor != null) {
+                    _selectedSurahNumber = anchor.surahNumber;
+                    _selectedVerseNumber = anchor.verseNumber;
+                  }
                   if (pageSurahNumber != null) {
                     _visibleSurahNumber = pageSurahNumber;
                   }
                 });
+                unawaited(_persistCurrentPosition());
               },
             ),
           ),
@@ -1753,7 +1895,7 @@ class _ReaderTopJumpButton extends StatelessWidget {
     required this.onTap,
     this.fontFamily,
     this.fontSize = 20,
-    this.fontWeight= FontWeight.w800,
+    this.fontWeight = FontWeight.w800,
     this.textColor = const Color(0xFF143A2A),
   });
 

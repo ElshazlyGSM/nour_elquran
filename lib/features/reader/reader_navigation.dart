@@ -1,9 +1,13 @@
-﻿part of 'reader_page.dart';
+part of 'reader_page.dart';
 
 extension _ReaderNavigation on _ReaderPageState {
   static const int _maxInitialStandardPositionAttempts = 8;
-  static const Duration _playbackPageScrollDuration = Duration(milliseconds: 1420);
-  static const Duration _playbackVerseCenterDuration = Duration(milliseconds: 1340);
+  static const Duration _playbackPageScrollDuration = Duration(
+    milliseconds: 1420,
+  );
+  static const Duration _playbackVerseCenterDuration = Duration(
+    milliseconds: 1340,
+  );
   static const Duration _playbackRetryDelay = Duration(milliseconds: 1220);
   static const Curve _playbackScrollCurve = Curves.easeInOutCubic;
 
@@ -308,8 +312,11 @@ extension _ReaderNavigation on _ReaderPageState {
     });
   }
 
-
-  GlobalKey? _findVerseKey(int surahNumber, int verseNumber, {int? pageNumber}) {
+  GlobalKey? _findVerseKey(
+    int surahNumber,
+    int verseNumber, {
+    int? pageNumber,
+  }) {
     if (pageNumber != null) {
       final exact = _verseKeys['$pageNumber:$surahNumber:$verseNumber'];
       if (exact != null) {
@@ -324,6 +331,7 @@ extension _ReaderNavigation on _ReaderPageState {
     }
     return null;
   }
+
   void _jumpPagedToSelectedVerse() {
     if (!_isMedinaPagesMode) {
       return;
@@ -440,12 +448,11 @@ extension _ReaderNavigation on _ReaderPageState {
         return;
       }
 
-      final verseContext =
-          _findVerseKey(
-            _selectedSurahNumber!,
-            _selectedVerseNumber!,
-            pageNumber: targetPage,
-          )?.currentContext;
+      final verseContext = _findVerseKey(
+        _selectedSurahNumber!,
+        _selectedVerseNumber!,
+        pageNumber: targetPage,
+      )?.currentContext;
       if (verseContext != null && verseContext.mounted) {
         Scrollable.ensureVisible(
           verseContext,
@@ -535,15 +542,20 @@ extension _ReaderNavigation on _ReaderPageState {
   }
 
   Future<void> _openSelectedVerseTafsir() async {
-    if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
+    final anchor = _effectiveActionAnchor();
+    if (anchor == null) {
       return;
     }
+    _updateState(() {
+      _selectedSurahNumber = anchor.surahNumber;
+      _selectedVerseNumber = anchor.verseNumber;
+    });
     await _showTafsirSheet(
-      surahNumber: _selectedSurahNumber!,
-      verseNumber: _selectedVerseNumber!,
+      surahNumber: anchor.surahNumber,
+      verseNumber: anchor.verseNumber,
       verseText: _quranSource.getVerseText(
-        _selectedSurahNumber!,
-        _selectedVerseNumber!,
+        anchor.surahNumber,
+        anchor.verseNumber,
         verseEndSymbol: true,
       ),
     );
@@ -593,16 +605,3 @@ extension _ReaderNavigation on _ReaderPageState {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
