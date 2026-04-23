@@ -46,6 +46,12 @@ final readerReciters = <ReaderReciter>[
     rewaya: 'حفص عن عاصم',
   ),
   ReaderReciter.mp3Quran(
+    timingReadId: 121,
+    nameAr: 'محمود علي البنا',
+    folderUrl: 'https://server8.mp3quran.net/bna/Almusshaf-Al-Mojawwad/',
+    rewaya: 'حفص عن عاصم',
+  ),
+  ReaderReciter.mp3Quran(
     timingReadId: 30,
     nameAr: 'سعد الغامدي',
     folderUrl: 'https://server7.mp3quran.net/s_gmd/',
@@ -65,7 +71,6 @@ final readerReciters = <ReaderReciter>[
     reciter: quran.Reciter.arMuhammadJibreel,
     nameAr: 'محمد جبريل',
   ),
-
   ReaderReciter.legacy(
     reciter: quran.Reciter.arMaherMuaiqly,
     nameAr: 'ماهر المعيقلي',

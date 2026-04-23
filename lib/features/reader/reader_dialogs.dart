@@ -370,9 +370,8 @@ extension _ReaderDialogs on _ReaderPageState {
                               onPressed: nextPosition == null
                                   ? null
                                   : () => shiftToVerse(nextPosition),
-                                  label: const Text('الآية التالية'),
+                              label: const Text('الآية التالية'),
                               icon: const Icon(Icons.navigate_next_rounded),
-                              
                             ),
                           ),
                         ],
@@ -492,7 +491,7 @@ extension _ReaderDialogs on _ReaderPageState {
   }
 
   Future<void> _showReciterPicker() async {
-    await _refreshReciterDownloadStatus();
+    unawaited(_refreshReciterDownloadStatus());
     if (!mounted) {
       return;
     }

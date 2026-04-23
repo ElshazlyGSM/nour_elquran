@@ -279,6 +279,15 @@ extension _ReaderAudio on _ReaderPageState {
         AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
         _audioPlayer.stop().catchError((_) {}),
       ], eagerError: false);
+      final allowedSurahs = _selectedReciter.availableSurahs;
+      if (allowedSurahs != null &&
+          allowedSurahs.isNotEmpty &&
+          !allowedSurahs.contains(surahNumber)) {
+        final count = allowedSurahs.length;
+        throw Exception(
+          '\u0647\u0630\u0647 \u0627\u0644\u0633\u0648\u0631\u0629 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0642\u0627\u0631\u0626. \u0627\u0644\u0645\u062a\u0627\u062d \u0644\u0647 $count \u0633\u0648\u0631\u0629 \u0641\u0642\u0637.',
+        );
+      }
       if (_selectedReciter.isMp3Quran) {
         await _playFromVerseWithMp3Quran(
           requestId: requestId,
@@ -437,16 +446,18 @@ extension _ReaderAudio on _ReaderPageState {
     required int verseNumber,
   }) async {
     final reciter = _selectedReciter;
-    final timings = await _mp3QuranRecitationService.fetchAyahTimings(
-      reciter: reciter,
-      surahNumber: surahNumber,
-    );
+    List<Mp3QuranAyahTiming> timings = const [];
+    try {
+      timings = await _mp3QuranRecitationService.fetchAyahTimings(
+        reciter: reciter,
+        surahNumber: surahNumber,
+      );
+    } catch (_) {
+      timings = const [];
+    }
     final timing = timings
         .where((item) => item.ayah == verseNumber)
         .firstOrNull;
-    if (timing == null) {
-      throw Exception('هذا القارئ لا يملك توقيتًا واضحًا لهذه الآية.');
-    }
     _currentMp3QuranTimings = timings;
     final url = _mp3QuranRecitationService.buildSurahAudioUrl(
       reciter: reciter,
@@ -491,7 +502,20 @@ extension _ReaderAudio on _ReaderPageState {
     if (requestId != _audioPlayRequestId) {
       return;
     }
-    await _audioPlayer.seek(Duration(milliseconds: timing.startTimeMs));
+    if (timing != null) {
+      await _audioPlayer.seek(Duration(milliseconds: timing.startTimeMs));
+    } else {
+      await _audioPlayer.seek(Duration.zero);
+      if (mounted && requestId == _audioPlayRequestId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '\u0647\u0630\u0627 \u0627\u0644\u0642\u0627\u0631\u0626 \u0644\u0627 \u064a\u062f\u0639\u0645 \u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0622\u064a\u0627\u062a. \u062a\u0645 \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u0645\u0646 \u0628\u062f\u0627\u064a\u0629 \u0627\u0644\u0633\u0648\u0631\u0629.',
+            ),
+          ),
+        );
+      }
+    }
     await _audioPlayer.play();
     if (mounted && requestId == _audioPlayRequestId) {
       _updateState(() {

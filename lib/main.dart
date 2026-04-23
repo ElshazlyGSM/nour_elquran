@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -26,16 +25,7 @@ import 'services/quran_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught platform error: $error');
-    return true;
-  };
-  runZonedGuarded(() => runApp(const _BootstrapApp()), (error, stack) {
-    debugPrint('Uncaught zone error: $error');
-  });
+  runApp(const _BootstrapApp());
 }
 
 class _BootstrapApp extends StatefulWidget {
@@ -61,25 +51,25 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     super.dispose();
   }
 
-  late final WidgetsBindingObserver _lifecycleObserver =
-      _BootstrapLifecycleObserver(
-        onResume: () async {
-          final store = _store;
-          if (store == null) {
-            return;
-          }
-          unawaited(_handleLaunchTarget(store));
-          unawaited(_syncPrayerCityFromLocation(store));
-          unawaited(_reschedulePrayerNotifications(store));
-          unawaited(() async {
-            try {
-              await _rescheduleSalawat(store);
-            } catch (_) {}
-          }());
-          unawaited(_refreshAndRescheduleDailyReminder(store));
-          unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
-        },
-      );
+  late final WidgetsBindingObserver
+  _lifecycleObserver = _BootstrapLifecycleObserver(
+    onResume: () async {
+      final store = _store;
+      if (store == null) {
+        return;
+      }
+      unawaited(_handleLaunchTarget(store));
+      unawaited(_syncPrayerCityFromLocation(store));
+      unawaited(_reschedulePrayerNotifications(store));
+      unawaited(() async {
+        try {
+          await _rescheduleSalawat(store);
+        } catch (_) {}
+      }());
+      unawaited(_refreshAndRescheduleDailyReminder(store));
+      unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -280,14 +270,13 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       'prayer' => PrayerTimesPage(store: store),
       'adhkar' => AdhkarPage(store: store),
       'tasbih' => TasbihPage(store: store),
-      'continue' =>
-        store.lastRead == null
-            ? QuranSectionShell(store: store)
-            : ReaderPage(
-                store: store,
-                surahNumber: store.lastRead!.surahNumber,
-                initialVerse: store.lastRead!.verseNumber,
-              ),
+      'continue' => store.lastRead == null
+          ? QuranSectionShell(store: store)
+          : ReaderPage(
+              store: store,
+              surahNumber: store.lastRead!.surahNumber,
+              initialVerse: store.lastRead!.verseNumber,
+            ),
       _ => null,
     };
     if (page == null) {
@@ -303,8 +292,10 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
     await navigatorState.push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            Directionality(textDirection: TextDirection.rtl, child: page),
+        builder: (_) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: page,
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ class ReaderReciter {
     this.mp3FolderUrl,
     this.rewaya,
     this.country,
+    this.availableSurahs,
   });
 
   final String id;
@@ -24,10 +25,13 @@ class ReaderReciter {
   final String? mp3FolderUrl;
   final String? rewaya;
   final String? country;
+  final Set<int>? availableSurahs;
 
   bool get isLegacy => source == ReaderReciterSource.legacy;
   bool get isMp3Quran => source == ReaderReciterSource.mp3Quran;
   bool get supportsFullDownload => isLegacy;
+  bool get hasLimitedSurahList =>
+      availableSurahs != null && availableSurahs!.isNotEmpty;
 
   String get subtitle {
     if (rewaya != null && rewaya!.isNotEmpty) {
@@ -57,6 +61,7 @@ class ReaderReciter {
     required String folderUrl,
     required String rewaya,
     String country = 'مصر',
+    Iterable<int>? availableSurahs,
   }) {
     return ReaderReciter._(
       id: 'mp3:$timingReadId',
@@ -67,6 +72,9 @@ class ReaderReciter {
       mp3FolderUrl: folderUrl,
       rewaya: rewaya,
       country: country,
+      availableSurahs: availableSurahs == null
+          ? null
+          : Set<int>.from(availableSurahs),
     );
   }
 }
