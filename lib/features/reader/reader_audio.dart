@@ -1,19 +1,10 @@
 part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
-  ReaderReciter? _mp3FallbackForLegacy(ReaderReciter reciter) {
-    if (!reciter.isLegacy || reciter.legacyReciter == null) {
-      return null;
-    }
-    final direct = switch (reciter.legacyReciter!) {
-      quran.Reciter.arMinshawi => findReaderReciterById('mp3:118'),
-      _ => null,
-    };
-    if (direct != null) {
-      return direct;
-    }
-    return readerReciters.where((item) => item.isMp3Quran).firstOrNull;
-  }
+  //عدد تشغيل اول ايات 5 وبعدها 20 
+  static const int _initialPlaylistBatchSize = 5;
+  static const int _initialPreloadBatchSize = 20;
+  static const int _backgroundPlaylistBatchSize = 10;
 
   int get _effectiveRepeatCount =>
       _selectedRepeatCount <= 0 ? 1 : _selectedRepeatCount;
@@ -257,24 +248,18 @@ extension _ReaderAudio on _ReaderPageState {
     if (_isPreparingAudio) {
       return;
     }
-    final anchor = _effectiveActionAnchor();
-    if (anchor == null) {
+    if (_selectedSurahNumber == null || _selectedVerseNumber == null) {
       return;
     }
-    _updateState(() {
-      _selectedSurahNumber = anchor.surahNumber;
-      _selectedVerseNumber = anchor.verseNumber;
-    });
     await _playFromVerse(
-      surahNumber: anchor.surahNumber,
-      verseNumber: anchor.verseNumber,
+      surahNumber: _selectedSurahNumber!,
+      verseNumber: _selectedVerseNumber!,
     );
   }
 
   Future<void> _playFromVerse({
     required int surahNumber,
     required int verseNumber,
-    bool allowLegacyFallback = true,
   }) async {
     final requestId = ++_audioPlayRequestId;
     _updateState(() {
@@ -287,10 +272,13 @@ extension _ReaderAudio on _ReaderPageState {
     });
     _currentMp3QuranTimings = const [];
     _activeAudioEngine = _AudioEngine.local;
+    _isAdvancingToNextSurah = false;
 
     try {
-      await AudioCtrl.instance.state.audioPlayer.stop();
-      await _audioPlayer.stop();
+      await Future.wait<void>([
+        AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
+        _audioPlayer.stop().catchError((_) {}),
+      ], eagerError: false);
       if (_selectedReciter.isMp3Quran) {
         await _playFromVerseWithMp3Quran(
           requestId: requestId,
@@ -306,80 +294,48 @@ extension _ReaderAudio on _ReaderPageState {
       }
       _playbackSurahNumber = surahNumber;
       _playbackStartVerse = verseNumber;
-      _playbackResumeVerseAfterChunk = null;
       final verseCount = _quranSource.getVerseCount(surahNumber);
-      final localChunkVerses = <int>[];
-      var firstMissingVerseAfterChunk = 0;
-      for (var ayah = verseNumber; ayah <= verseCount; ayah++) {
-        final localPath = await _recitationCacheService.localPathForVerse(
-          reciter: legacyReciter,
-          surahNumber: surahNumber,
-          verseNumber: ayah,
-        );
-        if (localPath == null) {
-          firstMissingVerseAfterChunk = ayah;
-          break;
-        }
-        localChunkVerses.add(ayah);
-      }
-
-      final shouldUseLocalChunk = localChunkVerses.isNotEmpty;
-      final versesToPlay = shouldUseLocalChunk
-          ? localChunkVerses
-          : [for (var ayah = verseNumber; ayah <= verseCount; ayah++) ayah];
-      _playlistVerseNumbers = [
-        for (final ayah in versesToPlay)
+      final allVersesToPlay = <int>[
+        for (var ayah = verseNumber; ayah <= verseCount; ayah++)
           for (var repeat = 0; repeat < _effectiveRepeatCount; repeat++) ayah,
       ];
-      if (shouldUseLocalChunk &&
-          firstMissingVerseAfterChunk > 0 &&
-          firstMissingVerseAfterChunk <= verseCount) {
-        _playbackResumeVerseAfterChunk = firstMissingVerseAfterChunk;
+      if (allVersesToPlay.isEmpty) {
+        throw Exception('لا توجد آيات متاحة للتشغيل.');
       }
-      final playlist = <AudioSource>[];
-      var allLocal = shouldUseLocalChunk;
-      for (final ayah in _playlistVerseNumbers) {
-        final localPath = await _recitationCacheService.localPathForVerse(
-          reciter: legacyReciter,
-          surahNumber: surahNumber,
-          verseNumber: ayah,
-        );
-        if (localPath != null) {
-          playlist.add(AudioSource.file(localPath));
-          continue;
-        }
-        allLocal = false;
-        playlist.add(
-          AudioSource.uri(
-            Uri.parse(
-              _quranSource.getAudioUrlByVerse(
-                surahNumber,
-                ayah,
-                reciter: legacyReciter,
-              ),
-            ),
-          ),
-        );
-      }
-      if (!allLocal && mounted && requestId == _audioPlayRequestId) {
-        _updateState(() {
-          _isPreparingAudio = true;
-        });
-      }
-      unawaited(
-        _cacheCurrentPlaybackLocally(
-          surahNumber: surahNumber,
-          verseNumbers: _playlistVerseNumbers,
-        ),
+      final initialBatchCount =
+          allVersesToPlay.length < _initialPlaylistBatchSize
+          ? allVersesToPlay.length
+          : _initialPlaylistBatchSize;
+      final initialVerses = allVersesToPlay
+          .take(initialBatchCount)
+          .toList(growable: true);
+      final preloadStart = initialBatchCount;
+      final preloadEndExclusive = (preloadStart + _initialPreloadBatchSize)
+          .clamp(0, allVersesToPlay.length);
+      final preloadedVerses = allVersesToPlay
+          .sublist(preloadStart, preloadEndExclusive)
+          .toList(growable: false);
+      _playlistVerseNumbers = [...initialVerses, ...preloadedVerses];
+      _playbackResumeVerseAfterChunk =
+          preloadEndExclusive < allVersesToPlay.length
+          ? allVersesToPlay[preloadEndExclusive]
+          : null;
+
+      final initialSources = await _buildLegacyAudioSourcesForVerses(
+        legacyReciter: legacyReciter,
+        surahNumber: surahNumber,
+        verses: initialVerses,
       );
-      if (allLocal && mounted && requestId == _audioPlayRequestId) {
-        _updateState(() {
-          _isPreparingAudio = true;
-          _isPlayingAudio = false;
-        });
+      final preloadedSources = _buildNetworkAudioSourcesForVerses(
+        legacyReciter: legacyReciter,
+        surahNumber: surahNumber,
+        verses: preloadedVerses,
+      );
+      if (initialSources.isEmpty) {
+        throw Exception('No verses available for playback.');
       }
       await _audioPlayer.setAudioSources(
-        playlist,
+        [...initialSources, ...preloadedSources],
         initialIndex: 0,
         initialPosition: Duration.zero,
       );
@@ -395,32 +351,73 @@ extension _ReaderAudio on _ReaderPageState {
           _audioError = null;
         });
       }
+
+      unawaited(
+        _cacheCurrentPlaybackLocally(
+          surahNumber: surahNumber,
+          verseNumbers: initialVerses.toSet(),
+        ),
+      );
+
+      if (preloadEndExclusive < allVersesToPlay.length) {
+        unawaited(() async {
+          try {
+            var nextStart = preloadEndExclusive;
+            while (nextStart < allVersesToPlay.length) {
+              final nextEndExclusive =
+                  (nextStart + _backgroundPlaylistBatchSize).clamp(
+                    0,
+                    allVersesToPlay.length,
+                  );
+              final batchVerses = allVersesToPlay
+                  .sublist(nextStart, nextEndExclusive)
+                  .toList(growable: false);
+              final batchSources = _buildNetworkAudioSourcesForVerses(
+                legacyReciter: legacyReciter,
+                surahNumber: surahNumber,
+                verses: batchVerses,
+              );
+              if (!mounted ||
+                  requestId != _audioPlayRequestId ||
+                  _activeAudioEngine != _AudioEngine.local) {
+                return;
+              }
+              if (batchSources.isEmpty) {
+                break;
+              }
+              await _audioPlayer.addAudioSources(batchSources);
+              if (!mounted ||
+                  requestId != _audioPlayRequestId ||
+                  _activeAudioEngine != _AudioEngine.local) {
+                return;
+              }
+              _playlistVerseNumbers.addAll(batchVerses);
+              nextStart = nextEndExclusive;
+              _playbackResumeVerseAfterChunk =
+                  nextStart < allVersesToPlay.length
+                  ? allVersesToPlay[nextStart]
+                  : null;
+              unawaited(
+                _cacheCurrentPlaybackLocally(
+                  surahNumber: surahNumber,
+                  verseNumbers: batchVerses.toSet(),
+                ),
+              );
+            }
+          } catch (error) {
+            if (kDebugMode) {
+              debugPrint(
+                '[ReaderAudio] Background playlist append failed: $error',
+              );
+            }
+            return;
+          }
+        }());
+      }
+      return;
     } catch (_) {
       if (requestId != _audioPlayRequestId) {
         return;
-      }
-      final fallbackReciter = allowLegacyFallback
-          ? _mp3FallbackForLegacy(_selectedReciter)
-          : null;
-      if (fallbackReciter != null) {
-        try {
-          if (mounted && requestId == _audioPlayRequestId) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '\u062a\u0645 \u0627\u0644\u0627\u0646\u062a\u0642\u0627\u0644 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627 \u0625\u0644\u0649 \u0645\u0635\u062f\u0631 \u0628\u062f\u064a\u0644 \u0644\u0644\u062a\u0644\u0627\u0648\u0629',
-                ),
-              ),
-            );
-          }
-          await _playFromVerseWithMp3Quran(
-            requestId: requestId,
-            surahNumber: surahNumber,
-            verseNumber: verseNumber,
-            reciterOverride: fallbackReciter,
-          );
-          return;
-        } catch (_) {}
       }
       _updateState(() {
         _audioError = _isAdvancingToNextSurah
@@ -432,21 +429,14 @@ extension _ReaderAudio on _ReaderPageState {
       });
       return;
     }
-
-    if (mounted && requestId == _audioPlayRequestId) {
-      _updateState(() {
-        _isPreparingAudio = false;
-      });
-    }
   }
 
   Future<void> _playFromVerseWithMp3Quran({
     required int requestId,
     required int surahNumber,
     required int verseNumber,
-    ReaderReciter? reciterOverride,
   }) async {
-    final reciter = reciterOverride ?? _selectedReciter;
+    final reciter = _selectedReciter;
     final timings = await _mp3QuranRecitationService.fetchAyahTimings(
       reciter: reciter,
       surahNumber: surahNumber,
@@ -529,57 +519,134 @@ extension _ReaderAudio on _ReaderPageState {
         _isPreparingAudio = false;
         _isPlayingAudio = false;
         _suspendPlaylistIndexSelectionSync = false;
-        _suspendPlaylistIndexSelectionSync = false;
       });
     }
-    await AudioCtrl.instance.state.audioPlayer.stop();
-    await _audioPlayer.stop();
+    await Future.wait<void>([
+      AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
+      _audioPlayer.stop().catchError((_) {}),
+    ], eagerError: false);
   }
 
   Future<void> _handleLocalAudioCompleted() async {
-    final currentSurah = _playbackSurahNumber;
-    if (_isAdvancingToNextSurah || currentSurah == null) {
-      await _stopAudio();
+    if (_isHandlingLocalCompletion) {
       return;
     }
-    final resumeVerse = _playbackResumeVerseAfterChunk;
-    if (resumeVerse != null) {
-      _playbackResumeVerseAfterChunk = null;
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-      try {
-        await _playFromVerse(
-          surahNumber: currentSurah,
-          verseNumber: resumeVerse,
-        );
-      } catch (_) {
-        await _stopAudio();
-      }
-      return;
-    }
-    if (currentSurah >= currentQuranTotalSurahCount) {
-      await _stopAudio();
-      return;
-    }
-    _isAdvancingToNextSurah = true;
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    _updateState(() {
-      _selectedSurahNumber = currentSurah + 1;
-      _selectedVerseNumber = 1;
-      _visibleSurahNumber = currentSurah + 1;
-      _audioError = null;
-    });
+    _isHandlingLocalCompletion = true;
     try {
-      await _playFromVerse(surahNumber: currentSurah + 1, verseNumber: 1);
-    } catch (_) {
-      if (mounted) {
-        _updateState(() {
-          _audioError = null;
-          _isPreparingAudio = false;
-          _isPlayingAudio = false;
-        });
+      final currentSurah = _playbackSurahNumber;
+      if (_isAdvancingToNextSurah) {
+        return;
+      }
+      if (currentSurah == null) {
+        await _stopAudio();
+        return;
+      }
+      final resumeVerse = _playbackResumeVerseAfterChunk;
+      if (resumeVerse != null) {
+        final verseCount = _quranSource.getVerseCount(currentSurah);
+        if (resumeVerse > verseCount) {
+          _playbackResumeVerseAfterChunk = null;
+        } else {
+          _playbackResumeVerseAfterChunk = null;
+          for (var attempt = 0; attempt < 2; attempt++) {
+            await Future<void>.delayed(
+              Duration(milliseconds: attempt == 0 ? 60 : 180),
+            );
+            try {
+              await _playFromVerse(
+                surahNumber: currentSurah,
+                verseNumber: resumeVerse,
+              );
+              return;
+            } catch (_) {
+              if (attempt == 1) {
+                break;
+              }
+            }
+          }
+        }
+      }
+      if (currentSurah >= currentQuranTotalSurahCount) {
+        await _stopAudio();
+        return;
+      }
+      _isAdvancingToNextSurah = true;
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+      _updateState(() {
+        _selectedSurahNumber = currentSurah + 1;
+        _selectedVerseNumber = 1;
+        _visibleSurahNumber = currentSurah + 1;
+        _audioError = null;
+      });
+      try {
+        await _playFromVerse(surahNumber: currentSurah + 1, verseNumber: 1);
+      } catch (_) {
+        if (mounted) {
+          _updateState(() {
+            _audioError = null;
+            _isPreparingAudio = false;
+            _isPlayingAudio = false;
+          });
+        }
+      } finally {
+        _isAdvancingToNextSurah = false;
       }
     } finally {
-      _isAdvancingToNextSurah = false;
+      _isHandlingLocalCompletion = false;
     }
+  }
+
+  Future<List<AudioSource>> _buildLegacyAudioSourcesForVerses({
+    required dynamic legacyReciter,
+    required int surahNumber,
+    required List<int> verses,
+  }) async {
+    if (verses.isEmpty) {
+      return const [];
+    }
+    final localPaths = await Future.wait<String?>([
+      for (final ayah in verses)
+        _recitationCacheService.localPathForVerse(
+          reciter: legacyReciter,
+          surahNumber: surahNumber,
+          verseNumber: ayah,
+        ),
+    ], eagerError: false);
+    return <AudioSource>[
+      for (var i = 0; i < verses.length; i++)
+        localPaths[i] != null
+            ? AudioSource.file(localPaths[i]!)
+            : AudioSource.uri(
+                Uri.parse(
+                  _quranSource.getAudioUrlByVerse(
+                    surahNumber,
+                    verses[i],
+                    reciter: legacyReciter,
+                  ),
+                ),
+              ),
+    ];
+  }
+
+  List<AudioSource> _buildNetworkAudioSourcesForVerses({
+    required dynamic legacyReciter,
+    required int surahNumber,
+    required List<int> verses,
+  }) {
+    if (verses.isEmpty) {
+      return const [];
+    }
+    return <AudioSource>[
+      for (final ayah in verses)
+        AudioSource.uri(
+          Uri.parse(
+            _quranSource.getAudioUrlByVerse(
+              surahNumber,
+              ayah,
+              reciter: legacyReciter,
+            ),
+          ),
+        ),
+    ];
   }
 }

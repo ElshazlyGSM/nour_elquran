@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,7 +26,16 @@ import 'services/quran_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const _BootstrapApp());
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught platform error: $error');
+    return true;
+  };
+  runZonedGuarded(() => runApp(const _BootstrapApp()), (error, stack) {
+    debugPrint('Uncaught zone error: $error');
+  });
 }
 
 class _BootstrapApp extends StatefulWidget {

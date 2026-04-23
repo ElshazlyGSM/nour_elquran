@@ -337,6 +337,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int _audioPlayRequestId = 0;
   bool _suspendPlaylistIndexSelectionSync = false;
   bool _isAdvancingToNextSurah = false;
+  bool _isHandlingLocalCompletion = false;
   bool _isInitialStandardPositioning = false;
   bool _isSwitchingToPagedMushaf = false;
   bool _isCheckingMedinaFonts =
@@ -1042,7 +1043,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         return;
       }
       if (state.processingState == ProcessingState.completed) {
-        if (!_isAdvancingToNextSurah) {
+        _updateState(() {
+          _isPlayingAudio = false;
+          _isPreparingAudio = true;
+        });
+        if (!_isAdvancingToNextSurah && !_isHandlingLocalCompletion) {
           unawaited(_handleLocalAudioCompleted());
         }
         return;

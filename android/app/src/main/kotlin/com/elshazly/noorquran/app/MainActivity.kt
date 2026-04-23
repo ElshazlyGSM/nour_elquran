@@ -26,17 +26,18 @@ class MainActivity : AudioServiceActivity() {
     private val settingsChannel = "com.elshazly.noorquran/device_settings"
     private val widgetChannel = "com.elshazly.noorquran/widget"
     private var pendingLaunchTarget: String? = null
+    private var lastShortcutsPublishAtMs: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         handleLaunchIntent(intent)
-        publishDynamicShortcuts()
+        publishDynamicShortcutsSafely(force = true)
     }
 
     override fun onResume() {
         super.onResume()
-        publishDynamicShortcuts()
+        publishDynamicShortcutsSafely()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -410,6 +411,19 @@ class MainActivity : AudioServiceActivity() {
         try {
             shortcutManager.dynamicShortcuts = shortcuts
         } catch (_: Throwable) {
+        }
+    }
+
+    private fun publishDynamicShortcutsSafely(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastShortcutsPublishAtMs < 2_000L) {
+            return
+        }
+        try {
+            publishDynamicShortcuts()
+            lastShortcutsPublishAtMs = now
+        } catch (_: Throwable) {
+            // Never let shortcuts publishing crash app startup/resume.
         }
     }
 

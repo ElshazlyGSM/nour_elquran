@@ -370,8 +370,9 @@ extension _ReaderDialogs on _ReaderPageState {
                               onPressed: nextPosition == null
                                   ? null
                                   : () => shiftToVerse(nextPosition),
+                                  label: const Text('الآية التالية'),
                               icon: const Icon(Icons.navigate_next_rounded),
-                              label: const Text('الآية التالية'),
+                              
                             ),
                           ),
                         ],
