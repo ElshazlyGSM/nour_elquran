@@ -2,7 +2,13 @@ import 'package:quran/quran.dart' as quran;
 
 import '../models/reader_reciter.dart';
 
-final readerReciters = <ReaderReciter>[
+final List<ReaderReciter> readerReciters = List<ReaderReciter>.unmodifiable(
+  _readerRecitersRaw.toList()..sort(
+    (a, b) => _arabicSortKey(a.nameAr).compareTo(_arabicSortKey(b.nameAr)),
+  ),
+);
+
+final _readerRecitersRaw = <ReaderReciter>[
   ReaderReciter.legacy(
     reciter: quran.Reciter.arShaatree,
     nameAr: 'أبو بكر الشاطري',
@@ -76,6 +82,20 @@ final readerReciters = <ReaderReciter>[
     nameAr: 'ماهر المعيقلي',
   ),
 ];
+
+String _arabicSortKey(String input) {
+  final trimmed = input.trim();
+  final withoutPrefix = trimmed.startsWith('ال')
+      ? trimmed.substring(2)
+      : trimmed;
+  return withoutPrefix
+      .replaceAll('أ', 'ا')
+      .replaceAll('إ', 'ا')
+      .replaceAll('آ', 'ا')
+      .replaceAll('ى', 'ي')
+      .replaceAll('ؤ', 'و')
+      .replaceAll('ئ', 'ي');
+}
 
 final ReaderReciter defaultReaderReciter = readerReciters.firstWhere(
   (reciter) => reciter.legacyReciter == quran.Reciter.arMinshawi,

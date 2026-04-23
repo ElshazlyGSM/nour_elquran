@@ -28,7 +28,6 @@ class SalawatNotificationService {
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
-  static const _firstReminderWarmupMinutes = 1;
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -210,6 +209,60 @@ class SalawatNotificationService {
     _log('Reschedule: pendingCount=$pendingCount');
   }
 
+  Future<int> pendingScheduledCount() async {
+    await initialize();
+    final pending = await _notifications.pendingNotificationRequests();
+    return pending
+        .where(
+          (item) =>
+              item.id >= _scheduledBaseId && item.id < _scheduledCeilingId,
+        )
+        .length;
+  }
+
+  Future<void> ensureRollingCapacity({
+    required bool enabled,
+    required int intervalMinutes,
+    required bool pauseAtPrayer,
+    required int prayerPauseMinutes,
+    required bool windowEnabled,
+    required int windowStartMinutes,
+    required int windowEndMinutes,
+    required bool vibrationEnabled,
+    PrayerCity? city,
+    Map<String, int> prayerOffsets = const {},
+    bool summerTimeEnabled = false,
+    int minimumPendingNotifications = 96,
+  }) async {
+    await initialize();
+    if (!enabled) {
+      await cancelAll();
+      return;
+    }
+    final safeMinimum = minimumPendingNotifications.clamp(24, 240);
+    final pendingCount = await pendingScheduledCount();
+    if (pendingCount >= safeMinimum) {
+      _log('EnsureCapacity: skip (pending=$pendingCount, min=$safeMinimum)');
+      return;
+    }
+    _log(
+      'EnsureCapacity: trigger reschedule (pending=$pendingCount, min=$safeMinimum)',
+    );
+    await reschedule(
+      enabled: enabled,
+      intervalMinutes: intervalMinutes,
+      pauseAtPrayer: pauseAtPrayer,
+      prayerPauseMinutes: prayerPauseMinutes,
+      windowEnabled: windowEnabled,
+      windowStartMinutes: windowStartMinutes,
+      windowEndMinutes: windowEndMinutes,
+      vibrationEnabled: vibrationEnabled,
+      city: city,
+      prayerOffsets: prayerOffsets,
+      summerTimeEnabled: summerTimeEnabled,
+    );
+  }
+
   Future<void> _refreshExactAlarmCapability() async {
     if (!Platform.isAndroid) {
       _canScheduleExactAlarms = true;
@@ -273,9 +326,9 @@ class SalawatNotificationService {
     required bool summerTimeEnabled,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
-    var nextTime = now.add(
-      const Duration(minutes: _firstReminderWarmupMinutes),
-    );
+    // Start from the configured interval itself to avoid "early" reminders
+    // when rescheduling is triggered by app resume/watchdog.
+    var nextTime = now.add(Duration(minutes: intervalMinutes));
     var nextId = _scheduledBaseId;
     final pauseDuration = Duration(minutes: prayerPauseMinutes.clamp(5, 180));
     var scheduledCount = 0;

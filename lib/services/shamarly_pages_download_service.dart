@@ -112,7 +112,7 @@ class ShamarlyPagesDownloadService {
       final url = ShamarlyPagesDownloadConfig.zipUrls[index];
       try {
         onProgress(0);
-        onStatus?.call('جارٍ تنزيل ملف الشمرلي...');
+        onStatus?.call('جارٍ تنزيل مصحف الشمرلي...');
         await _downloadZipFromUrl(
           url: url,
           zipFile: zipFile,

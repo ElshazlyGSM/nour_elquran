@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -38,6 +39,10 @@ class _BootstrapApp extends StatefulWidget {
 class _BootstrapAppState extends State<_BootstrapApp> {
   QuranStore? _store;
 
+  void _logMain(String message) {
+    developer.log(message, name: 'MainBootstrap');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,25 +56,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     super.dispose();
   }
 
-  late final WidgetsBindingObserver
-  _lifecycleObserver = _BootstrapLifecycleObserver(
-    onResume: () async {
-      final store = _store;
-      if (store == null) {
-        return;
-      }
-      unawaited(_handleLaunchTarget(store));
-      unawaited(_syncPrayerCityFromLocation(store));
-      unawaited(_reschedulePrayerNotifications(store));
-      unawaited(() async {
-        try {
-          await _rescheduleSalawat(store);
-        } catch (_) {}
-      }());
-      unawaited(_refreshAndRescheduleDailyReminder(store));
-      unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
-    },
-  );
+  late final WidgetsBindingObserver _lifecycleObserver =
+      _BootstrapLifecycleObserver(
+        onResume: () async {
+          final store = _store;
+          if (store == null) {
+            return;
+          }
+          unawaited(_handleLaunchTarget(store));
+          unawaited(_syncPrayerCityFromLocation(store));
+          unawaited(_reschedulePrayerNotifications(store));
+          unawaited(_ensureSalawatHealthy(store));
+          unawaited(_refreshAndRescheduleDailyReminder(store));
+          unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
+        },
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +149,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     unawaited(
       Future<void>.delayed(const Duration(seconds: 6), () async {
         try {
-          await _rescheduleSalawat(store);
+          await _ensureSalawatHealthy(store);
         } catch (_) {}
       }),
     );
@@ -215,9 +216,38 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     );
   }
 
-  Future<void> _rescheduleSalawat(QuranStore store) {
+  Future<void> _ensureSalawatHealthy(QuranStore store) async {
     final city = resolvePrayerCityByName(store.savedPrayerCityName);
-    return SalawatNotificationService.instance.reschedule(
+    final service = SalawatNotificationService.instance;
+    await service.initialize();
+    if (!store.savedSalawatReminderEnabled) {
+      _logMain('Salawat disabled -> cancelAll');
+      await service.cancelAll();
+      return;
+    }
+    final pendingCount = await service.pendingScheduledCount();
+    _logMain(
+      'Salawat health check: pending=$pendingCount, interval=${store.savedSalawatReminderIntervalMinutes}',
+    );
+    if (pendingCount == 0) {
+      _logMain('Salawat pending=0 -> full reschedule');
+      await service.reschedule(
+        enabled: store.savedSalawatReminderEnabled,
+        intervalMinutes: store.savedSalawatReminderIntervalMinutes,
+        pauseAtPrayer: store.savedSalawatPauseAtPrayer,
+        prayerPauseMinutes: store.savedSalawatPrayerPauseMinutes,
+        windowEnabled: store.savedSalawatWindowEnabled,
+        windowStartMinutes: store.savedSalawatWindowStartMinutes,
+        windowEndMinutes: store.savedSalawatWindowEndMinutes,
+        vibrationEnabled: store.savedSalawatVibrationEnabled,
+        city: city,
+        prayerOffsets: store.savedPrayerOffsets,
+        summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
+      );
+      return;
+    }
+    _logMain('Salawat pending available -> ensure rolling capacity');
+    await service.ensureRollingCapacity(
       enabled: store.savedSalawatReminderEnabled,
       intervalMinutes: store.savedSalawatReminderIntervalMinutes,
       pauseAtPrayer: store.savedSalawatPauseAtPrayer,
@@ -229,6 +259,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
       summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
+      minimumPendingNotifications: 96,
     );
   }
 
@@ -270,13 +301,14 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       'prayer' => PrayerTimesPage(store: store),
       'adhkar' => AdhkarPage(store: store),
       'tasbih' => TasbihPage(store: store),
-      'continue' => store.lastRead == null
-          ? QuranSectionShell(store: store)
-          : ReaderPage(
-              store: store,
-              surahNumber: store.lastRead!.surahNumber,
-              initialVerse: store.lastRead!.verseNumber,
-            ),
+      'continue' =>
+        store.lastRead == null
+            ? QuranSectionShell(store: store)
+            : ReaderPage(
+                store: store,
+                surahNumber: store.lastRead!.surahNumber,
+                initialVerse: store.lastRead!.verseNumber,
+              ),
       _ => null,
     };
     if (page == null) {
@@ -290,13 +322,12 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     if (!context.mounted) {
       return;
     }
-    await navigatorState.push(
+    await navigatorState.pushAndRemoveUntil(
       MaterialPageRoute<void>(
-        builder: (_) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: page,
-        ),
+        builder: (_) =>
+            Directionality(textDirection: TextDirection.rtl, child: page),
       ),
+      (route) => route.isFirst,
     );
   }
 

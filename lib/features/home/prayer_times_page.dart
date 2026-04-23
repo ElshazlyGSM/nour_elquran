@@ -396,6 +396,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                     margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
                       leading: CircleAvatar(
+                        radius: 16,
                         backgroundColor: entry.key == nextPrayer.key
                             ? const Color(0xFFE6C16A)
                             : const Color(0xFFE9DEC3),
@@ -404,6 +405,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                           entry.isPrayer
                               ? Icons.access_time_rounded
                               : Icons.wb_twilight_rounded,
+                          size: 18,
                         ),
                       ),
                       title: Text(
@@ -724,11 +726,21 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       barrierColor: Colors.black.withValues(alpha: 0.45),
       pageBuilder: (context, _, unused2) {
         final media = MediaQuery.of(context).size;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final showCoachmarkLabel = media.width >= 320;
         final arrowLeft =
             (targetRect == null
                     ? media.width - 64.0
                     : (targetRect.center.dx - 14).clamp(8.0, media.width - 36))
                 .toDouble();
+        final coachmarkWidth = (160.0 * textScale).clamp(
+          150.0,
+          media.width - 16,
+        );
+        final coachmarkLeft = arrowLeft.clamp(
+          8.0,
+          (media.width - coachmarkWidth - 8).clamp(8.0, media.width - 8.0),
+        );
         final arrowTop =
             (targetRect == null
                     ? 72.0
@@ -738,25 +750,36 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
           children: [
             Positioned(
               top: arrowTop,
-              left: arrowLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: const [
-                  Icon(
-                    Icons.arrow_upward_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'زر الودجت هنا',
-                    style: TextStyle(
+              left: coachmarkLeft,
+              child: SizedBox(
+                width: coachmarkWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Icon(
+                      Icons.arrow_upward_rounded,
                       color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                      size: 24,
                     ),
-                  ),
-                ],
+                    if (showCoachmarkLabel) ...[
+                      const SizedBox(height: 2),
+                      SizedBox(
+                        width: coachmarkWidth,
+                        child: Text(
+                          'زر الودجت هنا',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
             Center(
@@ -872,11 +895,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               for (final entry in previewEntries)
                 Expanded(
                   child: Container(
-                    height: 76,
-                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                    height: 45,
+                    margin: const EdgeInsets.symmetric(horizontal: 1),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 3,
-                      vertical: 5,
+                      horizontal: 2,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: entry.key == nextPrayer.key
@@ -898,11 +921,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                   ? const Color(0xFF14392A)
                                   : const Color(0xFFCEE0D8),
                               fontWeight: FontWeight.w800,
-                              fontSize: 11,
+                              fontSize: 10,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
@@ -914,7 +937,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                   ? const Color(0xFF14392A)
                                   : Colors.white,
                               fontWeight: FontWeight.w900,
-                              fontSize: 13,
+                              fontSize: 8,
                             ),
                           ),
                         ),

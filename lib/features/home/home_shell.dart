@@ -35,14 +35,14 @@ class _HomeShellState extends State<HomeShell> {
   };
 
   Timer? _countdownTimer;
-  DateTime _now = DateTime.now();
+  final ValueNotifier<DateTime> _nowNotifier = ValueNotifier(DateTime.now());
 
   @override
   void initState() {
     super.initState();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
-        setState(() => _now = DateTime.now());
+        _nowNotifier.value = DateTime.now();
       }
     });
   }
@@ -50,6 +50,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _nowNotifier.dispose();
     super.dispose();
   }
 
@@ -112,8 +113,6 @@ class _HomeShellState extends State<HomeShell> {
     final clampedTextScale = rawTextScale.clamp(1.0, 1.10);
     final lastRead = widget.store.lastRead;
     final prayerCity = _resolveSavedCity();
-    final upcomingPrayer = _buildUpcomingPrayer();
-    final hijriDate = _buildHijriDate();
     final screenWidth = mediaQuery.size.width;
     final isCompact = screenWidth < 380;
     final crossAxisCount = screenWidth < 560 ? 2 : 3;
@@ -188,14 +187,21 @@ class _HomeShellState extends State<HomeShell> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _HomeUpcomingPrayerCard(
-                      prayerName: upcomingPrayer.name,
-                      prayerTime: _formatTime(upcomingPrayer.time),
-                      remaining: _formatCountdown(
-                        upcomingPrayer.time.difference(_now),
-                      ),
-                      hijriDate: hijriDate,
-                      cityLabel: prayerCity.name,
+                    ValueListenableBuilder<DateTime>(
+                      valueListenable: _nowNotifier,
+                      builder: (context, now, _) {
+                        final upcomingPrayer = _buildUpcomingPrayer(now);
+                        final hijriDate = _buildHijriDate(now);
+                        return _HomeUpcomingPrayerCard(
+                          prayerName: upcomingPrayer.name,
+                          prayerTime: _formatTime(upcomingPrayer.time),
+                          remaining: _formatCountdown(
+                            upcomingPrayer.time.difference(now),
+                          ),
+                          hijriDate: hijriDate,
+                          cityLabel: prayerCity.name,
+                        );
+                      },
                     ),
                     const SizedBox(height: 18),
                     if (lastRead != null)
@@ -315,9 +321,9 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  _UpcomingPrayerData _buildUpcomingPrayer() {
+  _UpcomingPrayerData _buildUpcomingPrayer(DateTime now) {
     final enabledMap = widget.store.savedPrayerEnabledMap;
-    final today = _buildPrayerTimes(_now);
+    final today = _buildPrayerTimes(now);
     final entries = <_UpcomingPrayerData>[
       _UpcomingPrayerData(
         key: 'fajr',
@@ -347,13 +353,13 @@ class _HomeShellState extends State<HomeShell> {
     ];
 
     for (final entry in entries) {
-      if ((enabledMap[entry.key] ?? true) && entry.time.isAfter(_now)) {
+      if ((enabledMap[entry.key] ?? true) && entry.time.isAfter(now)) {
         return entry;
       }
     }
 
     final tomorrowFajr = _buildPrayerTimes(
-      _now.add(const Duration(days: 1)),
+      now.add(const Duration(days: 1)),
     ).fajr.toLocal();
     return _UpcomingPrayerData(
       key: 'fajr',
@@ -390,11 +396,11 @@ class _HomeShellState extends State<HomeShell> {
     return buffer.toString();
   }
 
-  String _buildHijriDate() {
+  String _buildHijriDate(DateTime now) {
     HijriCalendar.setLocal('ar');
     final offset = widget.store.savedPrayerHijriOffset;
     final hijri = HijriCalendar.fromDate(
-      DateTime(_now.year, _now.month, _now.day).add(Duration(days: offset)),
+      DateTime(now.year, now.month, now.day).add(Duration(days: offset)),
     );
     return '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)}';
   }

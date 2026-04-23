@@ -495,6 +495,8 @@ extension _ReaderDialogs on _ReaderPageState {
     if (!mounted) {
       return;
     }
+    final selectedReciterTileKey = GlobalObjectKey(_selectedReciter.id);
+    var didAutoScrollToSelected = false;
     final selected = await _showCompactListSheet<ReaderReciter>(
       children: [
         StatefulBuilder(
@@ -514,7 +516,24 @@ extension _ReaderDialogs on _ReaderPageState {
                 final isDownloaded = _downloadedReciterIds.contains(reciter.id);
                 final isPartial = _partialReciterIds.contains(reciter.id);
                 final progress = _reciterDownloadProgress[reciter.id];
+                if (isSelected && !didAutoScrollToSelected) {
+                  didAutoScrollToSelected = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final selectedContext =
+                        selectedReciterTileKey.currentContext;
+                    if (selectedContext == null || !context.mounted) {
+                      return;
+                    }
+                    Scrollable.ensureVisible(
+                      selectedContext,
+                      alignment: 0.34,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                    );
+                  });
+                }
                 return ListTile(
+                  key: isSelected ? selectedReciterTileKey : null,
                   title: Text(_reciterArabicName(reciter)),
                   subtitle: Text(
                     isDownloading
@@ -905,20 +924,28 @@ extension _ReaderDialogs on _ReaderPageState {
     var targetSurahNumber = _selectedSurahNumber;
     var targetVerseNumber = _selectedVerseNumber;
     if (wasPagedMushaf) {
-      final selectedAyahs = QuranCtrl.instance.selectedAyahsByUnequeNumber;
-      if (selectedAyahs.isNotEmpty) {
-        final ayah = QuranCtrl.instance.getAyahByUq(selectedAyahs.last);
-        targetSurahNumber = ayah.surahNumber;
-        targetVerseNumber = ayah.ayahNumber;
+      if (_isShamarlyPagesMode) {
+        final anchor = _resolveShamarlyAnchorForPage(_shamarlyCurrentPage);
+        if (anchor != null) {
+          targetSurahNumber = anchor.surahNumber;
+          targetVerseNumber = anchor.verseNumber;
+        }
       } else {
-        final currentPage = QuranCtrl.instance.state.currentPageNumber.value;
-        final pageData = _quranSource.getPageData(currentPage);
-        if (pageData.isNotEmpty) {
-          final firstAyahOnPage = pageData.first;
-          targetSurahNumber =
-              targetSurahNumber ?? firstAyahOnPage['surah'] as int;
-          targetVerseNumber =
-              targetVerseNumber ?? firstAyahOnPage['start'] as int;
+        final selectedAyahs = QuranCtrl.instance.selectedAyahsByUnequeNumber;
+        if (selectedAyahs.isNotEmpty) {
+          final ayah = QuranCtrl.instance.getAyahByUq(selectedAyahs.last);
+          targetSurahNumber = ayah.surahNumber;
+          targetVerseNumber = ayah.ayahNumber;
+        } else {
+          final currentPage = QuranCtrl.instance.state.currentPageNumber.value;
+          final pageData = _quranSource.getPageData(currentPage);
+          if (pageData.isNotEmpty) {
+            final firstAyahOnPage = pageData.first;
+            targetSurahNumber =
+                targetSurahNumber ?? firstAyahOnPage['surah'] as int;
+            targetVerseNumber =
+                targetVerseNumber ?? firstAyahOnPage['start'] as int;
+          }
         }
       }
     }
