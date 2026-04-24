@@ -38,6 +38,7 @@ class _BootstrapApp extends StatefulWidget {
 
 class _BootstrapAppState extends State<_BootstrapApp> {
   QuranStore? _store;
+  DateTime? _lastSalawatHealthCheckAt;
 
   void _logMain(String message) {
     developer.log(message, name: 'MainBootstrap');
@@ -65,7 +66,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           }
           unawaited(_handleLaunchTarget(store));
           unawaited(_syncPrayerCityFromLocation(store));
-          unawaited(_reschedulePrayerNotifications(store));
+          unawaited(_ensurePrayerNotificationsHealthy(store));
           unawaited(_ensureSalawatHealthy(store));
           unawaited(_refreshAndRescheduleDailyReminder(store));
           unawaited(PrayerTimesWidgetService.instance.updateFromStore(store));
@@ -216,16 +217,70 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     );
   }
 
+  Future<void> _ensurePrayerNotificationsHealthy(QuranStore store) async {
+    final service = PrayerNotificationService.instance;
+    await service.initialize();
+
+    final pendingCount = await service.pendingScheduledCount();
+    final anyPrayerEnabled = store.savedPrayerEnabledMap.values.any(
+      (enabled) => enabled,
+    );
+    final anyReminderEnabled = store.savedPrayerReminderByPrayer.values.any(
+      (minutes) => minutes > 0,
+    );
+    final shouldHaveAnyScheduled =
+        anyPrayerEnabled &&
+        (store.savedPrayerAdhanEnabled || anyReminderEnabled);
+
+    _logMain(
+      'Prayer health check: pending=$pendingCount, adhan=${store.savedPrayerAdhanEnabled}, '
+      'anyPrayerEnabled=$anyPrayerEnabled, anyReminderEnabled=$anyReminderEnabled',
+    );
+
+    if (!shouldHaveAnyScheduled) {
+      if (pendingCount > 0) {
+        _logMain('Prayer should be empty -> cleanup by reschedule');
+        await _reschedulePrayerNotifications(store);
+      } else {
+        _logMain('Prayer healthy: no pending expected');
+      }
+      return;
+    }
+
+    const minimumHealthyPending = 24;
+    if (pendingCount < minimumHealthyPending) {
+      _logMain(
+        'Prayer pending below threshold ($pendingCount < $minimumHealthyPending) -> full reschedule',
+      );
+      await _reschedulePrayerNotifications(store);
+      return;
+    }
+    _logMain('Prayer healthy: skip full reschedule on resume');
+  }
+
   Future<void> _ensureSalawatHealthy(QuranStore store) async {
+    final now = DateTime.now();
+    final lastCheck = _lastSalawatHealthCheckAt;
+    if (lastCheck != null &&
+        now.difference(lastCheck) < const Duration(seconds: 90)) {
+      _logMain('Salawat health check skipped (cooldown)');
+      return;
+    }
+    _lastSalawatHealthCheckAt = now;
+
     final city = resolvePrayerCityByName(store.savedPrayerCityName);
     final service = SalawatNotificationService.instance;
     await service.initialize();
+    final pendingCount = await service.pendingScheduledCount();
     if (!store.savedSalawatReminderEnabled) {
-      _logMain('Salawat disabled -> cancelAll');
-      await service.cancelAll();
+      if (pendingCount > 0) {
+        _logMain('Salawat disabled with pending=$pendingCount -> cancelAll');
+        await service.cancelAll();
+      } else {
+        _logMain('Salawat disabled and clean -> skip');
+      }
       return;
     }
-    final pendingCount = await service.pendingScheduledCount();
     _logMain(
       'Salawat health check: pending=$pendingCount, interval=${store.savedSalawatReminderIntervalMinutes}',
     );

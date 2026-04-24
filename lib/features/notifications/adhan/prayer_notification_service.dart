@@ -278,6 +278,16 @@ class PrayerNotificationService {
     }
   }
 
+  Future<int> pendingScheduledCount() async {
+    await initialize();
+    final pending = await _notifications.pendingNotificationRequests();
+    return pending
+        .where(
+          (request) => request.id > 0 && request.id < _prayerNotificationMaxId,
+        )
+        .length;
+  }
+
   PrayerTimes _buildPrayerTimes({
     required PrayerCity city,
     required DateTime date,

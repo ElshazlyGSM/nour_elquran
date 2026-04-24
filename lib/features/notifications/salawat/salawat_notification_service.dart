@@ -28,6 +28,7 @@ class SalawatNotificationService {
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
+  static const _payloadScheduledAtPrefix = 'scheduled_at_ms:';
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -235,31 +236,84 @@ class SalawatNotificationService {
     int minimumPendingNotifications = 96,
   }) async {
     await initialize();
+    await _refreshExactAlarmCapability();
+    final pendingRequests = await _pendingScheduledRequests();
+    final pendingCount = pendingRequests.length;
+
     if (!enabled) {
-      await cancelAll();
+      if (pendingCount > 0) {
+        await cancelAll();
+      }
       return;
     }
     final safeMinimum = minimumPendingNotifications.clamp(24, 240);
-    final pendingCount = await pendingScheduledCount();
     if (pendingCount >= safeMinimum) {
       _log('EnsureCapacity: skip (pending=$pendingCount, min=$safeMinimum)');
       return;
     }
-    _log(
-      'EnsureCapacity: trigger reschedule (pending=$pendingCount, min=$safeMinimum)',
+
+    if (pendingCount == 0) {
+      _log('EnsureCapacity: pending=0 -> full reschedule');
+      await reschedule(
+        enabled: enabled,
+        intervalMinutes: intervalMinutes,
+        pauseAtPrayer: pauseAtPrayer,
+        prayerPauseMinutes: prayerPauseMinutes,
+        windowEnabled: windowEnabled,
+        windowStartMinutes: windowStartMinutes,
+        windowEndMinutes: windowEndMinutes,
+        vibrationEnabled: vibrationEnabled,
+        city: city,
+        prayerOffsets: prayerOffsets,
+        summerTimeEnabled: summerTimeEnabled,
+      );
+      return;
+    }
+
+    final latestScheduledEpochMs = _latestScheduledEpochMsFromPayload(
+      pendingRequests,
     );
-    await reschedule(
-      enabled: enabled,
-      intervalMinutes: intervalMinutes,
+    if (latestScheduledEpochMs == null) {
+      _log('EnsureCapacity: missing payload timestamps -> full reschedule');
+      await reschedule(
+        enabled: enabled,
+        intervalMinutes: intervalMinutes,
+        pauseAtPrayer: pauseAtPrayer,
+        prayerPauseMinutes: prayerPauseMinutes,
+        windowEnabled: windowEnabled,
+        windowStartMinutes: windowStartMinutes,
+        windowEndMinutes: windowEndMinutes,
+        vibrationEnabled: vibrationEnabled,
+        city: city,
+        prayerOffsets: prayerOffsets,
+        summerTimeEnabled: summerTimeEnabled,
+      );
+      return;
+    }
+
+    final safeInterval = intervalMinutes.clamp(1, 720);
+    final additionalTarget = (_maxScheduledNotifications - pendingCount).clamp(
+      1,
+      _maxScheduledNotifications,
+    );
+    final scheduledCount = await _topUpRollingNotifications(
+      intervalMinutes: safeInterval,
+      details: _notificationDetails(vibrationEnabled),
+      vibrationEnabled: vibrationEnabled,
       pauseAtPrayer: pauseAtPrayer,
       prayerPauseMinutes: prayerPauseMinutes,
       windowEnabled: windowEnabled,
       windowStartMinutes: windowStartMinutes,
       windowEndMinutes: windowEndMinutes,
-      vibrationEnabled: vibrationEnabled,
       city: city,
       prayerOffsets: prayerOffsets,
       summerTimeEnabled: summerTimeEnabled,
+      usedIds: pendingRequests.map((item) => item.id).toSet(),
+      startAfterEpochMs: latestScheduledEpochMs,
+      additionalTarget: additionalTarget,
+    );
+    _log(
+      'EnsureCapacity: top-up completed additional=$scheduledCount, pendingBefore=$pendingCount',
     );
   }
 
@@ -312,6 +366,47 @@ class SalawatNotificationService {
     }
   }
 
+  Future<List<PendingNotificationRequest>> _pendingScheduledRequests() async {
+    final pending = await _notifications.pendingNotificationRequests();
+    return pending
+        .where(
+          (item) =>
+              item.id >= _scheduledBaseId && item.id < _scheduledCeilingId,
+        )
+        .toList(growable: false);
+  }
+
+  int? _latestScheduledEpochMsFromPayload(
+    List<PendingNotificationRequest> pending,
+  ) {
+    int? latest;
+    for (final request in pending) {
+      final epochMs = _scheduledEpochMsFromPayload(request.payload);
+      if (epochMs == null) {
+        continue;
+      }
+      if (latest == null || epochMs > latest) {
+        latest = epochMs;
+      }
+    }
+    return latest;
+  }
+
+  int? _scheduledEpochMsFromPayload(String? payload) {
+    if (payload == null || payload.isEmpty) {
+      return null;
+    }
+    if (!payload.startsWith(_payloadScheduledAtPrefix)) {
+      return null;
+    }
+    final value = payload.substring(_payloadScheduledAtPrefix.length);
+    return int.tryParse(value);
+  }
+
+  String _payloadForScheduledTime(tz.TZDateTime dateTime) {
+    return '$_payloadScheduledAtPrefix${dateTime.millisecondsSinceEpoch}';
+  }
+
   Future<void> _scheduleSimpleRollingNotifications({
     required int intervalMinutes,
     required NotificationDetails details,
@@ -360,89 +455,194 @@ class SalawatNotificationService {
         continue;
       }
 
-      final preferredMode = _canScheduleExactAlarms
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
-      try {
-        await _notifications.zonedSchedule(
-          nextId,
-          _title,
-          _body,
-          nextTime,
-          details,
-          androidScheduleMode: preferredMode,
-        );
-      } on PlatformException catch (error) {
-        _log(
-          'Schedule failed id=$nextId mode=$preferredMode: ${error.code} ${error.message}',
-        );
-        final message = error.message ?? '';
-        if (message.contains('Maximum limit of concurrent alarms')) {
-          break;
-        }
-        if (preferredMode == AndroidScheduleMode.inexactAllowWhileIdle) {
-          try {
-            await _notifications.zonedSchedule(
-              nextId,
-              _title,
-              _body,
-              nextTime,
-              _fallbackNotificationDetails(vibrationEnabled),
-              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            );
-          } catch (fallbackError) {
-            _log('Fallback(inexact) failed id=$nextId: $fallbackError');
-            nextTime = nextTime.add(Duration(minutes: intervalMinutes));
-            continue;
-          }
-          nextId++;
-          scheduledCount++;
-          nextTime = nextTime.add(Duration(minutes: intervalMinutes));
-          continue;
-        }
-        _canScheduleExactAlarms = false;
-        try {
-          await _notifications.zonedSchedule(
-            nextId,
-            _title,
-            _body,
-            nextTime,
-            details,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          );
-        } on PlatformException catch (fallbackError) {
-          _log(
-            'Fallback failed id=$nextId: ${fallbackError.code} ${fallbackError.message}',
-          );
-          final fallbackMessage = fallbackError.message ?? '';
-          if (fallbackMessage.contains('Maximum limit of concurrent alarms')) {
-            break;
-          }
-          try {
-            await _notifications.zonedSchedule(
-              nextId,
-              _title,
-              _body,
-              nextTime,
-              _fallbackNotificationDetails(vibrationEnabled),
-              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            );
-          } catch (lastError) {
-            _log('Fallback(secondary) failed id=$nextId: $lastError');
-            nextTime = nextTime.add(Duration(minutes: intervalMinutes));
-            continue;
-          }
-        }
+      final result = await _scheduleSingleRollingNotification(
+        id: nextId,
+        scheduledTime: nextTime,
+        details: details,
+        vibrationEnabled: vibrationEnabled,
+      );
+      if (result == _ScheduleAttemptResult.stop) {
+        break;
+      }
+      if (result == _ScheduleAttemptResult.skipped) {
+        nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+        continue;
       }
 
       nextId++;
       scheduledCount++;
       if (scheduledCount == 1) {
-        _log('First scheduled at ${nextTime.toLocal()} mode=$preferredMode');
+        _log('First scheduled at ${nextTime.toLocal()}');
       }
       nextTime = nextTime.add(Duration(minutes: intervalMinutes));
     }
     _log('Scheduled count=$scheduledCount (limit=$_maxScheduledNotifications)');
+  }
+
+  Future<int> _topUpRollingNotifications({
+    required int intervalMinutes,
+    required NotificationDetails details,
+    required bool vibrationEnabled,
+    required bool pauseAtPrayer,
+    required int prayerPauseMinutes,
+    required bool windowEnabled,
+    required int windowStartMinutes,
+    required int windowEndMinutes,
+    required PrayerCity? city,
+    required Map<String, int> prayerOffsets,
+    required bool summerTimeEnabled,
+    required Set<int> usedIds,
+    required int startAfterEpochMs,
+    required int additionalTarget,
+  }) async {
+    final pauseDuration = Duration(minutes: prayerPauseMinutes.clamp(5, 180));
+    final freeIds = <int>[
+      for (var id = _scheduledBaseId; id < _scheduledCeilingId; id++)
+        if (!usedIds.contains(id)) id,
+    ];
+    if (freeIds.isEmpty) {
+      return 0;
+    }
+
+    var nextTime = tz.TZDateTime.fromMillisecondsSinceEpoch(
+      tz.local,
+      startAfterEpochMs,
+    ).add(Duration(minutes: intervalMinutes));
+    final now = tz.TZDateTime.now(tz.local);
+    if (!nextTime.isAfter(now)) {
+      nextTime = now.add(Duration(minutes: intervalMinutes));
+    }
+
+    var scheduledCount = 0;
+    for (final id in freeIds) {
+      if (scheduledCount >= additionalTarget) {
+        break;
+      }
+      while (true) {
+        final withinWindow = _isWithinWindow(
+          nextTime,
+          enabled: windowEnabled,
+          startMinutes: windowStartMinutes,
+          endMinutes: windowEndMinutes,
+        );
+        final withinPrayerPause = _isWithinPrayerPause(
+          nextTime,
+          city: city,
+          prayerOffsets: prayerOffsets,
+          summerTimeEnabled: summerTimeEnabled,
+          pauseAtPrayer: pauseAtPrayer,
+          pauseDuration: pauseDuration,
+        );
+        if (withinWindow && !withinPrayerPause) {
+          break;
+        }
+        nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+      }
+
+      final result = await _scheduleSingleRollingNotification(
+        id: id,
+        scheduledTime: nextTime,
+        details: details,
+        vibrationEnabled: vibrationEnabled,
+      );
+      if (result == _ScheduleAttemptResult.stop) {
+        break;
+      }
+      if (result == _ScheduleAttemptResult.skipped) {
+        nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+        continue;
+      }
+
+      scheduledCount++;
+      nextTime = nextTime.add(Duration(minutes: intervalMinutes));
+    }
+
+    return scheduledCount;
+  }
+
+  Future<_ScheduleAttemptResult> _scheduleSingleRollingNotification({
+    required int id,
+    required tz.TZDateTime scheduledTime,
+    required NotificationDetails details,
+    required bool vibrationEnabled,
+  }) async {
+    final preferredMode = _canScheduleExactAlarms
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    final payload = _payloadForScheduledTime(scheduledTime);
+    try {
+      await _notifications.zonedSchedule(
+        id,
+        _title,
+        _body,
+        scheduledTime,
+        details,
+        androidScheduleMode: preferredMode,
+        payload: payload,
+      );
+      return _ScheduleAttemptResult.scheduled;
+    } on PlatformException catch (error) {
+      _log(
+        'Schedule failed id=$id mode=$preferredMode: ${error.code} ${error.message}',
+      );
+      final message = error.message ?? '';
+      if (message.contains('Maximum limit of concurrent alarms')) {
+        return _ScheduleAttemptResult.stop;
+      }
+      if (preferredMode == AndroidScheduleMode.inexactAllowWhileIdle) {
+        try {
+          await _notifications.zonedSchedule(
+            id,
+            _title,
+            _body,
+            scheduledTime,
+            _fallbackNotificationDetails(vibrationEnabled),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: payload,
+          );
+          return _ScheduleAttemptResult.scheduled;
+        } catch (fallbackError) {
+          _log('Fallback(inexact) failed id=$id: $fallbackError');
+          return _ScheduleAttemptResult.skipped;
+        }
+      }
+      _canScheduleExactAlarms = false;
+      try {
+        await _notifications.zonedSchedule(
+          id,
+          _title,
+          _body,
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: payload,
+        );
+        return _ScheduleAttemptResult.scheduled;
+      } on PlatformException catch (fallbackError) {
+        _log(
+          'Fallback failed id=$id: ${fallbackError.code} ${fallbackError.message}',
+        );
+        final fallbackMessage = fallbackError.message ?? '';
+        if (fallbackMessage.contains('Maximum limit of concurrent alarms')) {
+          return _ScheduleAttemptResult.stop;
+        }
+        try {
+          await _notifications.zonedSchedule(
+            id,
+            _title,
+            _body,
+            scheduledTime,
+            _fallbackNotificationDetails(vibrationEnabled),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: payload,
+          );
+          return _ScheduleAttemptResult.scheduled;
+        } catch (lastError) {
+          _log('Fallback(secondary) failed id=$id: $lastError');
+          return _ScheduleAttemptResult.skipped;
+        }
+      }
+    }
   }
 
   bool _isWithinWindow(
@@ -583,3 +783,5 @@ class SalawatNotificationService {
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
 }
+
+enum _ScheduleAttemptResult { scheduled, skipped, stop }
