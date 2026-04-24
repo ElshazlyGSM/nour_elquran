@@ -83,25 +83,34 @@ class SalawatNotificationService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
+    final ios = _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (await NotificationPermissionGuard.shouldRequest()) {
-      try {
-        await android?.requestNotificationsPermission();
-      } on PlatformException catch (error) {
-        if (error.code != 'permissionRequestInProgress') {
-          rethrow;
+      if (Platform.isAndroid) {
+        try {
+          await android?.requestNotificationsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
         }
-      }
-      try {
-        await android?.requestExactAlarmsPermission();
-      } on PlatformException catch (error) {
-        if (error.code != 'permissionRequestInProgress') {
-          rethrow;
+        try {
+          await android?.requestExactAlarmsPermission();
+        } on PlatformException catch (error) {
+          if (error.code != 'permissionRequestInProgress') {
+            rethrow;
+          }
         }
+      } else if (Platform.isIOS) {
+        await ios?.requestPermissions(alert: true, badge: true, sound: true);
       }
       await NotificationPermissionGuard.markRequested();
     }
-    _canScheduleExactAlarms =
-        await android?.canScheduleExactNotifications() ?? true;
+    _canScheduleExactAlarms = Platform.isAndroid
+        ? await android?.canScheduleExactNotifications() ?? true
+        : true;
 
     _log('Initialized. canScheduleExact=$_canScheduleExactAlarms');
     _initialized = true;
@@ -716,8 +725,8 @@ class SalawatNotificationService {
   }
 
   NotificationDetails _notificationDetails(
-    bool vibrationEnabled,
-  ) => NotificationDetails(
+  bool vibrationEnabled,
+) => NotificationDetails(
     android: AndroidNotificationDetails(
       'salawat_reminders_channel_clean_v4_${vibrationEnabled ? 'vib' : 'silent'}',
       'تذكير الصلاة على النبي',
@@ -734,6 +743,13 @@ class SalawatNotificationService {
       onlyAlertOnce: false,
       category: AndroidNotificationCategory.reminder,
       audioAttributesUsage: AudioAttributesUsage.notification,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      sound: 'saly.caf',
     ),
   );
 
@@ -757,6 +773,13 @@ class SalawatNotificationService {
       category: AndroidNotificationCategory.reminder,
       audioAttributesUsage: AudioAttributesUsage.notification,
     ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      sound: 'saly.caf',
+    ),
   );
   NotificationDetails _fallbackNotificationDetails(
     bool vibrationEnabled,
@@ -776,6 +799,12 @@ class SalawatNotificationService {
       onlyAlertOnce: false,
       category: AndroidNotificationCategory.reminder,
       audioAttributesUsage: AudioAttributesUsage.notification,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
     ),
   );
 

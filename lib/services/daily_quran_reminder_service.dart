@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -34,7 +35,11 @@ class DailyQuranReminderService {
     }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: androidSettings);
+    const darwinSettings = DarwinInitializationSettings();
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+    );
     await _notifications.initialize(settings);
 
     tz.initializeTimeZones();
@@ -49,9 +54,17 @@ class DailyQuranReminderService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
+    final ios = _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (await NotificationPermissionGuard.shouldRequest()) {
-      await android?.requestNotificationsPermission();
-      await android?.requestExactAlarmsPermission();
+      if (Platform.isAndroid) {
+        await android?.requestNotificationsPermission();
+        await android?.requestExactAlarmsPermission();
+      } else if (Platform.isIOS) {
+        await ios?.requestPermissions(alert: true, badge: true, sound: true);
+      }
       await NotificationPermissionGuard.markRequested();
     }
 
@@ -101,6 +114,12 @@ class DailyQuranReminderService {
       playSound: true,
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 220, 120, 320]),
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.active,
     ),
   );
 }

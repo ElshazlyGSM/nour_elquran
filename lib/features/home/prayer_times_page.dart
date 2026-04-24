@@ -786,6 +786,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 380),
                 child: AlertDialog(
+                  scrollable: true,
+                  insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 20,
+                  ),
                   title: const Text('اختصار مفيد للمواقيت'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -828,14 +833,17 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     required String previewHijriText,
     required String previewSunrise,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF143A2A),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
+    final mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF143A2A),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -957,6 +965,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

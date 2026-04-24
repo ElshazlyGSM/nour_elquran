@@ -149,6 +149,7 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				9740EEB61CF901F6004384FC /* Run Script */,
+				8F77C8A92F20000100D73A11 /* Copy Notification Sounds */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
@@ -255,6 +256,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		8F77C8A92F20000100D73A11 /* Copy Notification Sounds */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Notification Sounds";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -f \"$PROJECT_DIR/scripts/copy_notification_sounds.sh\" ]; then\n  /bin/sh \"$PROJECT_DIR/scripts/copy_notification_sounds.sh\"\nelse\n  echo \"[iOS Sounds] copy script missing\"\nfi";
 		};
 /* End PBXShellScriptBuildPhase section */
 

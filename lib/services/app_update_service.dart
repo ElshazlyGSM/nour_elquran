@@ -50,8 +50,9 @@ class AppUpdateService {
       if (manifest == null) {
         return;
       }
-
+      //لاختبار رساله التحديث تفعيل هذاالسطر مكان الاخر
       final packageInfo = await PackageInfo.fromPlatform();
+      //final currentVersion = '0.0.0';
       final currentVersion = packageInfo.version.trim();
       final latestVersion = manifest.latestVersion.trim();
 
@@ -205,61 +206,69 @@ class AppUpdateService {
       barrierDismissible: !manifest.forceUpdate,
       builder: (dialogContext) {
         final theme = Theme.of(dialogContext);
-        return AlertDialog(
-          title: Text(title),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(message),
-                  const SizedBox(height: 12),
-                  Text(
-                    'إصدارك الحالي: $currentVersion',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  Text(
-                    'الإصدار الجديد: ${manifest.latestVersion}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (manifest.whatsNew.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text('ما الجديد', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    for (final item in manifest.whatsNew)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('• '),
-                            Expanded(child: Text(item)),
-                          ],
+        final mediaQuery = MediaQuery.of(dialogContext);
+        final rawTextScale = mediaQuery.textScaler.scale(16) / 16;
+        final clampedTextScale = rawTextScale.clamp(1.0, 1.12);
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: TextScaler.linear(clampedTextScale)),
+          child: AlertDialog(
+            scrollable: true,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+            title: Text(title),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(message),
+                    const SizedBox(height: 12),
+                    Text(
+                      'إصدارك الحالي: $currentVersion',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    Text(
+                      'الإصدار الجديد: ${manifest.latestVersion}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    if (manifest.whatsNew.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text('ما الجديد', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      for (final item in manifest.whatsNew)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('• '),
+                              Expanded(child: Text(item)),
+                            ],
+                          ),
                         ),
-                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
+            actions: [
+              if (!manifest.forceUpdate && manifest.ignoreEnabled)
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.ignoreVersion),
+                  child: const Text('تجاهل'),
+                ),
+              if (!manifest.forceUpdate && manifest.remindLaterEnabled)
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.remindLater),
+                  child: const Text('ذكرني لاحقًا'),
+                ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.updateNow),
+                child: const Text('تحديث الآن'),
+              ),
+            ],
           ),
-          actions: [
-            if (!manifest.forceUpdate && manifest.ignoreEnabled)
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.ignoreVersion),
-                child: const Text('تجاهل'),
-              ),
-            if (!manifest.forceUpdate && manifest.remindLaterEnabled)
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.remindLater),
-                child: const Text('ذكرني لاحقًا'),
-              ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(_UpdatePromptAction.updateNow),
-              child: const Text('تحديث الآن'),
-            ),
-          ],
         );
       },
     );

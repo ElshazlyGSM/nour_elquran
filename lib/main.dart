@@ -126,7 +126,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     setState(() => _store = store);
     unawaited(_postBootstrapSetup(store));
     unawaited(
-      Future<void>.delayed(const Duration(seconds: 20), () async {
+      Future<void>.delayed(const Duration(seconds: 6), () async {
         await AppUpdateService.instance.checkForUpdatesFromNavigator();
       }),
     );

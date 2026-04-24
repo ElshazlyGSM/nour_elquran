@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:io';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -26,7 +27,11 @@ class WhiteDaysReminderService {
     }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: androidSettings);
+    const darwinSettings = DarwinInitializationSettings();
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+    );
     await _notifications.initialize(settings);
 
     tz.initializeTimeZones();
@@ -41,9 +46,17 @@ class WhiteDaysReminderService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
+    final ios = _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (await NotificationPermissionGuard.shouldRequest()) {
-      await android?.requestNotificationsPermission();
-      await android?.requestExactAlarmsPermission();
+      if (Platform.isAndroid) {
+        await android?.requestNotificationsPermission();
+        await android?.requestExactAlarmsPermission();
+      } else if (Platform.isIOS) {
+        await ios?.requestPermissions(alert: true, badge: true, sound: true);
+      }
       await NotificationPermissionGuard.markRequested();
     }
 
@@ -105,6 +118,12 @@ class WhiteDaysReminderService {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.active,
     ),
   );
 }

@@ -14,14 +14,14 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.activity.enableEdgeToEdge
 import androidx.core.content.FileProvider
-import androidx.core.view.WindowCompat
-import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
-class MainActivity : AudioServiceActivity() {
+class MainActivity : AudioServiceFragmentActivity() {
     private val adhanChannel = "com.elshazly.noorquran/adhan_audio"
     private val settingsChannel = "com.elshazly.noorquran/device_settings"
     private val widgetChannel = "com.elshazly.noorquran/widget"
@@ -29,8 +29,8 @@ class MainActivity : AudioServiceActivity() {
     private var lastShortcutsPublishAtMs: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         handleLaunchIntent(intent)
         publishDynamicShortcutsSafely(force = true)
     }

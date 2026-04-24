@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.util.TypedValue
 import android.widget.RemoteViews
 
 class PrayerTimesWidgetProvider : AppWidgetProvider() {
@@ -47,6 +48,7 @@ class PrayerTimesWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_maghrib_time, maghrib)
         views.setTextViewText(R.id.widget_isha_time, isha)
 
+        applyFixedTextSizing(views)
         applyHighlight(views, nextKey)
 
         val openIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -88,6 +90,28 @@ class PrayerTimesWidgetProvider : AppWidgetProvider() {
         views.setInt(active.first, "setBackgroundResource", R.drawable.widget_prayer_item_bg_active)
         views.setTextColor(active.second, activeText)
         views.setTextColor(active.third, activeText)
+    }
+
+    private fun applyFixedTextSizing(views: RemoteViews) {
+        val textSizesDp = mapOf(
+            R.id.widget_app_name to 12f,
+            R.id.widget_city to 14f,
+            R.id.widget_sunrise_label to 12f,
+            R.id.widget_hijri_date to 12f,
+            R.id.widget_fajr_name to 12f,
+            R.id.widget_dhuhr_name to 12f,
+            R.id.widget_asr_name to 12f,
+            R.id.widget_maghrib_name to 12f,
+            R.id.widget_isha_name to 12f,
+            R.id.widget_fajr_time to 14f,
+            R.id.widget_dhuhr_time to 14f,
+            R.id.widget_asr_time to 14f,
+            R.id.widget_maghrib_time to 14f,
+            R.id.widget_isha_time to 14f,
+        )
+        textSizesDp.forEach { (viewId, sizeDp) ->
+            views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_DIP, sizeDp)
+        }
     }
 
     companion object {
