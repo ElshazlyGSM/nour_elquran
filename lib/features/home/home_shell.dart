@@ -687,7 +687,7 @@ class _FeatureCard extends StatelessWidget {
                 ? 14.0
                 : (shortestSide >= 430 ? 20.0 : (compact ? 16.0 : 18.0));
             final titleSize = veryTight ? 16.2 : (compact ? 17.4 : 18.2);
-            final subtitleSizeBase = veryTight ? 11.4 : (compact ? 12.2 : 13.1);
+            final subtitleSizeBase = veryTight ? 11.8 : (compact ? 12.6 : 13.5);
             final subtitleSize = isAndroidPhone
                 ? (subtitleSizeBase + 0.6)
                 : subtitleSizeBase;
