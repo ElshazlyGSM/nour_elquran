@@ -6,12 +6,6 @@ This app expects these custom notification sounds in `ios/Runner/NotificationSou
 - `shoro2.caf`
 - `azan-alah-akbr.caf`
 - `saly.caf`
-- `azan-nsr-elden.caf`
-- `abdelbast.caf`
-- `azan-elmnshawy.caf`
-- `azan-mowahd.caf`
-- `harm.caf`
-- `mashary.caf`
 
 ## One-time setup on Mac
 
@@ -19,7 +13,7 @@ This app expects these custom notification sounds in `ios/Runner/NotificationSou
    - `brew install ffmpeg`
 2. Generate the `.caf` files:
    - `cd ios`
-   - `./scripts/prepare_notification_sounds.sh`
+   - `sh scripts/prepare_notification_sounds.sh`
 3. Build from Xcode or Flutter as usual.
 
 ## How it is wired

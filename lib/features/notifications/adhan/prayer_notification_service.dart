@@ -648,24 +648,12 @@ class PrayerNotificationService {
     if (!isPrayerTimeAlarm) {
       return 'a2trb.caf';
     }
-    return switch (profile) {
-      'allah_akbar' => 'azan-alah-akbr.caf',
-      'nsr_elden' => 'azan-nsr-elden.caf',
-      'egypt' => 'abdelbast.caf',
-      'mnshawy' => 'azan-elmnshawy.caf',
-      'mowahd' => 'azan-mowahd.caf',
-      'haram' => 'harm.caf',
-      'soft' => 'mashary.caf',
-      _ => 'azan-alah-akbr.caf',
-    };
+    return 'azan-alah-akbr.caf';
   }
 
   String? _iOSBundledSoundName(String soundName) => switch (soundName) {
     'a2trb' => 'a2trb.caf',
     'shoro2' => 'shoro2.caf',
-    'harm' => 'harm.caf',
-    'abdelbast' => 'abdelbast.caf',
-    'mashary' => 'mashary.caf',
     'azan_alah_akbr' => 'azan-alah-akbr.caf',
     'saly' => 'saly.caf',
     _ => null,

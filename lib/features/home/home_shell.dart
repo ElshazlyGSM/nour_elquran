@@ -116,9 +116,21 @@ class _HomeShellState extends State<HomeShell> {
     final screenWidth = mediaQuery.size.width;
     final isCompact = screenWidth < 380;
     final crossAxisCount = screenWidth < 560 ? 2 : 3;
-    final cardAspectRatio = rawTextScale > 1.15
-        ? (isCompact ? 0.78 : 0.88)
-        : (isCompact ? 0.88 : 0.96);
+    double cardAspectRatio;
+    if (crossAxisCount == 2) {
+      if (screenWidth < 360) {
+        cardAspectRatio = 0.76;
+      } else if (screenWidth < 420) {
+        cardAspectRatio = 0.82;
+      } else {
+        cardAspectRatio = 0.88;
+      }
+    } else {
+      cardAspectRatio = screenWidth < 760 ? 0.94 : 1.00;
+    }
+    if (rawTextScale > 1.08) {
+      cardAspectRatio -= 0.04;
+    }
 
     final backgroundGradient = isDark
         ? const [Color(0xFF0D1417), Color(0xFF101A1E), Color(0xFF101A1E)]
@@ -651,65 +663,81 @@ class _FeatureCard extends StatelessWidget {
       1.0,
       1.10,
     );
-    final compact = shortestSide < 390 || scale > 1.06;
-    final iconBoxSize = shortestSide >= 430 ? 62.0 : (compact ? 50.0 : 54.0);
-    final iconSize = shortestSide >= 430 ? 33.0 : (compact ? 27.0 : 29.0);
-    final iconRadius = shortestSide >= 430 ? 20.0 : (compact ? 16.0 : 18.0);
-    final titleSize = compact ? 18.0 : 20.0;
-    final subtitleSize = compact ? 13.0 : 15.0;
-    final betweenGap = compact ? 4.0 : 6.0;
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
         onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.all(scale > 1.06 ? 12 : 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: iconBoxSize,
-                height: iconBoxSize,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(iconRadius),
-                ),
-                child: Icon(icon, color: accent, size: iconSize),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = shortestSide < 390 || scale > 1.06;
+            final veryTight =
+                constraints.maxHeight < 170 || constraints.maxWidth < 148;
+            final iconBoxSize = veryTight
+                ? 44.0
+                : (shortestSide >= 430 ? 60.0 : (compact ? 50.0 : 54.0));
+            final iconSize = veryTight
+                ? 24.0
+                : (shortestSide >= 430 ? 32.0 : (compact ? 27.0 : 29.0));
+            final iconRadius = veryTight
+                ? 14.0
+                : (shortestSide >= 430 ? 20.0 : (compact ? 16.0 : 18.0));
+            final titleSize = veryTight ? 16.0 : (compact ? 17.0 : 18.0);
+            final subtitleSize = veryTight ? 10.0 : (compact ? 11.5 : 13.0);
+            final betweenGap = veryTight ? 3.0 : (compact ? 4.0 : 6.0);
+            final verticalPadding = veryTight
+                ? 10.0
+                : (scale > 1.06 ? 12.0 : 14.0);
+
+            return Padding(
+              padding: EdgeInsets.all(verticalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: iconBoxSize,
+                    height: iconBoxSize,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(iconRadius),
+                    ),
+                    child: Icon(icon, color: accent, size: iconSize),
+                  ),
+                  SizedBox(height: veryTight ? 6 : (compact ? 8 : 10)),
+                  Text(
+                    title,
+                    textScaler: TextScaler.noScaling,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? const Color(0xFFF1EBDE)
+                          : const Color(0xFF143A2A),
+                    ),
+                  ),
+                  SizedBox(height: betweenGap),
+                  Text(
+                    subtitle,
+                    textScaler: TextScaler.noScaling,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: subtitleSize,
+                      height: 1.30,
+                      color: isDark
+                          ? const Color(0xFFB8C0BC)
+                          : const Color(0xFF5C655F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: compact ? 8 : 10),
-              Text(
-                title,
-                textScaler: TextScaler.noScaling,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.bold,
-                  color: isDark
-                      ? const Color(0xFFF1EBDE)
-                      : const Color(0xFF143A2A),
-                ),
-              ),
-              SizedBox(height: betweenGap),
-              Text(
-                subtitle,
-                textScaler: TextScaler.noScaling,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: subtitleSize,
-                  height: 1.35,
-                  color: isDark
-                      ? const Color(0xFFB8C0BC)
-                      : const Color(0xFF5C655F),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
