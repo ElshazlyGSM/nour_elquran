@@ -656,7 +656,7 @@ class PrayerNotificationService {
       'mowahd' => 'azan-mowahd.caf',
       'haram' => 'harm.caf',
       'soft' => 'mashary.caf',
-      _ => null,
+      _ => 'azan-alah-akbr.caf',
     };
   }
 

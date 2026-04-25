@@ -345,6 +345,13 @@ class _ShamarlyPages extends StatefulWidget {
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
   late final PageController _controller;
 
+  bool _isIPhoneLayout(BuildContext context) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      return false;
+    }
+    return MediaQuery.sizeOf(context).shortestSide < 600;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -413,8 +420,11 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
               final scale = (constraints.maxWidth / baseWidth) * baseScale;
               //حجم مصحف الشمرلي وتكبيره لملاءمة الشاشة
               final clampedScale = scale.clamp(1.35, 1.4);
+              final tunedScale = _isIPhoneLayout(context)
+                  ? (clampedScale - 0.05).clamp(1.3, 1.35)
+                  : clampedScale;
               return Transform.scale(
-                scale: clampedScale,
+                scale: tunedScale,
                 child: buildShamarlyPageImage(
                   context: context,
                   filePath: filePath,
@@ -507,9 +517,14 @@ class _QuranPageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageData = _readerQuranSource.getPageData(pageNumber);
+    final isIPhoneLayout =
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.iOS &&
+        MediaQuery.sizeOf(context).shortestSide < 600;
     final showSideQuarterMarker =
         appearance != _ReaderAppearance.medinaPages &&
         appearance != _ReaderAppearance.shamarlyPages;
+    final leftInset = isIPhoneLayout && showSideQuarterMarker ? 8.0 : 3.0;
     final content = Material(
       color: Colors.transparent,
       child: Container(
@@ -520,7 +535,7 @@ class _QuranPageCard extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             //حجم الشريط الى بالطول فى اليمين نعدل من رقم 30
-            3,
+            leftInset,
             8,
             showSideQuarterMarker ? 33 : 3,
             10,

@@ -25,7 +25,7 @@ copy_and_convert_local() {
   src="$1"
   out="$2"
   if [ ! -f "${src}" ]; then
-    echo "Missing local source: ${src}"
+    echo "Missing local source: ${src} (skip)"
     return 1
   fi
   ffmpeg -y -i "${src}" -ac 1 -ar 44100 -c:a pcm_s16le "${OUT_DIR}/${out}"
@@ -36,15 +36,21 @@ download_and_convert() {
   ext="$2"
   out="$3"
   tmp="${TEMP_DIR}/${out}.${ext}"
-  curl -L --fail --retry 3 --connect-timeout 10 "${url}" -o "${tmp}"
+  if ! curl -L --fail --retry 3 --connect-timeout 10 "${url}" -o "${tmp}"; then
+    echo "Failed to download ${url} (skip)"
+    return 0
+  fi
   ffmpeg -y -i "${tmp}" -ac 1 -ar 44100 -c:a pcm_s16le "${OUT_DIR}/${out}"
 }
 
-# Local Android raw sounds (already in repo)
-copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/a2trb.ogg" "a2trb.caf"
-copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/shoro2.ogg" "shoro2.caf"
-copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/azan_alah_akbr.ogg" "azan-alah-akbr.caf"
-copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/saly.ogg" "saly.caf"
+# Local bundled sounds (prefer Android raw, then Flutter assets)
+copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/a2trb.ogg" "a2trb.caf" \
+  || copy_and_convert_local "${ROOT_DIR}/../assets/a2trb.ogg" "a2trb.caf" || true
+copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/shoro2.ogg" "shoro2.caf" \
+  || copy_and_convert_local "${ROOT_DIR}/../assets/audio/shoro2.ogg" "shoro2.caf" || true
+copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/azan_alah_akbr.ogg" "azan-alah-akbr.caf" \
+  || copy_and_convert_local "${ROOT_DIR}/../assets/audio/azan-alah-akbr.ogg" "azan-alah-akbr.caf" || true
+copy_and_convert_local "${ROOT_DIR}/../android/app/src/main/res/raw/saly.ogg" "saly.caf" || true
 
 # Adhan profiles from production mirrors
 download_and_convert "https://huggingface.co/datasets/HaoElshazly/quran_data/resolve/main/azan-nsr-elden.mp3" "mp3" "azan-nsr-elden.caf"
