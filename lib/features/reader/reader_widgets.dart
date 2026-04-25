@@ -739,6 +739,7 @@ class _SurahMarker extends StatelessWidget {
           ),
           child: Text(
             _readerQuranSource.getSurahNameArabic(surahNumber),
+            textScaler: TextScaler.noScaling,
             style: TextStyle(
               fontFamily: _surahNameFontFamily,
               package: _headerFontPackage,
@@ -770,6 +771,7 @@ class _SurahMarker extends StatelessWidget {
             child: Text(
               _readerQuranSource.basmala,
               textAlign: TextAlign.center,
+              textScaler: TextScaler.noScaling,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontFamily: _headerFontFamily,
                 package: _headerFontPackage,
@@ -1757,6 +1759,9 @@ class _SideQuarterMarkerLayer extends StatefulWidget {
 class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
   //تحريك مكان الحزب
   static const double _markerOffset = -15.0;
+  static const double _markerWidth = 30.0;
+  static const double _markerHeight = 52.0;
+  static const double _markerFontSize = 11.0;
   List<_QuarterMarkerPosition> _positions = const [];
 
   @override
@@ -1806,8 +1811,12 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
         }
         final verseOrigin = verseBox.localToGlobal(Offset.zero);
         final rawTop = verseOrigin.dy - pageOrigin.dy;
-        //تحريك مكان علامة الحزب
-        final top = rawTop - (verseBox.size.height * 1.5) + _markerOffset;
+        // تثبيت موضع العلامة مع تغير أحجام الخط: لا نعتمد إزاحة كبيرة على ارتفاع السطر.
+        final top =
+            rawTop +
+            (verseBox.size.height * 0.50) -
+            (_markerHeight / 2) +
+            _markerOffset;
         nextPositions.add(
           _QuarterMarkerPosition(
             top: top,
@@ -1835,7 +1844,11 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
         }
         final verseOrigin = verseBox.localToGlobal(Offset.zero);
         final rawTop = verseOrigin.dy - pageOrigin.dy;
-        final top = rawTop - (verseBox.size.height * -0.5) + _markerOffset;
+        final top =
+            rawTop +
+            (verseBox.size.height * 0.62) -
+            (_markerHeight / 2) +
+            _markerOffset;
         nextPositions.add(
           _QuarterMarkerPosition(
             top: top,
@@ -1934,9 +1947,6 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
 
   @override
   Widget build(BuildContext context) {
-    final markerWidth = 28.0;
-    const markerHeight = 56.0;
-    const markerFontSize = 11.5;
     //علامه الحزب وحجمه ولونه
     return Stack(
       children: [
@@ -1945,17 +1955,20 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
             right: 1,
             top: position.top,
             child: SizedBox(
-              width: markerWidth,
-              height: markerHeight,
+              width: _markerWidth,
+              height: _markerHeight,
               child: Center(
                 child: Text(
                   position.label,
                   textAlign: TextAlign.center,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  textScaler: TextScaler.noScaling,
                   style: TextStyle(
                     color:
                         position.color ??
                         widget.appearance.quarterMarkerTextColor,
-                    fontSize: markerFontSize,
+                    fontSize: _markerFontSize,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),

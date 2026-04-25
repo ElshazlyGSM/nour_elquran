@@ -56,136 +56,140 @@ class _BottomControlBar extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onPointerDown: (_) => onInteract(),
       onPointerMove: (_) => onInteract(),
-      child: SafeArea(
-        top: false,
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
-              decoration: BoxDecoration(
-                color: (isDark ? const Color(0xFF152127) : Colors.white)
-                    .withValues(alpha: 0.75),
-                border: Border(
-                  top: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF26343B)
-                        : const Color(0xFFE8DEC7),
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+        child: SafeArea(
+          top: false,
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                decoration: BoxDecoration(
+                  color: (isDark ? const Color(0xFF152127) : Colors.white)
+                      .withValues(alpha: 0.75),
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF26343B)
+                          : const Color(0xFFE8DEC7),
+                    ),
                   ),
                 ),
-              ),
-              child: SizedBox(
-                height: 56,
-                child: isAutoScrollModeActive
-                    ? Row(
-                        children: [
-                          _BottomBarSquareAction(
-                            icon: isAutoScrollPaused
-                                ? Icons.play_arrow_rounded
-                                : Icons.pause_rounded,
-                            onTap: onPauseResumeAutoScroll,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: _BottomBarInlineGroup(
-                              icon: Icons.keyboard_double_arrow_down_rounded,
-                              title: 'السرعة',
-                              label: autoScrollLabel,
-                              onDecrease: onDecreaseReadingSpeed,
-                              onIncrease: onIncreaseReadingSpeed,
+                child: SizedBox(
+                  height: 56,
+                  child: isAutoScrollModeActive
+                      ? Row(
+                          children: [
+                            _BottomBarSquareAction(
+                              icon: isAutoScrollPaused
+                                  ? Icons.play_arrow_rounded
+                                  : Icons.pause_rounded,
+                              onTap: onPauseResumeAutoScroll,
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: _BottomBarInlineGroup(
-                              icon: Icons.format_size_rounded,
-                              title: 'الخط',
-                              label: fontSizeLabel,
-                              onDecrease: onDecreaseFontSize,
-                              onIncrease: onIncreaseFontSize,
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: _BottomBarInlineGroup(
+                                icon: Icons.keyboard_double_arrow_down_rounded,
+                                title: 'السرعة',
+                                label: autoScrollLabel,
+                                onDecrease: onDecreaseReadingSpeed,
+                                onIncrease: onIncreaseReadingSpeed,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          _BottomBarSquareAction(
-                            icon: Icons.close_rounded,
-                            onTap: onCloseAutoScroll,
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                      Expanded(
-                        child: _BottomBarPrimaryAction(
-                          icon: (isPlayingAudio || isPreparingAudio)
-                              ? Icons.stop_rounded
-                              : Icons.play_arrow_rounded,
-                              label: isPreparingAudio
-                                  ? 'جاري التحميل'
-                                  : 'الصوت',
-                              onTap: onToggleAudio,
-                              isLoading: isPreparingAudio,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (showAutoScrollToggle) ...[
-                        Expanded(
-                          child: _BottomBarPrimaryAction(
-                            icon: Icons.keyboard_double_arrow_down_rounded,
-                            label: 'نزول تلقائي',
-                            onTap: onToggleAutoScroll,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      Expanded(
-                        child: _BottomBarPrimaryAction(
-                          icon: Icons.search_rounded,
-                          label: 'بحث',
-                              onTap: onSearch,
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: _BottomBarInlineGroup(
+                                icon: Icons.format_size_rounded,
+                                title: 'الخط',
+                                label: fontSizeLabel,
+                                onDecrease: onDecreaseFontSize,
+                                onIncrease: onIncreaseFontSize,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _BottomBarPrimaryAction(
-                              icon: Icons.library_books_rounded,
-                              label: 'تفسير',
-                              onTap: onShowTafsir,
+                            const SizedBox(width: 6),
+                            _BottomBarSquareAction(
+                              icon: Icons.close_rounded,
+                              onTap: onCloseAutoScroll,
                             ),
-                          ),
-                          if (showTajweedLegend) ...[
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: _BottomBarPrimaryAction(
+                                icon: (isPlayingAudio || isPreparingAudio)
+                                    ? Icons.stop_rounded
+                                    : Icons.play_arrow_rounded,
+                                label: isPreparingAudio
+                                    ? 'جاري التحميل'
+                                    : 'الصوت',
+                                onTap: onToggleAudio,
+                                isLoading: isPreparingAudio,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (showAutoScrollToggle) ...[
+                              Expanded(
+                                child: _BottomBarPrimaryAction(
+                                  icon:
+                                      Icons.keyboard_double_arrow_down_rounded,
+                                  label: 'نزول تلقائي',
+                                  onTap: onToggleAutoScroll,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: _BottomBarPrimaryAction(
+                                icon: Icons.search_rounded,
+                                label: 'بحث',
+                                onTap: onSearch,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: _BottomBarCustomAction(
-                                label: 'التجويد',
-                                onTap: onShowTajweedLegend,
-                                child: const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CustomPaint(
-                                    painter: _TajweedWheelPainter(),
+                              child: _BottomBarPrimaryAction(
+                                icon: Icons.library_books_rounded,
+                                label: 'تفسير',
+                                onTap: onShowTafsir,
+                              ),
+                            ),
+                            if (showTajweedLegend) ...[
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _BottomBarCustomAction(
+                                  label: 'التجويد',
+                                  onTap: onShowTajweedLegend,
+                                  child: const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CustomPaint(
+                                      painter: _TajweedWheelPainter(),
+                                    ),
                                   ),
                                 ),
                               ),
+                            ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _BottomBarPrimaryAction(
+                                icon: Icons.bookmark_border_rounded,
+                                label: 'علامة',
+                                onTap: onSaveBookmark,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _BottomBarPrimaryAction(
+                                icon: Icons.more_horiz_rounded,
+                                label: 'المزيد',
+                                onTap: onShowMoreActions,
+                              ),
                             ),
                           ],
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _BottomBarPrimaryAction(
-                              icon: Icons.bookmark_border_rounded,
-                              label: 'علامة',
-                              onTap: onSaveBookmark,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _BottomBarPrimaryAction(
-                              icon: Icons.more_horiz_rounded,
-                              label: 'المزيد',
-                              onTap: onShowMoreActions,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                ),
               ),
             ),
           ),
@@ -240,17 +244,22 @@ class _BottomBarPrimaryAction extends StatelessWidget {
                     : const Color(0xFF143A2A),
               ),
             const SizedBox(height: 4),
-            Text(
-              displayLabel,
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: isLoading ? 11.5 : 12.5,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? const Color(0xFFF2ECDF)
-                    : const Color(0xFF143A2A),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                displayLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  fontSize: isLoading ? 11.0 : 11.8,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? const Color(0xFFF2ECDF)
+                      : const Color(0xFF143A2A),
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -292,6 +301,7 @@ class _BottomBarCustomAction extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textScaler: TextScaler.noScaling,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -439,6 +449,7 @@ class _BottomBarStatusAction extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                textScaler: TextScaler.noScaling,
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
@@ -455,6 +466,7 @@ class _BottomBarStatusAction extends StatelessWidget {
             child: Text(
               label,
               maxLines: 1,
+              textScaler: TextScaler.noScaling,
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
@@ -576,11 +588,7 @@ class _ControlGroup extends StatelessWidget {
 }
 
 class _CompactValue extends StatelessWidget {
-  const _CompactValue({
-    required this.icon,
-    required this.label,
-    this.minWidth,
-  });
+  const _CompactValue({required this.icon, required this.label, this.minWidth});
 
   final IconData icon;
   final String label;

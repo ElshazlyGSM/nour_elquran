@@ -64,6 +64,13 @@ class PrayerSettingsPage extends StatefulWidget {
 
 class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   static const double _uniformFontSize = 15;
+  static const List<String> _fardPrayerKeys = <String>[
+    'fajr',
+    'dhuhr',
+    'asr',
+    'maghrib',
+    'isha',
+  ];
 
   late bool _adhanEnabled;
   late bool _summerTimeEnabled;
@@ -385,6 +392,15 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   bool _isDividerProfile(String profile) => profile == '__full_adhans__';
 
   bool _isBundledProfile(String profile) => profile == 'allah_akbar';
+
+  void _ensureDefaultFardRemindersWhenAdhanEnabled() {
+    for (final key in _fardPrayerKeys) {
+      final current = _prayerReminderByPrayer[key] ?? 0;
+      if (current <= 0) {
+        _prayerReminderByPrayer[key] = 5;
+      }
+    }
+  }
 
   Future<void> _loadNotificationVolume() async {
     final current = await BackgroundExecutionSettings.getNotificationVolume();
@@ -930,6 +946,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                               if (_adhanProfile == 'default') {
                                 _adhanProfile = 'allah_akbar';
                               }
+                              _ensureDefaultFardRemindersWhenAdhanEnabled();
                             });
                           },
                           title: const Text(

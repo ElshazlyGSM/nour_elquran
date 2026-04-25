@@ -371,8 +371,11 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   Map<int, int>? _medinaPageToSurahMap;
   List<int>? _medinaJuzStartPages;
   bool _isLoadingShamarlyPageMap = false;
-  double? _scaleStartFontSize;
-  double? _scaleStartPagedFactor;
+  final Map<int, Offset> _activePointerPositions = <int, Offset>{};
+  double? _manualPinchStartDistance;
+  double? _manualPinchStartFontSize;
+  double? _manualPinchStartPagedFactor;
+  bool _isPinchPriorityActive = false;
   String? _audioError;
   int? _selectedSurahNumber;
   int? _selectedVerseNumber;
@@ -409,6 +412,147 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       return target;
     }
     return size;
+  }
+
+  // Make pinch feel easier: small finger movement gives a slightly bigger
+  // visual change without being jumpy.
+  double _pinchScaleWithSensitivity(double rawScale) {
+    const sensitivity = 1.24;
+    return 1 + ((rawScale - 1) * sensitivity);
+  }
+
+  void _setPinchPriorityActive(bool value) {
+    if (_isPinchPriorityActive == value) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isPinchPriorityActive = value;
+    });
+  }
+
+  double? _currentTwoPointersDistance() {
+    if (_activePointerPositions.length < 2) {
+      return null;
+    }
+    final points = _activePointerPositions.values.take(2).toList();
+    return (points[0] - points[1]).distance;
+  }
+
+  void _activateManualPinchIfReady() {
+    if (_activePointerPositions.length < 2) {
+      return;
+    }
+    final distance = _currentTwoPointersDistance();
+    if (distance == null || distance <= 0) {
+      return;
+    }
+    _manualPinchStartDistance ??= distance;
+    _manualPinchStartFontSize ??= _fontSize;
+    if (_isMedinaPagesMode) {
+      try {
+        _manualPinchStartPagedFactor ??=
+            QuranCtrl.instance.state.scaleFactor.value;
+      } catch (_) {
+        _manualPinchStartPagedFactor ??= 1.0;
+      }
+    }
+    _setPinchPriorityActive(true);
+  }
+
+  void _handleReaderPointerDown(PointerDownEvent event) {
+    _activePointerPositions[event.pointer] = event.position;
+    if (_activePointerPositions.length >= 2) {
+      _activateManualPinchIfReady();
+      return;
+    }
+    if (_isAutoScrollModeActive) {
+      final now = DateTime.now();
+      if (_ignoreAutoScrollTapUntil != null &&
+          now.isBefore(_ignoreAutoScrollTapUntil!)) {
+        return;
+      }
+      _toggleAutoScrollPauseResume();
+    }
+  }
+
+  void _handleReaderPointerMove(PointerMoveEvent event) {
+    if (!_activePointerPositions.containsKey(event.pointer)) {
+      return;
+    }
+    _activePointerPositions[event.pointer] = event.position;
+    if (_activePointerPositions.length < 2) {
+      return;
+    }
+    _activateManualPinchIfReady();
+    final startDistance = _manualPinchStartDistance;
+    if (startDistance == null || startDistance <= 0) {
+      return;
+    }
+    final currentDistance = _currentTwoPointersDistance();
+    if (currentDistance == null || currentDistance <= 0) {
+      return;
+    }
+    final adjustedScale = _pinchScaleWithSensitivity(
+      currentDistance / startDistance,
+    );
+
+    if (_isMedinaPagesMode) {
+      final startFactor = _manualPinchStartPagedFactor;
+      if (startFactor == null) {
+        return;
+      }
+      final nextFactor = (startFactor * adjustedScale).clamp(1.0, 2.0);
+      try {
+        final current = QuranCtrl.instance.state.scaleFactor.value;
+        if ((nextFactor - current).abs() < 0.004) {
+          return;
+        }
+        QuranCtrl.instance.state.baseScaleFactor.value = nextFactor;
+        QuranCtrl.instance.state.scaleFactor.value = nextFactor;
+        QuranCtrl.instance.update(['_pageViewBuild']);
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _fontSize = ((nextFactor - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
+          _lastContinuousFontSize = _fontSize;
+        });
+      } catch (_) {}
+      return;
+    }
+
+    final startSize = _manualPinchStartFontSize;
+    if (startSize == null) {
+      return;
+    }
+    final nextSize = (startSize * adjustedScale).clamp(14.0, 42.0);
+    if ((nextSize - _fontSize).abs() < 0.035) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _fontSize = _snapFontSize(nextSize);
+      _lastContinuousFontSize = _fontSize;
+    });
+  }
+
+  void _handleReaderPointerUpOrCancel(PointerEvent event) {
+    _activePointerPositions.remove(event.pointer);
+    if (_activePointerPositions.length < 2) {
+      final wasPinching = _isPinchPriorityActive;
+      _manualPinchStartDistance = null;
+      _manualPinchStartFontSize = null;
+      _manualPinchStartPagedFactor = null;
+      _setPinchPriorityActive(false);
+      if (wasPinching) {
+        unawaited(_persistReaderPreferences());
+      }
+    }
   }
 
   int get _startPage =>
@@ -487,46 +631,6 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       return;
     }
     _syncPagedMushafScaleFromFontSize();
-  }
-
-  void _startPagedPinchScale() {
-    if (!_isMedinaPagesMode) {
-      return;
-    }
-    try {
-      _scaleStartPagedFactor = QuranCtrl.instance.state.scaleFactor.value;
-    } catch (_) {
-      _scaleStartPagedFactor = 1.0;
-    }
-  }
-
-  void _updatePagedPinchScale(ScaleUpdateDetails details) {
-    if (!_isMedinaPagesMode || details.pointerCount < 2) {
-      return;
-    }
-    final startFactor = _scaleStartPagedFactor;
-    if (startFactor == null) {
-      return;
-    }
-    final nextFactor = (startFactor * details.scale).clamp(1.0, 2.0);
-    try {
-      final current = QuranCtrl.instance.state.scaleFactor.value;
-      if ((nextFactor - current).abs() < 0.01) {
-        return;
-      }
-      QuranCtrl.instance.state.baseScaleFactor.value = nextFactor;
-      QuranCtrl.instance.state.scaleFactor.value = nextFactor;
-      QuranCtrl.instance.update(['_pageViewBuild']);
-      _updateState(() {
-        _fontSize = ((nextFactor - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
-        _lastContinuousFontSize = _fontSize;
-      });
-    } catch (_) {}
-  }
-
-  void _endPagedPinchScale() {
-    _scaleStartPagedFactor = null;
-    unawaited(_persistReaderPreferences());
   }
 
   Future<void> _openQuranChooser(int index) async {
@@ -1373,16 +1477,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               : null,
           body: Listener(
             behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) {
-              if (_isAutoScrollModeActive) {
-                final now = DateTime.now();
-                if (_ignoreAutoScrollTapUntil != null &&
-                    now.isBefore(_ignoreAutoScrollTapUntil!)) {
-                  return;
-                }
-                _toggleAutoScrollPauseResume();
-              }
-            },
+            onPointerDown: _handleReaderPointerDown,
+            onPointerMove: _handleReaderPointerMove,
+            onPointerUp: _handleReaderPointerUpOrCancel,
+            onPointerCancel: _handleReaderPointerUpOrCancel,
             child: Stack(
               children: [
                 SafeArea(
@@ -1409,116 +1507,76 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                       Expanded(
                         child: _isPagedMushafMode
                             ? _buildPagedMushafContent()
-                            : GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onScaleStart: (_) {
-                                  _scaleStartFontSize = _fontSize;
-                                },
-                                onScaleUpdate: (details) {
-                                  if (details.pointerCount < 2) {
-                                    return;
+                            : NotificationListener<ScrollStartNotification>(
+                                onNotification: (_) {
+                                  if (_isInitialStandardPositioning) {
+                                    _updateState(() {
+                                      _isInitialStandardPositioning = false;
+                                    });
                                   }
-                                  final startSize = _scaleStartFontSize;
-                                  if (startSize == null) {
-                                    return;
-                                  }
-                                  final nextSize = (startSize * details.scale)
-                                      .clamp(14.0, 42.0);
-                                  if ((nextSize - _fontSize).abs() < 0.08) {
-                                    return;
-                                  }
-                                  _updateState(() {
-                                    _fontSize = _snapFontSize(nextSize);
-                                    _lastContinuousFontSize = _fontSize;
-                                  });
+                                  return false;
                                 },
-                                onScaleEnd: (_) {
-                                  _scaleStartFontSize = null;
-                                  unawaited(_persistReaderPreferences());
-                                },
-                                child:
-                                    NotificationListener<
-                                      ScrollStartNotification
-                                    >(
-                                      onNotification: (_) {
-                                        if (_isInitialStandardPositioning) {
-                                          _updateState(() {
-                                            _isInitialStandardPositioning =
-                                                false;
-                                          });
-                                        }
-                                        return false;
-                                      },
-                                      child: ScrollablePositionedList.builder(
-                                        key: ValueKey(
-                                          _standardInitialPage ?? _startPage,
-                                        ),
-                                        padding: const EdgeInsets.fromLTRB(
-                                          2,
-                                          8,
-                                          2,
-                                          24,
-                                        ),
-                                        itemCount: currentQuranTotalPagesCount,
-                                        initialScrollIndex:
-                                            ((_standardInitialPage ??
-                                                        _startPage) -
-                                                    1)
-                                                .clamp(
-                                                  0,
-                                                  currentQuranTotalPagesCount -
-                                                      1,
-                                                ),
-                                        initialAlignment: 0,
-                                        itemScrollController:
-                                            _standardItemScrollController,
-                                        itemPositionsListener:
-                                            _standardItemPositionsListener,
-                                        scrollOffsetController:
-                                            _standardScrollOffsetController,
-                                        itemBuilder: (context, index) {
-                                          final pageNumber = index + 1;
-                                          final pageKey = _pageKeyFor(
-                                            pageNumber,
-                                          );
-                                          return Padding(
-                                            key: pageKey,
-                                            padding: const EdgeInsets.only(
-                                              bottom: 14,
-                                            ),
-                                            child: _QuranPageCard(
-                                              pageNumber: pageNumber,
-                                              pageKey: pageKey,
-                                              hasBookmark: _pageHasBookmark(
-                                                pageNumber,
-                                              ),
-                                              bookmarkColor: _pageBookmarkColor(
-                                                pageNumber,
-                                              ),
-                                              initialSurahNumber:
-                                                  widget.surahNumber,
-                                              initialVerse: widget.initialVerse,
-                                              lastRead: widget.store.lastRead,
-                                              selectedSurahNumber:
-                                                  _selectedSurahNumber,
-                                              selectedVerseNumber:
-                                                  _selectedVerseNumber,
-                                              highlightQuery:
-                                                  widget.highlightQuery,
-                                              fontSize: _fontSize,
-                                              appearance: _appearance,
-                                              verseKeyBuilder: (s, v) =>
-                                                  _verseKeyFor(
-                                                    s,
-                                                    v,
-                                                    pageNumber,
-                                                  ),
-                                              onVerseTap: _showVerseActions,
-                                            ),
-                                          );
-                                        },
+                                child: ScrollablePositionedList.builder(
+                                  key: ValueKey(
+                                    _standardInitialPage ?? _startPage,
+                                  ),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    2,
+                                    8,
+                                    2,
+                                    24,
+                                  ),
+                                  itemCount: currentQuranTotalPagesCount,
+                                  initialScrollIndex:
+                                      ((_standardInitialPage ?? _startPage) - 1)
+                                          .clamp(
+                                            0,
+                                            currentQuranTotalPagesCount - 1,
+                                          ),
+                                  initialAlignment: 0,
+                                  itemScrollController:
+                                      _standardItemScrollController,
+                                  itemPositionsListener:
+                                      _standardItemPositionsListener,
+                                  scrollOffsetController:
+                                      _standardScrollOffsetController,
+                                  physics: _isPinchPriorityActive
+                                      ? const NeverScrollableScrollPhysics()
+                                      : const ClampingScrollPhysics(),
+                                  itemBuilder: (context, index) {
+                                    final pageNumber = index + 1;
+                                    final pageKey = _pageKeyFor(pageNumber);
+                                    return Padding(
+                                      key: pageKey,
+                                      padding: const EdgeInsets.only(
+                                        bottom: 14,
                                       ),
-                                    ),
+                                      child: _QuranPageCard(
+                                        pageNumber: pageNumber,
+                                        pageKey: pageKey,
+                                        hasBookmark: _pageHasBookmark(
+                                          pageNumber,
+                                        ),
+                                        bookmarkColor: _pageBookmarkColor(
+                                          pageNumber,
+                                        ),
+                                        initialSurahNumber: widget.surahNumber,
+                                        initialVerse: widget.initialVerse,
+                                        lastRead: widget.store.lastRead,
+                                        selectedSurahNumber:
+                                            _selectedSurahNumber,
+                                        selectedVerseNumber:
+                                            _selectedVerseNumber,
+                                        highlightQuery: widget.highlightQuery,
+                                        fontSize: _fontSize,
+                                        appearance: _appearance,
+                                        verseKeyBuilder: (s, v) =>
+                                            _verseKeyFor(s, v, pageNumber),
+                                        onVerseTap: _showVerseActions,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                       ),
                     ],
@@ -1598,43 +1656,37 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     return Stack(
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onScaleStart: (_) => _startPagedPinchScale(),
-            onScaleUpdate: _updatePagedPinchScale,
-            onScaleEnd: (_) => _endPagedPinchScale(),
-            child: _LibraryMushafPages(
-              startPage: _pagedStartPage ?? _startPage,
-              onPageTap: _showPagedControlBar,
-              onPageChanged: (rawPageNumber) {
-                if (_isSwitchingToPagedMushaf) {
-                  _updateState(() {
-                    _isSwitchingToPagedMushaf = false;
-                  });
-                }
-                final pageNumber = _normalizeMedinaPageNumberFromPageViewIndex(
-                  rawPageNumber,
-                );
+          child: _LibraryMushafPages(
+            startPage: _pagedStartPage ?? _startPage,
+            onPageTap: _showPagedControlBar,
+            onPageChanged: (rawPageNumber) {
+              if (_isSwitchingToPagedMushaf) {
                 _updateState(() {
-                  _visiblePagedPageNumber = pageNumber;
+                  _isSwitchingToPagedMushaf = false;
                 });
-              },
-              onAyahSelected: (surahNumber, verseNumber) {
-                final ayahUq = _quranSource.getAyahUqBySurahAndAyah(
-                  surahNumber,
-                  verseNumber,
-                );
-                try {
-                  QuranCtrl.instance.setExternalHighlights([ayahUq]);
-                  QuranCtrl.instance.update();
-                } catch (_) {}
-                _updateState(() {
-                  _selectedSurahNumber = surahNumber;
-                  _selectedVerseNumber = verseNumber;
-                });
-                unawaited(_persistCurrentPosition());
-              },
-            ),
+              }
+              final pageNumber = _normalizeMedinaPageNumberFromPageViewIndex(
+                rawPageNumber,
+              );
+              _updateState(() {
+                _visiblePagedPageNumber = pageNumber;
+              });
+            },
+            onAyahSelected: (surahNumber, verseNumber) {
+              final ayahUq = _quranSource.getAyahUqBySurahAndAyah(
+                surahNumber,
+                verseNumber,
+              );
+              try {
+                QuranCtrl.instance.setExternalHighlights([ayahUq]);
+                QuranCtrl.instance.update();
+              } catch (_) {}
+              _updateState(() {
+                _selectedSurahNumber = surahNumber;
+                _selectedVerseNumber = verseNumber;
+              });
+              unawaited(_persistCurrentPosition());
+            },
           ),
         ),
         if (_isSwitchingToPagedMushaf)

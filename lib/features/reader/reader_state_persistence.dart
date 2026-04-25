@@ -1,6 +1,18 @@
 part of 'reader_page.dart';
 
 extension _ReaderStatePersistence on _ReaderPageState {
+  bool _resolveReaderDarkModeEnabled() {
+    final mode = widget.store.savedThemeMode;
+    if (mode == 'dark') {
+      return true;
+    }
+    if (mode == 'light') {
+      return false;
+    }
+    return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
+  }
+
   _ReaderAppearance _appearanceForThemePreference(
     _ReaderAppearance appearance,
     bool darkModeEnabled,
@@ -216,7 +228,7 @@ extension _ReaderStatePersistence on _ReaderPageState {
     if (_selectedRepeatCount == 1) {
       _selectedRepeatCount = 0;
     }
-    final darkModeEnabled = widget.store.savedDarkModeEnabled;
+    final darkModeEnabled = _resolveReaderDarkModeEnabled();
 
     final savedAppearance = widget.store.savedAppearance;
     if (savedAppearance != null) {

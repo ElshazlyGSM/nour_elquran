@@ -22,7 +22,11 @@ class _ReaderSearchIndexEntry {
 
 final List<_ReaderSearchIndexEntry> _readerSearchCache = [
   for (var surah = 1; surah <= currentQuranTotalSurahCount; surah++)
-    for (var verse = 1; verse <= _readerSearchSource.getVerseCount(surah); verse++)
+    for (
+      var verse = 1;
+      verse <= _readerSearchSource.getVerseCount(surah);
+      verse++
+    )
       () {
         final verseText = _readerSearchSource.getVerseText(
           surah,
@@ -162,12 +166,16 @@ class _ReaderSearchDelegate extends SearchDelegate<_ReaderSearchHit?> {
   }
 
   @override
-  Widget buildSuggestions(BuildContext context) =>
-      _ReaderSearchResults(query: query, onOpenResult: (result) => close(context, result));
+  Widget buildSuggestions(BuildContext context) => _ReaderSearchResults(
+    query: query,
+    onOpenResult: (result) => close(context, result),
+  );
 
   @override
-  Widget buildResults(BuildContext context) =>
-      _ReaderSearchResults(query: query, onOpenResult: (result) => close(context, result));
+  Widget buildResults(BuildContext context) => _ReaderSearchResults(
+    query: query,
+    onOpenResult: (result) => close(context, result),
+  );
 }
 
 class _ReaderSearchResults extends StatelessWidget {
@@ -180,9 +188,15 @@ class _ReaderSearchResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF18242A) : Colors.white;
-    final surahTitleColor = isDark ? const Color(0xFFF2ECDF) : const Color(0xFF163C2D);
-    final verseNumberColor = isDark ? const Color(0xFFE6D8B7) : const Color(0xFF3A2D14);
-    final dividerColor = isDark ? const Color(0xFF314047) : const Color(0x22000000);
+    final surahTitleColor = isDark
+        ? const Color(0xFFF2ECDF)
+        : const Color(0xFF163C2D);
+    final verseNumberColor = isDark
+        ? const Color(0xFFE6D8B7)
+        : const Color(0xFF3A2D14);
+    final dividerColor = isDark
+        ? const Color(0xFF314047)
+        : const Color(0x22000000);
     final normalizedQuery = _normalizeReaderSearch(query);
     if (normalizedQuery.isEmpty) {
       return const Center(
@@ -235,9 +249,8 @@ class _ReaderSearchResults extends StatelessWidget {
               children: [
                 Text(
                   surahName,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(
+                  textScaler: TextScaler.noScaling,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
                     color: surahTitleColor,
@@ -258,6 +271,7 @@ class _ReaderSearchResults extends StatelessWidget {
                         children: [
                           Text(
                             toArabicNumber(result.verseNumber),
+                            textScaler: TextScaler.noScaling,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -313,11 +327,10 @@ String _normalizeReaderSearch(String input) {
       .trim();
 }
 
-List<String> _tokenizeNormalizedText(String text) =>
-    text
-        .split(RegExp(r'\s+'))
-        .where((word) => word.isNotEmpty && word.length > 1)
-        .toList();
+List<String> _tokenizeNormalizedText(String text) => text
+    .split(RegExp(r'\s+'))
+    .where((word) => word.isNotEmpty && word.length > 1)
+    .toList();
 
 String _readerSearchSnippet(String verseText, String query) {
   final words = verseText.trim().split(RegExp(r'\s+'));
@@ -344,17 +357,18 @@ TextSpan _highlightedReaderSearchSnippet(
   String query,
 ) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+  final baseStyle =
+      Theme.of(context).textTheme.bodyMedium?.copyWith(
         fontFamily: 'UthmanicNeo',
-        fontSize: 18,
-        height: 1,
-        
+        fontSize: 19,
+        height: 1.9,
+        wordSpacing: 2.4,
         color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF1E241F),
         fontWeight: FontWeight.w700,
       ) ??
       TextStyle(
         fontFamily: 'UthmanicNeo',
-        fontSize: 18,
+        fontSize: 19,
         height: 1.9,
         wordSpacing: 2.4,
         color: isDark ? Color(0xFFF2ECDF) : Color(0xFF1E241F),
@@ -381,16 +395,10 @@ TextSpan _highlightedReaderSearchSnippet(
         ? highlightStyle
         : baseStyle;
     spans.add(TextSpan(text: part, style: style));
-    spans.add(const WidgetSpan(child: SizedBox(width: 8))); 
+    spans.add(const WidgetSpan(child: SizedBox(width: 8)));
   }
   if (spans.isNotEmpty) {
     spans.removeLast();
   }
   return TextSpan(children: spans, style: baseStyle);
 }
-
-
-
-
-
-

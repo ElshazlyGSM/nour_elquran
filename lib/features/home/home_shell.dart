@@ -239,7 +239,9 @@ class _HomeShellState extends State<HomeShell> {
                           title: 'المصحف',
                           subtitle: 'قراءة واستماع وتفسير وتجويد ومصاحف متعددة',
                           icon: Icons.menu_book_rounded,
-                          accent: const Color(0xFF143A2A),
+                          accent: isDark
+                              ? const Color(0xFFE6C16A)
+                              : const Color(0xFF143A2A),
                           onTap: () => _openPage(
                             context,
                             QuranSectionShell(store: widget.store),
@@ -259,7 +261,9 @@ class _HomeShellState extends State<HomeShell> {
                           title: 'السبحة',
                           subtitle: 'عداد وأذكار مختارة وذكر مخصص',
                           icon: Icons.touch_app_rounded,
-                          accent: const Color(0xFF2D5C4E),
+                          accent: isDark
+                              ? const Color(0xFFE6C16A)
+                              : const Color(0xFF2D5C4E),
                           onTap: () => _openPage(
                             context,
                             TasbihPage(store: widget.store),
@@ -642,10 +646,18 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shortestSide = MediaQuery.sizeOf(context).shortestSide;
     final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
       1.0,
       1.10,
     );
+    final compact = shortestSide < 390 || scale > 1.06;
+    final iconBoxSize = shortestSide >= 430 ? 62.0 : (compact ? 50.0 : 54.0);
+    final iconSize = shortestSide >= 430 ? 33.0 : (compact ? 27.0 : 29.0);
+    final iconRadius = shortestSide >= 430 ? 20.0 : (compact ? 16.0 : 18.0);
+    final titleSize = compact ? 18.0 : 20.0;
+    final subtitleSize = compact ? 13.0 : 15.0;
+    final betweenGap = compact ? 4.0 : 6.0;
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
@@ -656,36 +668,38 @@ class _FeatureCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: iconBoxSize,
+                height: iconBoxSize,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(iconRadius),
                 ),
-                child: Icon(icon, color: accent, size: 22),
+                child: Icon(icon, color: accent, size: iconSize),
               ),
-              const Spacer(),
+              SizedBox(height: compact ? 8 : 10),
               Text(
                 title,
+                textScaler: TextScaler.noScaling,
                 maxLines: 2,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: scale > 1.06 ? 16 : 17,
-                  fontWeight: FontWeight.w800,
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.bold,
                   color: isDark
                       ? const Color(0xFFF1EBDE)
                       : const Color(0xFF143A2A),
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: betweenGap),
               Text(
                 subtitle,
-                maxLines: scale > 1.06 ? 3 : 2,
+                textScaler: TextScaler.noScaling,
+                maxLines: 2,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: subtitleSize,
                   height: 1.35,
                   color: isDark
                       ? const Color(0xFFB8C0BC)
@@ -693,6 +707,7 @@ class _FeatureCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const Spacer(),
             ],
           ),
         ),
@@ -747,7 +762,7 @@ class _ProphetHighlightCard extends StatelessWidget {
                 ),
                 child: const Icon(
                   Icons.favorite_rounded,
-                  color: Color(0xFF8C6A1F),
+                  color: Colors.red,
                   size: 24,
                 ),
               ),

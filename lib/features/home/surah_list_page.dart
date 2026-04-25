@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:quran/quran.dart' as legacy_quran;
-
 import '../../core/utils/arabic_numbers.dart';
 import '../../features/reader/reader_page.dart';
 import '../../services/current_quran_text_source.dart';
@@ -501,7 +499,10 @@ class _HeroPanel extends StatelessWidget {
                               ),
                             );
                           },
-                          child: const Text('متابعة القراءة'),
+                          child: const Text(
+                            'متابعة القراءة',
+                            textScaler: TextScaler.noScaling,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -545,7 +546,10 @@ class _HeroPanel extends StatelessWidget {
                                   ),
                                 );
                               },
-                              child: const Text('معلومات عن القرآن'),
+                              child: const Text(
+                                'معلومات عن القرآن',
+                                textScaler: TextScaler.noScaling,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             const Icon(
@@ -577,7 +581,10 @@ class _HeroPanel extends StatelessWidget {
                                       ),
                                     );
                                   },
-                                  child: const Text('معلومات عن القرآن'),
+                                  child: const Text(
+                                    'معلومات عن القرآن',
+                                    textScaler: TextScaler.noScaling,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 const Icon(
@@ -922,6 +929,7 @@ class _SearchResults extends StatelessWidget {
               children: [
                 Text(
                   surahName,
+                  textScaler: TextScaler.noScaling,
                   style: Theme.of(
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -941,18 +949,16 @@ class _SearchResults extends StatelessWidget {
                         children: [
                           Text(
                             toArabicNumber(result.verseNumber),
+                            textScaler: TextScaler.noScaling,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: RichText(
-                              maxLines: 2,
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               textDirection: TextDirection.rtl,
-                              textAlign: TextAlign.justify,
-                              textWidthBasis: TextWidthBasis.parent,
-                              softWrap: true,
                               text: _highlightedSearchSnippet(
                                 context,
                                 _searchSnippet(
@@ -1022,16 +1028,6 @@ String _searchSnippet(String verseText, String query) {
 }
 
 String _displayVerseText(_VerseSearchHit hit) {
-  try {
-    final legacy = legacy_quran.getVerse(
-      hit.surahNumber,
-      hit.verseNumber,
-      verseEndSymbol: false,
-    );
-    if (legacy.isNotEmpty) {
-      return _normalizeDisplaySpacing(legacy);
-    }
-  } catch (_) {}
   return _normalizeDisplaySpacing(hit.verseText);
 }
 
@@ -1044,8 +1040,7 @@ String _normalizeDisplaySpacing(String text) {
   if (words.length <= 1) {
     return normalized;
   }
-  // Break joining at word boundaries to avoid ligature-stuck words.
-  return words.map((word) => '\u200C$word\u200C').join(' ');
+  return words.join(' ');
 }
 
 TextSpan _highlightedSearchSnippet(
@@ -1053,29 +1048,28 @@ TextSpan _highlightedSearchSnippet(
   String verseText,
   String query,
 ) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final baseStyle =
       Theme.of(context).textTheme.bodyMedium?.copyWith(
-        fontSize: 17,
-        height: 1.8,
-        wordSpacing: 1.0,
-        letterSpacing: 0.0,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFE0DBD1)
-            : const Color(0xFF213128),
+        fontFamily: 'UthmanicNeo',
+        fontSize: 19,
+        height: 1.9,
+        wordSpacing: 2.4,
+        color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF1E241F),
+        fontWeight: FontWeight.w700,
       ) ??
       TextStyle(
-        fontSize: 17,
-        height: 1.8,
-        wordSpacing: 1.0,
-        letterSpacing: 0.0,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFE0DBD1)
-            : const Color(0xFF213128),
+        fontFamily: 'UthmanicNeo',
+        fontSize: 19,
+        height: 1.9,
+        wordSpacing: 2.4,
+        color: isDark ? const Color(0xFFF2ECDF) : const Color(0xFF1E241F),
+        fontWeight: FontWeight.w700,
       );
   final highlightStyle = baseStyle.copyWith(
-    backgroundColor: const Color(0xFFF6E3A8),
+    backgroundColor: isDark ? const Color(0xFF6B5A2A) : const Color(0xFFF6E3A8),
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF143A2A),
+    color: isDark ? const Color(0xFFFFF4D6) : const Color(0xFF143A2A),
   );
 
   final normalizedQuery = _normalizeArabic(query);
@@ -1087,13 +1081,16 @@ TextSpan _highlightedSearchSnippet(
   final spans = <InlineSpan>[];
   for (final part in words) {
     if (part.trim().isEmpty) {
-      spans.add(TextSpan(text: part, style: baseStyle));
       continue;
     }
     final style = _normalizeArabic(part).contains(normalizedQuery)
         ? highlightStyle
         : baseStyle;
     spans.add(TextSpan(text: part, style: style));
+    spans.add(const WidgetSpan(child: SizedBox(width: 8)));
+  }
+  if (spans.isNotEmpty) {
+    spans.removeLast();
   }
   return TextSpan(children: spans, style: baseStyle);
 }
