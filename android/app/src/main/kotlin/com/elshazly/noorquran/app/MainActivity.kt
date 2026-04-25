@@ -14,7 +14,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import androidx.core.content.FileProvider
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,8 +29,8 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var lastShortcutsPublishAtMs: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         handleLaunchIntent(intent)
         publishDynamicShortcutsSafely(force = true)
     }

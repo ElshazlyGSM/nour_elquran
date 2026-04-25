@@ -737,17 +737,33 @@ class _SurahMarker extends StatelessWidget {
             color: appearance.surahBadgeColor,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Text(
-            _readerQuranSource.getSurahNameArabic(surahNumber),
-            textScaler: TextScaler.noScaling,
-            style: TextStyle(
-              fontFamily: _surahNameFontFamily,
-              package: _headerFontPackage,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: titleFontSize,
-              height: 1.2,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _readerQuranSource.getSurahNameArabic(surahNumber),
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  fontFamily: _surahNameFontFamily,
+                  package: _headerFontPackage,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: titleFontSize,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                toArabicNumber(surahNumber),
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.96),
+                  fontWeight: FontWeight.w800,
+                  fontSize: (titleFontSize * 0.78).clamp(12.0, 18.0),
+                  height: 1.0,
+                ),
+              ),
+            ],
           ),
         ),
         if (showBasmala) ...[

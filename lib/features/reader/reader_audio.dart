@@ -1,6 +1,34 @@
 part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
+  bool _shouldInjectLeadingBasmalaAudio({
+    required int surahNumber,
+    required int verseNumber,
+  }) {
+    // At start of a surah (except Al-Tawbah), play basmala once before verse 1.
+    return verseNumber == 1 && surahNumber > 1 && surahNumber != 9;
+  }
+
+  AudioSource _legacyVerseAudioSource({
+    required dynamic legacyReciter,
+    required int surahNumber,
+    required int verseNumber,
+    required String? localPath,
+  }) {
+    if (localPath != null) {
+      return AudioSource.file(localPath);
+    }
+    return AudioSource.uri(
+      Uri.parse(
+        _quranSource.getAudioUrlByVerse(
+          surahNumber,
+          verseNumber,
+          reciter: legacyReciter,
+        ),
+      ),
+    );
+  }
+
   int get _effectiveRepeatCount =>
       _selectedRepeatCount <= 0 ? 1 : _selectedRepeatCount;
 
@@ -298,6 +326,10 @@ extension _ReaderAudio on _ReaderPageState {
       }
       _playbackSurahNumber = surahNumber;
       _playbackStartVerse = verseNumber;
+      final includeLeadingBasmala = _shouldInjectLeadingBasmalaAudio(
+        surahNumber: surahNumber,
+        verseNumber: verseNumber,
+      );
       final verseCount = _quranSource.getVerseCount(surahNumber);
       final allVersesToPlay = <int>[
         for (var ayah = verseNumber; ayah <= verseCount; ayah++)
@@ -306,14 +338,34 @@ extension _ReaderAudio on _ReaderPageState {
       if (allVersesToPlay.isEmpty) {
         throw Exception('لا توجد آيات متاحة للتشغيل.');
       }
-      _playlistVerseNumbers = List<int>.from(allVersesToPlay);
+      _playlistVerseNumbers = includeLeadingBasmala
+          ? <int>[1, ...allVersesToPlay]
+          : List<int>.from(allVersesToPlay);
       _playbackResumeVerseAfterChunk = null;
 
-      final allSources = await _buildLegacyAudioSourcesForVerses(
+      final allSources = <AudioSource>[];
+      if (includeLeadingBasmala) {
+        final basmalaLocalPath = await _recitationCacheService
+            .localPathForVerse(
+              reciter: legacyReciter,
+              surahNumber: 1,
+              verseNumber: 1,
+            );
+        allSources.add(
+          _legacyVerseAudioSource(
+            legacyReciter: legacyReciter,
+            surahNumber: 1,
+            verseNumber: 1,
+            localPath: basmalaLocalPath,
+          ),
+        );
+      }
+      final verseSources = await _buildLegacyAudioSourcesForVerses(
         legacyReciter: legacyReciter,
         surahNumber: surahNumber,
         verses: allVersesToPlay,
       );
+      allSources.addAll(verseSources);
       if (allSources.isEmpty) {
         throw Exception('No verses available for playback.');
       }
@@ -341,6 +393,16 @@ extension _ReaderAudio on _ReaderPageState {
           verseNumbers: allVersesToPlay.toSet(),
         ),
       );
+      if (includeLeadingBasmala) {
+        unawaited(
+          _recitationCacheService.cacheVerseIfMissing(
+            reciter: legacyReciter,
+            surahNumber: 1,
+            verseNumber: 1,
+            url: _quranSource.getAudioUrlByVerse(1, 1, reciter: legacyReciter),
+          ),
+        );
+      }
       return;
     } catch (_) {
       if (requestId != _audioPlayRequestId) {

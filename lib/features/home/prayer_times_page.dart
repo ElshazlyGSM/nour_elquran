@@ -727,7 +727,6 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       pageBuilder: (context, _, unused2) {
         final media = MediaQuery.of(context).size;
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final showCoachmarkLabel = media.width >= 320;
         final arrowLeft =
             (targetRect == null
                     ? media.width - 64.0
@@ -751,35 +750,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             Positioned(
               top: arrowTop,
               left: coachmarkLeft,
-              child: SizedBox(
-                width: coachmarkWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    if (showCoachmarkLabel) ...[
-                      const SizedBox(height: 2),
-                      SizedBox(
-                        width: coachmarkWidth,
-                        child: Text(
-                          'زر الودجت هنا',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              child: const Icon(
+                Icons.arrow_upward_rounded,
+                color: Colors.white,
+                size: 40,
               ),
             ),
             Center(
@@ -844,127 +818,127 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: Text(
-                  'نور القرآن  ${_selectedCity.name}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFE9C777),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Center(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  flex: 4,
                   child: Text(
-                    'الشروق: $previewSunrise',
+                    'نور القرآن  ${_selectedCity.name}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFFD5E6DE),
-                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFE9C777),
+                      fontWeight: FontWeight.w900,
                       fontSize: 12,
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
+                Expanded(
+                  flex: 3,
+                  child: Center(
                     child: Text(
-                      previewHijriText,
+                      'الشروق: $previewSunrise',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFFD4E7DC),
+                        color: Color(0xFFD5E6DE),
                         fontWeight: FontWeight.w800,
                         fontSize: 12,
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              for (final entry in previewEntries)
                 Expanded(
-                  child: Container(
-                    height: 45,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: entry.key == nextPrayer.key
-                          ? const Color(0xFFE4C170)
-                          : const Color(0xFF1B4C3A),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            entry.name,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: TextStyle(
-                              color: entry.key == nextPrayer.key
-                                  ? const Color(0xFF14392A)
-                                  : const Color(0xFFCEE0D8),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 10,
-                            ),
-                          ),
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        previewHijriText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFD4E7DC),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
                         ),
-                        const SizedBox(height: 3),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _formatTime(entry.time),
-                            maxLines: 1,
-                            softWrap: false,
-                            style: TextStyle(
-                              color: entry.key == nextPrayer.key
-                                  ? const Color(0xFF14392A)
-                                  : Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'يمكنك إضافتها الآن، وإن كان اللانشر لا يدعم الإضافة المباشرة ستضيفها يدويًا من Widgets.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.90),
-              fontWeight: FontWeight.w600,
-              fontSize: 11.5,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final entry in previewEntries)
+                  Expanded(
+                    child: Container(
+                      height: 45,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: entry.key == nextPrayer.key
+                            ? const Color(0xFFE4C170)
+                            : const Color(0xFF1B4C3A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              entry.name,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(
+                                color: entry.key == nextPrayer.key
+                                    ? const Color(0xFF14392A)
+                                    : const Color(0xFFCEE0D8),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _formatTime(entry.time),
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(
+                                color: entry.key == nextPrayer.key
+                                    ? const Color(0xFF14392A)
+                                    : Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'يمكنك إضافتها الآن، وإن كان اللانشر لا يدعم الإضافة المباشرة ستضيفها يدويًا من Widgets.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.90),
+                fontWeight: FontWeight.w600,
+                fontSize: 11.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
