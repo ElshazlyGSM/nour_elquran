@@ -1,11 +1,6 @@
 part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
-  //عدد تشغيل اول ايات 5 وبعدها 20 
-  static const int _initialPlaylistBatchSize = 5;
-  static const int _initialPreloadBatchSize = 20;
-  static const int _backgroundPlaylistBatchSize = 10;
-
   int get _effectiveRepeatCount =>
       _selectedRepeatCount <= 0 ? 1 : _selectedRepeatCount;
 
@@ -311,40 +306,19 @@ extension _ReaderAudio on _ReaderPageState {
       if (allVersesToPlay.isEmpty) {
         throw Exception('لا توجد آيات متاحة للتشغيل.');
       }
-      final initialBatchCount =
-          allVersesToPlay.length < _initialPlaylistBatchSize
-          ? allVersesToPlay.length
-          : _initialPlaylistBatchSize;
-      final initialVerses = allVersesToPlay
-          .take(initialBatchCount)
-          .toList(growable: true);
-      final preloadStart = initialBatchCount;
-      final preloadEndExclusive = (preloadStart + _initialPreloadBatchSize)
-          .clamp(0, allVersesToPlay.length);
-      final preloadedVerses = allVersesToPlay
-          .sublist(preloadStart, preloadEndExclusive)
-          .toList(growable: false);
-      _playlistVerseNumbers = [...initialVerses, ...preloadedVerses];
-      _playbackResumeVerseAfterChunk =
-          preloadEndExclusive < allVersesToPlay.length
-          ? allVersesToPlay[preloadEndExclusive]
-          : null;
+      _playlistVerseNumbers = List<int>.from(allVersesToPlay);
+      _playbackResumeVerseAfterChunk = null;
 
-      final initialSources = await _buildLegacyAudioSourcesForVerses(
+      final allSources = await _buildLegacyAudioSourcesForVerses(
         legacyReciter: legacyReciter,
         surahNumber: surahNumber,
-        verses: initialVerses,
+        verses: allVersesToPlay,
       );
-      final preloadedSources = _buildNetworkAudioSourcesForVerses(
-        legacyReciter: legacyReciter,
-        surahNumber: surahNumber,
-        verses: preloadedVerses,
-      );
-      if (initialSources.isEmpty) {
+      if (allSources.isEmpty) {
         throw Exception('No verses available for playback.');
       }
       await _audioPlayer.setAudioSources(
-        [...initialSources, ...preloadedSources],
+        allSources,
         initialIndex: 0,
         initialPosition: Duration.zero,
       );
@@ -364,65 +338,9 @@ extension _ReaderAudio on _ReaderPageState {
       unawaited(
         _cacheCurrentPlaybackLocally(
           surahNumber: surahNumber,
-          verseNumbers: initialVerses.toSet(),
+          verseNumbers: allVersesToPlay.toSet(),
         ),
       );
-
-      if (preloadEndExclusive < allVersesToPlay.length) {
-        unawaited(() async {
-          try {
-            var nextStart = preloadEndExclusive;
-            while (nextStart < allVersesToPlay.length) {
-              final nextEndExclusive =
-                  (nextStart + _backgroundPlaylistBatchSize).clamp(
-                    0,
-                    allVersesToPlay.length,
-                  );
-              final batchVerses = allVersesToPlay
-                  .sublist(nextStart, nextEndExclusive)
-                  .toList(growable: false);
-              final batchSources = _buildNetworkAudioSourcesForVerses(
-                legacyReciter: legacyReciter,
-                surahNumber: surahNumber,
-                verses: batchVerses,
-              );
-              if (!mounted ||
-                  requestId != _audioPlayRequestId ||
-                  _activeAudioEngine != _AudioEngine.local) {
-                return;
-              }
-              if (batchSources.isEmpty) {
-                break;
-              }
-              await _audioPlayer.addAudioSources(batchSources);
-              if (!mounted ||
-                  requestId != _audioPlayRequestId ||
-                  _activeAudioEngine != _AudioEngine.local) {
-                return;
-              }
-              _playlistVerseNumbers.addAll(batchVerses);
-              nextStart = nextEndExclusive;
-              _playbackResumeVerseAfterChunk =
-                  nextStart < allVersesToPlay.length
-                  ? allVersesToPlay[nextStart]
-                  : null;
-              unawaited(
-                _cacheCurrentPlaybackLocally(
-                  surahNumber: surahNumber,
-                  verseNumbers: batchVerses.toSet(),
-                ),
-              );
-            }
-          } catch (error) {
-            if (kDebugMode) {
-              debugPrint(
-                '[ReaderAudio] Background playlist append failed: $error',
-              );
-            }
-            return;
-          }
-        }());
-      }
       return;
     } catch (_) {
       if (requestId != _audioPlayRequestId) {
@@ -533,6 +451,10 @@ extension _ReaderAudio on _ReaderPageState {
     _currentMp3QuranTimings = const [];
     _playbackResumeVerseAfterChunk = null;
     _isAdvancingToNextSurah = false;
+    _pendingLocalCompletion = false;
+    _audioBufferingHintTimer?.cancel();
+    _audioBufferingHintTimer = null;
+    _audioBufferingHintShown = false;
     if (_isPagedMushafMode) {
       try {
         QuranCtrl.instance.clearExternalHighlights();
@@ -553,14 +475,16 @@ extension _ReaderAudio on _ReaderPageState {
 
   Future<void> _handleLocalAudioCompleted() async {
     if (_isHandlingLocalCompletion) {
+      _pendingLocalCompletion = true;
+      return;
+    }
+    if (_isAdvancingToNextSurah) {
+      _pendingLocalCompletion = true;
       return;
     }
     _isHandlingLocalCompletion = true;
     try {
       final currentSurah = _playbackSurahNumber;
-      if (_isAdvancingToNextSurah) {
-        return;
-      }
       if (currentSurah == null) {
         await _stopAudio();
         return;
@@ -572,22 +496,11 @@ extension _ReaderAudio on _ReaderPageState {
           _playbackResumeVerseAfterChunk = null;
         } else {
           _playbackResumeVerseAfterChunk = null;
-          for (var attempt = 0; attempt < 2; attempt++) {
-            await Future<void>.delayed(
-              Duration(milliseconds: attempt == 0 ? 60 : 180),
-            );
-            try {
-              await _playFromVerse(
-                surahNumber: currentSurah,
-                verseNumber: resumeVerse,
-              );
-              return;
-            } catch (_) {
-              if (attempt == 1) {
-                break;
-              }
-            }
-          }
+          await _playFromVerse(
+            surahNumber: currentSurah,
+            verseNumber: resumeVerse,
+          );
+          return;
         }
       }
       if (currentSurah >= currentQuranTotalSurahCount) {
@@ -602,21 +515,17 @@ extension _ReaderAudio on _ReaderPageState {
         _visibleSurahNumber = currentSurah + 1;
         _audioError = null;
       });
-      try {
-        await _playFromVerse(surahNumber: currentSurah + 1, verseNumber: 1);
-      } catch (_) {
-        if (mounted) {
-          _updateState(() {
-            _audioError = null;
-            _isPreparingAudio = false;
-            _isPlayingAudio = false;
-          });
-        }
-      } finally {
-        _isAdvancingToNextSurah = false;
-      }
+      await _playFromVerse(surahNumber: currentSurah + 1, verseNumber: 1);
+      _isAdvancingToNextSurah = false;
     } finally {
       _isHandlingLocalCompletion = false;
+      if (_pendingLocalCompletion &&
+          mounted &&
+          _activeAudioEngine == _AudioEngine.local &&
+          !_isAdvancingToNextSurah) {
+        _pendingLocalCompletion = false;
+        unawaited(_handleLocalAudioCompleted());
+      }
     }
   }
 
@@ -649,28 +558,6 @@ extension _ReaderAudio on _ReaderPageState {
                   ),
                 ),
               ),
-    ];
-  }
-
-  List<AudioSource> _buildNetworkAudioSourcesForVerses({
-    required dynamic legacyReciter,
-    required int surahNumber,
-    required List<int> verses,
-  }) {
-    if (verses.isEmpty) {
-      return const [];
-    }
-    return <AudioSource>[
-      for (final ayah in verses)
-        AudioSource.uri(
-          Uri.parse(
-            _quranSource.getAudioUrlByVerse(
-              surahNumber,
-              ayah,
-              reciter: legacyReciter,
-            ),
-          ),
-        ),
     ];
   }
 }
