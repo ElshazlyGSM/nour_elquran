@@ -338,6 +338,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   bool _suspendPlaylistIndexSelectionSync = false;
   bool _isAdvancingToNextSurah = false;
   bool _isHandlingLocalCompletion = false;
+  bool _pendingLocalCompletion = false;
+  Timer? _audioBufferingHintTimer;
+  bool _audioBufferingHintShown = false;
   bool _isInitialStandardPositioning = false;
   bool _isSwitchingToPagedMushaf = false;
   bool _isCheckingMedinaFonts =
@@ -1043,11 +1046,14 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         return;
       }
       if (state.processingState == ProcessingState.completed) {
+        _audioBufferingHintTimer?.cancel();
         _updateState(() {
           _isPlayingAudio = false;
           _isPreparingAudio = true;
         });
-        if (!_isAdvancingToNextSurah && !_isHandlingLocalCompletion) {
+        if (_isHandlingLocalCompletion || _isAdvancingToNextSurah) {
+          _pendingLocalCompletion = true;
+        } else {
           unawaited(_handleLocalAudioCompleted());
         }
         return;
@@ -1055,6 +1061,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       _updateState(() {
         _isPlayingAudio = state.playing;
         if (state.playing) {
+          _audioBufferingHintTimer?.cancel();
+          _audioBufferingHintShown = false;
           _isPreparingAudio = false;
           _suspendPlaylistIndexSelectionSync = false;
         } else if (state.processingState == ProcessingState.loading ||
@@ -1063,12 +1071,53 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 state.processingState == ProcessingState.ready)) {
           // Keep showing loading until playback actually starts.
           _isPreparingAudio = true;
-        } else if (state.processingState == ProcessingState.idle &&
-            !_isPreparingAudio) {
+          if (state.processingState == ProcessingState.buffering &&
+              !_audioBufferingHintShown) {
+            _audioBufferingHintTimer ??= Timer(const Duration(seconds: 6), () {
+              _audioBufferingHintTimer = null;
+              if (!mounted ||
+                  _activeAudioEngine != _AudioEngine.local ||
+                  _audioPlayer.playing ||
+                  _audioBufferingHintShown) {
+                return;
+              }
+              _audioBufferingHintShown = true;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('التشغيل توقف بسبب ضعف أو انقطاع الإنترنت.'),
+                ),
+              );
+            });
+          }
+        } else if (state.processingState == ProcessingState.idle) {
+          _audioBufferingHintTimer?.cancel();
+          _audioBufferingHintTimer = null;
           _isPreparingAudio = false;
         }
       });
     });
+
+    _audioPlayer.playbackEventStream.listen(
+      (_) {},
+      onError: (Object _) {
+        if (!mounted || _activeAudioEngine != _AudioEngine.local) {
+          return;
+        }
+        _audioBufferingHintTimer?.cancel();
+        _audioBufferingHintTimer = null;
+        _audioBufferingHintShown = true;
+        _updateState(() {
+          _isPreparingAudio = false;
+          _isPlayingAudio = false;
+          _audioError = 'انقطع الاتصال بالإنترنت أثناء التشغيل.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('انقطع الاتصال بالإنترنت أثناء التشغيل.'),
+          ),
+        );
+      },
+    );
 
     _audioPlayer.currentIndexStream.listen((index) {
       if (!mounted ||
@@ -1215,6 +1264,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _autoScrollTimer?.cancel();
     _controlBarHideTimer?.cancel();
     _visibleSurahSyncTimer?.cancel();
+    _audioBufferingHintTimer?.cancel();
     _libraryAudioStateSubscription?.cancel();
     _libraryAyahSubscription?.cancel();
     _librarySelectionSubscription?.cancel();
