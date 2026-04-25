@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:adhan_dart/adhan_dart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 
@@ -119,17 +120,17 @@ class _HomeShellState extends State<HomeShell> {
     double cardAspectRatio;
     if (crossAxisCount == 2) {
       if (screenWidth < 360) {
-        cardAspectRatio = 0.76;
-      } else if (screenWidth < 420) {
-        cardAspectRatio = 0.82;
-      } else {
         cardAspectRatio = 0.88;
+      } else if (screenWidth < 420) {
+        cardAspectRatio = 0.93;
+      } else {
+        cardAspectRatio = 0.98;
       }
     } else {
-      cardAspectRatio = screenWidth < 760 ? 0.94 : 1.00;
+      cardAspectRatio = screenWidth < 760 ? 0.98 : 1.02;
     }
     if (rawTextScale > 1.08) {
-      cardAspectRatio -= 0.04;
+      cardAspectRatio -= 0.03;
     }
 
     final backgroundGradient = isDark
@@ -659,6 +660,10 @@ class _FeatureCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final shortestSide = MediaQuery.sizeOf(context).shortestSide;
+    final isAndroidPhone =
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android &&
+        shortestSide < 600;
     final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
       1.0,
       1.10,
@@ -671,7 +676,7 @@ class _FeatureCard extends StatelessWidget {
           builder: (context, constraints) {
             final compact = shortestSide < 390 || scale > 1.06;
             final veryTight =
-                constraints.maxHeight < 170 || constraints.maxWidth < 148;
+                constraints.maxHeight < 162 || constraints.maxWidth < 146;
             final iconBoxSize = veryTight
                 ? 44.0
                 : (shortestSide >= 430 ? 60.0 : (compact ? 50.0 : 54.0));
@@ -681,8 +686,11 @@ class _FeatureCard extends StatelessWidget {
             final iconRadius = veryTight
                 ? 14.0
                 : (shortestSide >= 430 ? 20.0 : (compact ? 16.0 : 18.0));
-            final titleSize = veryTight ? 16.0 : (compact ? 17.0 : 18.0);
-            final subtitleSize = veryTight ? 10.0 : (compact ? 11.5 : 13.0);
+            final titleSize = veryTight ? 16.2 : (compact ? 17.4 : 18.2);
+            final subtitleSizeBase = veryTight ? 11.4 : (compact ? 12.2 : 13.1);
+            final subtitleSize = isAndroidPhone
+                ? (subtitleSizeBase + 0.6)
+                : subtitleSizeBase;
             final betweenGap = veryTight ? 3.0 : (compact ? 4.0 : 6.0);
             final verticalPadding = veryTight
                 ? 10.0
