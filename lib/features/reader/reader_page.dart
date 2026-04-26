@@ -412,10 +412,13 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int? _standardInitialPage;
 
   double _snapFontSize(double size) {
-    const target = 23.0;
-    const range = 0.6;
-    if ((size - target).abs() <= range) {
-      return target;
+    final primaryRange =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 1.8 : 1.0;
+    if ((size - 26.0).abs() <= primaryRange) {
+      return 26.0;
+    }
+    if ((size - 23.0).abs() <= 0.8) {
+      return 23.0;
     }
     return size;
   }
@@ -423,7 +426,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   // Make pinch feel easier: small finger movement gives a slightly bigger
   // visual change without being jumpy.
   double _pinchScaleWithSensitivity(double rawScale) {
-    const sensitivity = 1.10;
+    final sensitivity =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 0.45 : 1.10;
     return 1 + ((rawScale - 1) * sensitivity);
   }
 
@@ -507,7 +511,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (currentDistance == null || currentDistance <= 0) {
       return;
     }
-    if ((currentDistance - startDistance).abs() < 8) {
+    final deadZone =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 18.0 : 8.0;
+    if ((currentDistance - startDistance).abs() < deadZone) {
       return;
     }
     final adjustedScale = _pinchScaleWithSensitivity(
