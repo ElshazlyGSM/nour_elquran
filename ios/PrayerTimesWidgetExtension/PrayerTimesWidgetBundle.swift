@@ -5,6 +5,6 @@ import SwiftUI
 struct PrayerTimesWidgetBundle: WidgetBundle {
   var body: some Widget {
     PrayerTimesWidget()
+    NextPrayerFocusWidget()
   }
 }
-

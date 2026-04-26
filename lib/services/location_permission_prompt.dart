@@ -11,13 +11,6 @@ class LocationPermissionPrompt {
   static Future<LocationPermission> ensurePermission() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      // Android: skip custom pre-permission dialog and show system prompt directly.
-      if (!Platform.isAndroid) {
-        final shouldContinue = await _showPrePermissionDialog();
-        if (!shouldContinue) {
-          return permission;
-        }
-      }
       permission = await Geolocator.requestPermission();
     }
 
@@ -32,35 +25,6 @@ class LocationPermissionPrompt {
     final navigatorState = AppUpdateService.navigatorKey.currentState;
     return navigatorState?.overlay?.context ??
         AppUpdateService.navigatorKey.currentContext;
-  }
-
-  static Future<bool> _showPrePermissionDialog() async {
-    final dialogContext = _resolveDialogContext();
-    if (dialogContext == null || !dialogContext.mounted) {
-      return true;
-    }
-
-    final result = await showDialog<bool>(
-      context: dialogContext,
-      builder: (context) => AlertDialog(
-        title: const Text('السماح باستخدام الموقع'),
-        content: const Text(
-          'نستخدم موقعك لتحديد مواقيت الصلاة بدقة، واختيار أقرب مدينة، ومعرفة اتجاه القبلة بشكل صحيح.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('ليس الآن'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('متابعة'),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
   }
 
   static Future<void> _showOpenSettingsDialog() async {
@@ -96,4 +60,3 @@ class LocationPermissionPrompt {
     );
   }
 }
-
