@@ -392,6 +392,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   double _shamarlyZoomScale = 1.0;
   List<int> _playlistVerseNumbers = const [];
   final Map<String, GlobalKey> _verseKeys = {};
+  final Map<String, GlobalKey> _quarterMarkerAnchorKeys = {};
   final Map<int, GlobalKey> _pageKeys = {};
   final Set<int> _downloadedTafsirIds = {};
   final Set<int> _downloadingTafsirIds = {};
@@ -695,6 +696,15 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   GlobalKey _verseKeyFor(int surahNumber, int verseNumber, [int? pageNumber]) {
     final key = '${pageNumber ?? 0}:$surahNumber:$verseNumber';
     return _verseKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  GlobalKey _quarterMarkerAnchorKeyFor(
+    int surahNumber,
+    int verseNumber, [
+    int? pageNumber,
+  ]) {
+    final key = 'q:${pageNumber ?? 0}:$surahNumber:$verseNumber';
+    return _quarterMarkerAnchorKeys.putIfAbsent(key, GlobalKey.new);
   }
 
   void _showBottomBarTemporarily() {
@@ -1664,6 +1674,12 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                                         appearance: _appearance,
                                         verseKeyBuilder: (s, v) =>
                                             _verseKeyFor(s, v, pageNumber),
+                                        quarterMarkerAnchorKeyBuilder: (s, v) =>
+                                            _quarterMarkerAnchorKeyFor(
+                                              s,
+                                              v,
+                                              pageNumber,
+                                            ),
                                         onVerseTap: _showVerseActions,
                                       ),
                                     );

@@ -579,6 +579,7 @@ class _QuranPageCard extends StatelessWidget {
     required this.fontSize,
     required this.appearance,
     required this.verseKeyBuilder,
+    required this.quarterMarkerAnchorKeyBuilder,
     required this.onVerseTap,
   });
 
@@ -595,6 +596,8 @@ class _QuranPageCard extends StatelessWidget {
   final double fontSize;
   final _ReaderAppearance appearance;
   final GlobalKey Function(int surahNumber, int verseNumber) verseKeyBuilder;
+  final GlobalKey Function(int surahNumber, int verseNumber)
+  quarterMarkerAnchorKeyBuilder;
   final Future<void> Function({
     required int surahNumber,
     required int verseNumber,
@@ -607,16 +610,11 @@ class _QuranPageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageData = _readerQuranSource.getPageData(pageNumber);
-    final isIPhoneLayout =
-        !kIsWeb &&
-        defaultTargetPlatform == TargetPlatform.iOS &&
-        MediaQuery.sizeOf(context).shortestSide < 600;
     final showSideQuarterMarker =
         appearance != _ReaderAppearance.medinaPages &&
         appearance != _ReaderAppearance.shamarlyPages;
-    final leftInset = showSideQuarterMarker
-        ? (isIPhoneLayout ? 14.0 : 10.0)
-        : 3.0;
+        //هامش اليسار
+    final leftInset = showSideQuarterMarker ? 16.0 : 3.0;
     final content = Material(
       color: Colors.transparent,
       child: Container(
@@ -626,7 +624,7 @@ class _QuranPageCard extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
-            //حجم الشريط الى بالطول فى اليمين نعدل من رقم 30
+            //حجم الهامش الشريط الى بالطول فى اليمين نعدل من رقم 30
             leftInset,
             8,
             showSideQuarterMarker ? 33 : 3,
@@ -656,6 +654,8 @@ class _QuranPageCard extends StatelessWidget {
                   fontSize: fontSize,
                   appearance: appearance,
                   verseKeyBuilder: verseKeyBuilder,
+                  quarterMarkerAnchorKeyBuilder:
+                      quarterMarkerAnchorKeyBuilder,
                   onVerseTap: onVerseTap,
                 ),
                 const SizedBox(height: 4),
@@ -698,6 +698,8 @@ class _QuranPageCard extends StatelessWidget {
                 appearance: appearance,
                 fontSize: fontSize,
                 verseKeyBuilder: verseKeyBuilder,
+                quarterMarkerAnchorKeyBuilder:
+                    quarterMarkerAnchorKeyBuilder,
               ),
             ),
           ),
@@ -929,6 +931,7 @@ class _VerseWrap extends StatelessWidget {
     required this.fontSize,
     required this.appearance,
     required this.verseKeyBuilder,
+    required this.quarterMarkerAnchorKeyBuilder,
     required this.onVerseTap,
   });
 
@@ -944,6 +947,8 @@ class _VerseWrap extends StatelessWidget {
   final double fontSize;
   final _ReaderAppearance appearance;
   final GlobalKey Function(int surahNumber, int verseNumber) verseKeyBuilder;
+  final GlobalKey Function(int surahNumber, int verseNumber)
+  quarterMarkerAnchorKeyBuilder;
   final Future<void> Function({
     required int surahNumber,
     required int verseNumber,
@@ -1109,6 +1114,15 @@ class _VerseWrap extends StatelessWidget {
       };
 
     final markerHeight = fontSize * 1.05;
+    final quarterAnchor = WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: _VersePlaceholderWidget(
+        key: quarterMarkerAnchorKeyBuilder(surahNumber, verseNumber),
+        placeholderWidth: 0,
+        placeholderHeight: markerHeight,
+        child: SizedBox(width: 0, height: markerHeight),
+      ),
+    );
     final marker = WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: _VersePlaceholderWidget(
@@ -1225,6 +1239,7 @@ class _VerseWrap extends StatelessWidget {
 
     return _VerseSpanBuildResult(
       spans: [
+        quarterAnchor,
         ...verseSpans,
         verseEndMarker,
         if (sajdaMarker != null && !useSideQuarterMarker) sajdaMarker,
@@ -1237,8 +1252,8 @@ class _VerseWrap extends StatelessWidget {
         ),
         marker,
       ],
-      contentStart: 0,
-      contentEnd: verseLength + verseEndMarkerLength,
+      contentStart: 1,
+      contentEnd: 1 + verseLength + verseEndMarkerLength,
     );
   }
 
@@ -1866,6 +1881,7 @@ class _SideQuarterMarkerLayer extends StatefulWidget {
     required this.appearance,
     required this.fontSize,
     required this.verseKeyBuilder,
+    required this.quarterMarkerAnchorKeyBuilder,
   });
 
   final GlobalKey pageKey;
@@ -1873,6 +1889,8 @@ class _SideQuarterMarkerLayer extends StatefulWidget {
   final _ReaderAppearance appearance;
   final double fontSize;
   final GlobalKey Function(int surahNumber, int verseNumber) verseKeyBuilder;
+  final GlobalKey Function(int surahNumber, int verseNumber)
+  quarterMarkerAnchorKeyBuilder;
 
   @override
   State<_SideQuarterMarkerLayer> createState() =>
@@ -1881,12 +1899,10 @@ class _SideQuarterMarkerLayer extends StatefulWidget {
 
 class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
   //تحريك مكان الحزب
-  static const double _markerOffset = -15.0;
+  static const double _markerOffset = 8.0;
   static const double _markerWidth = 30.0;
   static const double _markerHeight = 52.0;
   static const double _markerFontSize = 11.0;
-  static const double _leftMarkerWidth = 10.0;
-  static const double _leftMarkerHeight = 26.0;
   List<_QuarterMarkerPosition> _positions = const [];
 
   @override
@@ -1928,8 +1944,12 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
         if (!_isStartOfHizbQuarter(surahNumber, verseNumber)) {
           continue;
         }
+        final anchorKey = widget.quarterMarkerAnchorKeyBuilder(
+          surahNumber,
+          verseNumber,
+        );
         final verseKey = widget.verseKeyBuilder(surahNumber, verseNumber);
-        final verseContext = verseKey.currentContext;
+        final verseContext = anchorKey.currentContext ?? verseKey.currentContext;
         final verseBox = verseContext?.findRenderObject() as RenderBox?;
         if (verseBox == null || !verseBox.hasSize) {
           continue;
@@ -2075,27 +2095,6 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
     //علامه الحزب وحجمه ولونه
     return Stack(
       children: [
-        for (final position in _positions)
-          Positioned(
-            left: 2,
-            top: position.top + ((_markerHeight - _leftMarkerHeight) / 2),
-            child: Container(
-              width: _leftMarkerWidth,
-              height: _leftMarkerHeight,
-              decoration: BoxDecoration(
-                color: widget.appearance.quarterMarkerFillColor.withValues(
-                  alpha: 0.7,
-                ),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: widget.appearance.quarterMarkerBorderColor.withValues(
-                    alpha: 0.85,
-                  ),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
         for (final position in _positions)
           Positioned(
             right: 1,
