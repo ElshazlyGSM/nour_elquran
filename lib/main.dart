@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:quran_library/quran_library.dart';
 
 import 'app/quran_app.dart';
@@ -26,6 +27,11 @@ import 'services/quran_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.elshazly.noorquran.app.quran_audio',
+    androidNotificationChannelName: 'تشغيل القرآن',
+    androidNotificationOngoing: true,
+  );
   runApp(const _BootstrapApp());
 }
 
@@ -209,7 +215,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     return PrayerNotificationService.instance.reschedulePrayerNotifications(
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
-      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
       adhanEnabled: store.savedPrayerAdhanEnabled,
       prayerEnabledMap: store.savedPrayerEnabledMap,
       prayerReminderByPrayer: store.savedPrayerReminderByPrayer,
@@ -297,7 +302,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         vibrationEnabled: store.savedSalawatVibrationEnabled,
         city: city,
         prayerOffsets: store.savedPrayerOffsets,
-        summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
       );
       return;
     }
@@ -313,7 +317,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       vibrationEnabled: store.savedSalawatVibrationEnabled,
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
-      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
       minimumPendingNotifications: 96,
     );
   }

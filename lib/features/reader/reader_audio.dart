@@ -1,6 +1,24 @@
 part of 'reader_page.dart';
 
 extension _ReaderAudio on _ReaderPageState {
+  MediaItem _mediaItemForVerse({
+    required int surahNumber,
+    required int verseNumber,
+    bool isLeadingBasmala = false,
+  }) {
+    final surahName = _quranSource.getSurahNameArabic(surahNumber);
+    final title = isLeadingBasmala
+        ? 'بسم الله الرحمن الرحيم'
+        : 'سورة $surahName - آية ${toArabicNumber(verseNumber)}';
+    return MediaItem(
+      id: 'reciter:${_selectedReciter.id}/surah:$surahNumber/verse:$verseNumber/${isLeadingBasmala ? 'basmala' : 'ayah'}',
+      album: 'القرآن الكريم',
+      title: title,
+      artist: _selectedReciter.nameAr,
+      artUri: _mediaArtworkUri ?? Uri.parse('asset:///assets/IMG_4554.png'),
+    );
+  }
+
   bool _shouldInjectLeadingBasmalaAudio({
     required int surahNumber,
     required int verseNumber,
@@ -14,9 +32,15 @@ extension _ReaderAudio on _ReaderPageState {
     required int surahNumber,
     required int verseNumber,
     required String? localPath,
+    bool isLeadingBasmala = false,
   }) {
+    final mediaItem = _mediaItemForVerse(
+      surahNumber: surahNumber,
+      verseNumber: verseNumber,
+      isLeadingBasmala: isLeadingBasmala,
+    );
     if (localPath != null) {
-      return AudioSource.file(localPath);
+      return AudioSource.file(localPath, tag: mediaItem);
     }
     return AudioSource.uri(
       Uri.parse(
@@ -26,7 +50,43 @@ extension _ReaderAudio on _ReaderPageState {
           reciter: legacyReciter,
         ),
       ),
+      tag: mediaItem,
     );
+  }
+
+  Future<bool> _isLegacyVerseReadyToPlay({
+    required dynamic legacyReciter,
+    required int surahNumber,
+    required int verseNumber,
+  }) async {
+    final localPath = await _recitationCacheService.localPathForVerse(
+      reciter: legacyReciter,
+      surahNumber: surahNumber,
+      verseNumber: verseNumber,
+    );
+    if (localPath != null) {
+      return true;
+    }
+    if (kIsWeb) {
+      return true;
+    }
+    final url = _quranSource.getAudioUrlByVerse(
+      surahNumber,
+      verseNumber,
+      reciter: legacyReciter,
+    );
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
+    try {
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close().timeout(
+        const Duration(seconds: 5),
+      );
+      return response.statusCode >= 200 && response.statusCode < 400;
+    } catch (_) {
+      return false;
+    } finally {
+      client.close(force: true);
+    }
   }
 
   int get _effectiveRepeatCount =>
@@ -293,6 +353,7 @@ extension _ReaderAudio on _ReaderPageState {
       _selectedSurahNumber = surahNumber;
       _selectedVerseNumber = verseNumber;
     });
+    _startAudioPreparingTimeout();
     _currentMp3QuranTimings = const [];
     _activeAudioEngine = _AudioEngine.local;
     _isAdvancingToNextSurah = false;
@@ -330,6 +391,16 @@ extension _ReaderAudio on _ReaderPageState {
         surahNumber: surahNumber,
         verseNumber: verseNumber,
       );
+      if (includeLeadingBasmala) {
+        final firstVerseReady = await _isLegacyVerseReadyToPlay(
+          legacyReciter: legacyReciter,
+          surahNumber: surahNumber,
+          verseNumber: verseNumber,
+        );
+        if (!firstVerseReady) {
+          throw Exception('NO_INTERNET_FOR_SURAH_START');
+        }
+      }
       final verseCount = _quranSource.getVerseCount(surahNumber);
       final allVersesToPlay = <int>[
         for (var ayah = verseNumber; ayah <= verseCount; ayah++)
@@ -357,6 +428,7 @@ extension _ReaderAudio on _ReaderPageState {
             surahNumber: 1,
             verseNumber: 1,
             localPath: basmalaLocalPath,
+            isLeadingBasmala: true,
           ),
         );
       }
@@ -385,6 +457,7 @@ extension _ReaderAudio on _ReaderPageState {
           _suspendPlaylistIndexSelectionSync = false;
           _audioError = null;
         });
+        _cancelAudioPreparingTimeout();
       }
 
       unawaited(
@@ -408,6 +481,7 @@ extension _ReaderAudio on _ReaderPageState {
       if (requestId != _audioPlayRequestId) {
         return;
       }
+      _cancelAudioPreparingTimeout();
       _updateState(() {
         _audioError = _isAdvancingToNextSurah
             ? null
@@ -458,14 +532,32 @@ extension _ReaderAudio on _ReaderPageState {
           _isPlayingAudio = false;
         });
       }
-      await _audioPlayer.setFilePath(localPath);
+      _startAudioPreparingTimeout();
+      await _audioPlayer.setAudioSource(
+        AudioSource.file(
+          localPath,
+          tag: _mediaItemForVerse(
+            surahNumber: surahNumber,
+            verseNumber: verseNumber,
+          ),
+        ),
+      );
     } else {
       if (mounted && requestId == _audioPlayRequestId) {
         _updateState(() {
           _isPreparingAudio = true;
         });
       }
-      await _audioPlayer.setUrl(url);
+      _startAudioPreparingTimeout();
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: _mediaItemForVerse(
+            surahNumber: surahNumber,
+            verseNumber: verseNumber,
+          ),
+        ),
+      );
       unawaited(() async {
         try {
           await _recitationCacheService.cacheMp3QuranSurahIfMissing(
@@ -504,6 +596,7 @@ extension _ReaderAudio on _ReaderPageState {
         _suspendPlaylistIndexSelectionSync = false;
         _audioError = null;
       });
+      _cancelAudioPreparingTimeout();
     }
   }
 
@@ -516,6 +609,7 @@ extension _ReaderAudio on _ReaderPageState {
     _pendingLocalCompletion = false;
     _audioBufferingHintTimer?.cancel();
     _audioBufferingHintTimer = null;
+    _cancelAudioPreparingTimeout();
     _audioBufferingHintShown = false;
     if (_isPagedMushafMode) {
       try {
@@ -609,17 +703,12 @@ extension _ReaderAudio on _ReaderPageState {
     ], eagerError: false);
     return <AudioSource>[
       for (var i = 0; i < verses.length; i++)
-        localPaths[i] != null
-            ? AudioSource.file(localPaths[i]!)
-            : AudioSource.uri(
-                Uri.parse(
-                  _quranSource.getAudioUrlByVerse(
-                    surahNumber,
-                    verses[i],
-                    reciter: legacyReciter,
-                  ),
-                ),
-              ),
+        _legacyVerseAudioSource(
+          legacyReciter: legacyReciter,
+          surahNumber: surahNumber,
+          verseNumber: verses[i],
+          localPath: localPaths[i],
+        ),
     ];
   }
 }

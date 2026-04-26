@@ -1088,3 +1088,68 @@ Why isolated:
     - `flutter pub get`
     - build fresh release artifact
     - recheck Play Console foreground-service declaration status
+
+## April 2026 Follow-up (Reader + Notifications)
+- Home cards overflow fix:
+  - updated subtitle sizing and spacing behavior in home shell to avoid overflow on small/large devices (Android/iOS).
+  - file: `lib/features/home/home_shell.dart`
+
+- iOS quick actions:
+  - added long-press app-icon shortcuts on iOS (`continue`, `prayer`, `adhkar`, `tasbih`).
+  - files:
+    - `ios/Runner/AppDelegate.swift`
+    - `lib/main.dart`
+
+- Reader background playback / lock screen controls:
+  - integrated `just_audio_background` metadata flow for verse playback.
+  - added media item tags and artwork wiring for lock-screen controls.
+  - files:
+    - `lib/main.dart`
+    - `lib/features/reader/reader_audio.dart`
+    - `lib/features/reader/reader_page.dart`
+    - `pubspec.yaml`
+
+- Medina dark mode behavior:
+  - Medina pages now follow app dark mode state.
+  - files:
+    - `lib/features/reader/reader_widgets.dart`
+    - `lib/features/reader/reader_page.dart`
+
+- Shamarly page interaction:
+  - restored zoom and improved gesture separation:
+    - one finger: page flip
+    - two fingers: zoom only (page swiping pauses while multi-touch is active)
+  - zoom level now stays while moving between Shamarly pages in the same reading session.
+  - file:
+    - `lib/features/reader/reader_widgets.dart`
+
+- Reader zoom sensitivity:
+  - reduced pinch sensitivity in reader to be less jumpy.
+  - file:
+    - `lib/features/reader/reader_page.dart`
+
+- Surah-start offline edge case (basmala then stop):
+  - before injecting leading basmala at surah start, app now checks verse readiness (cached or reachable).
+  - if verse audio is not reachable, playback does not start and user gets the offline message directly.
+  - files:
+    - `lib/features/reader/reader_audio.dart`
+    - `lib/features/reader/reader_page.dart`
+
+- Salawat settings save behavior:
+  - keep save-on-back behavior as baseline (no forced immediate save on enable toggle).
+  - file:
+    - `lib/features/notifications/salawat/salawat_notification_settings_page.dart`
+
+- Salawat custom sound on iOS:
+  - kept `saly.caf` as the configured salawat notification sound.
+  - file:
+    - `lib/features/notifications/salawat/salawat_notification_service.dart`
+
+- iOS prayer widget groundwork:
+  - prepared iOS bridge channel to push prayer widget payload into App Group defaults and trigger timeline reload.
+  - prepared WidgetKit extension source files under:
+    - `ios/PrayerTimesWidgetExtension/`
+  - added Runner app-group entitlements file:
+    - `ios/Runner/Runner.entitlements`
+  - setup guide:
+    - `ios/PRAYER_WIDGETKIT_SETUP.md`

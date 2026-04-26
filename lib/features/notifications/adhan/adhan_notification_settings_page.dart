@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -11,7 +12,6 @@ import 'prayer_notification_service.dart';
 class PrayerSettingsResult {
   const PrayerSettingsResult({
     required this.adhanEnabled,
-    required this.summerTimeEnabled,
     required this.hijriOffset,
     required this.prayerOffsets,
     required this.prayerEnabledMap,
@@ -20,7 +20,6 @@ class PrayerSettingsResult {
   });
 
   final bool adhanEnabled;
-  final bool summerTimeEnabled;
   final int hijriOffset;
   final Map<String, int> prayerOffsets;
   final Map<String, bool> prayerEnabledMap;
@@ -35,7 +34,6 @@ class PrayerSettingsPage extends StatefulWidget {
     required this.prayerNames,
     required this.prayerTimes,
     required this.initialAdhanEnabled,
-    required this.initialSummerTimeEnabled,
     required this.initialHijriOffset,
     required this.initialPrayerOffsets,
     required this.initialPrayerEnabledMap,
@@ -49,7 +47,6 @@ class PrayerSettingsPage extends StatefulWidget {
   final Map<String, String> prayerNames;
   final Map<String, DateTime> prayerTimes;
   final bool initialAdhanEnabled;
-  final bool initialSummerTimeEnabled;
   final int initialHijriOffset;
   final Map<String, int> initialPrayerOffsets;
   final Map<String, bool> initialPrayerEnabledMap;
@@ -73,7 +70,6 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   ];
 
   late bool _adhanEnabled;
-  late bool _summerTimeEnabled;
   late int _hijriOffset;
   late Map<String, int> _prayerOffsets;
   late Map<String, bool> _prayerEnabledMap;
@@ -102,7 +98,6 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   void initState() {
     super.initState();
     _adhanEnabled = widget.initialAdhanEnabled;
-    _summerTimeEnabled = widget.initialSummerTimeEnabled;
     _hijriOffset = widget.initialHijriOffset;
     _prayerOffsets = {
       for (final entry in widget.initialPrayerOffsets.entries)
@@ -113,7 +108,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
       for (final entry in widget.initialPrayerReminderByPrayer.entries)
         entry.key: entry.value.clamp(0, 60),
     };
-    _adhanProfile = widget.initialAdhanProfile;
+    _adhanProfile = _normalizedProfile(widget.initialAdhanProfile);
     _initialResult = _buildResult();
 
     _playerStateSub = _previewPlayer.playerStateStream.listen((state) {
@@ -152,6 +147,11 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     unawaited(_loadNotificationVolume());
   }
 
+  String _normalizedProfile(String value) {
+    final available = widget.adhanProfiles.map((item) => item.$1).toSet();
+    return available.contains(value) ? value : 'allah_akbar';
+  }
+
   @override
   void dispose() {
     _playerStateSub?.cancel();
@@ -162,7 +162,6 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   PrayerSettingsResult _buildResult() {
     return PrayerSettingsResult(
       adhanEnabled: _adhanEnabled,
-      summerTimeEnabled: _summerTimeEnabled,
       hijriOffset: _hijriOffset,
       prayerOffsets: Map<String, int>.from(_prayerOffsets),
       prayerEnabledMap: Map<String, bool>.from(_prayerEnabledMap),
@@ -200,7 +199,6 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
 
   bool _resultsEqual(PrayerSettingsResult a, PrayerSettingsResult b) {
     return a.adhanEnabled == b.adhanEnabled &&
-        a.summerTimeEnabled == b.summerTimeEnabled &&
         a.hijriOffset == b.hijriOffset &&
         a.adhanProfile == b.adhanProfile &&
         _intMapsEqual(a.prayerOffsets, b.prayerOffsets) &&
@@ -235,8 +233,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     final baseTime = widget.prayerTimes[key];
     if (baseTime == null) return null;
     final offset = _prayerOffsets[key] ?? 0;
-    final summerOffset = _summerTimeEnabled ? 60 : 0;
-    return baseTime.add(Duration(minutes: offset + summerOffset));
+    return baseTime.add(Duration(minutes: offset));
   }
 
   String _toArabicDigits(String input) {
@@ -257,6 +254,14 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
   }
 
   Future<void> _loadDownloadStates() async {
+    if (!Platform.isAndroid) {
+      if (!mounted) return;
+      setState(() {
+        _downloadStatesLoaded = true;
+        _downloadedProfiles.clear();
+      });
+      return;
+    }
     final downloaded = <String>{};
     for (final profile in widget.adhanProfiles) {
       if (!AdhanAudioCacheService.instance.supportsProfile(profile.$1)) {
@@ -320,6 +325,20 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
         return;
       }
 
+      if (Platform.isIOS) {
+        try {
+          await PrayerNotificationService.instance.showInstantPrayerPreview(
+            adhanProfile: _normalizedProfile(profile),
+          );
+        } catch (_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر تشغيل معاينة صوت الأذان')),
+          );
+        }
+        return;
+      }
+
       if (_isBundledProfile(profile)) {
         if (!mounted) return;
         setState(() {
@@ -360,6 +379,21 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
 
   Future<void> _previewSunriseTone() async {
     await _runSerializedPreview(() async {
+      if (Platform.isIOS) {
+        try {
+          await PrayerNotificationService.instance.showInstantPrayerPreview(
+            adhanProfile: _normalizedProfile(_adhanProfile),
+            isSunriseTone: true,
+          );
+        } catch (_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر تشغيل معاينة الشروق')),
+          );
+        }
+        return;
+      }
+
       final isSameRunning = _isSunrisePreviewing && _previewPlayer.playing;
       if (isSameRunning) {
         await _stopAllPreviewState();
@@ -595,6 +629,11 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
     Color titleColor,
     Color mutedColor,
   ) {
+    final selectedProfileLabel = widget.adhanProfiles
+        .where((profile) => profile.$1 == _normalizedProfile(_adhanProfile))
+        .map((profile) => profile.$2)
+        .firstOrNull;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -616,9 +655,7 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
           ),
         ),
         subtitle: Text(
-          widget.adhanProfiles
-              .firstWhere((profile) => profile.$1 == _adhanProfile)
-              .$2,
+          selectedProfileLabel ?? 'تكبير فقط',
           style: TextStyle(
             color: mutedColor,
             fontWeight: FontWeight.w700,
@@ -946,8 +983,19 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                               if (_adhanProfile == 'default') {
                                 _adhanProfile = 'allah_akbar';
                               }
+                              _adhanProfile = _normalizedProfile(_adhanProfile);
                               _ensureDefaultFardRemindersWhenAdhanEnabled();
                             });
+                            if (Platform.isIOS) {
+                              unawaited(
+                                PrayerNotificationService.instance
+                                    .showInstantPrayerPreview(
+                                      adhanProfile: _normalizedProfile(
+                                        _adhanProfile,
+                                      ),
+                                    ),
+                              );
+                            }
                           },
                           title: const Text(
                             'تفعيل إشعارات الصلاة',
@@ -1063,41 +1111,6 @@ class _PrayerSettingsPageState extends State<PrayerSettingsPage> {
                           ),
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(Icons.add_rounded),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'تعديل التوقيت الصيفى',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: _uniformFontSize,
-                            ),
-                          ),
-                        ),
-                        Switch.adaptive(
-                          value: _summerTimeEnabled,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onChanged: (value) {
-                            _mutate(() => _summerTimeEnabled = value);
-                          },
                         ),
                       ],
                     ),

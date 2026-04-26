@@ -18,6 +18,7 @@ class QuranStore extends ChangeNotifier {
   static const _fontSizeKey = 'reader_font_size';
   static const _readingSpeedKey = 'reader_speed';
   static const _appearanceKey = 'reader_appearance';
+  static const _shamarlyZoomScaleKey = 'reader_shamarly_zoom_scale';
   static const _prayerCityKey = 'prayer_city_name';
   static const _prayerAutoDetectKey = 'prayer_auto_detect';
   static const _prayerHijriOffsetKey = 'prayer_hijri_offset';
@@ -42,7 +43,6 @@ class QuranStore extends ChangeNotifier {
   static const _prayerMaghribReminderKey = 'prayer_maghrib_reminder';
   static const _prayerIshaReminderKey = 'prayer_isha_reminder';
   static const _prayerAdhanProfileKey = 'prayer_adhan_profile';
-  static const _prayerSummerTimeEnabledKey = 'prayer_summer_time_enabled';
   static const _prayerWidgetCoachmarkSeenKey = 'prayer_widget_coachmark_seen';
   static const _tasbihPhraseKey = 'tasbih_phrase';
   static const _tasbihCustomPhrasesKey = 'tasbih_custom_phrases';
@@ -81,6 +81,8 @@ class QuranStore extends ChangeNotifier {
   double? get savedFontSize => _prefs.getDouble(_fontSizeKey);
   double? get savedReadingSpeed => _prefs.getDouble(_readingSpeedKey);
   String? get savedAppearance => _prefs.getString(_appearanceKey);
+  double get savedShamarlyZoomScale =>
+      (_prefs.getDouble(_shamarlyZoomScaleKey) ?? 1.0).clamp(1.0, 2.6);
   String? get savedPrayerCityName => _prefs.getString(_prayerCityKey);
   bool get savedPrayerAutoDetect =>
       _prefs.getBool(_prayerAutoDetectKey) ?? true;
@@ -115,8 +117,6 @@ class QuranStore extends ChangeNotifier {
   };
   String get savedPrayerAdhanProfile =>
       _prefs.getString(_prayerAdhanProfileKey) ?? 'allah_akbar';
-  bool get savedPrayerSummerTimeEnabled =>
-      _prefs.getBool(_prayerSummerTimeEnabledKey) ?? false;
   bool get savedPrayerWidgetCoachmarkSeen =>
       _prefs.getBool(_prayerWidgetCoachmarkSeenKey) ?? false;
   String? get savedTasbihPhrase => _prefs.getString(_tasbihPhraseKey);
@@ -228,6 +228,7 @@ class QuranStore extends ChangeNotifier {
     required double fontSize,
     required double readingSpeed,
     required String appearance,
+    double? shamarlyZoomScale,
   }) async {
     await _prefs.setInt(_reciterIndexKey, reciterIndex);
     await _prefs.setString(_reciterIdKey, reciterId);
@@ -236,6 +237,12 @@ class QuranStore extends ChangeNotifier {
     await _prefs.setDouble(_fontSizeKey, fontSize);
     await _prefs.setDouble(_readingSpeedKey, readingSpeed);
     await _prefs.setString(_appearanceKey, appearance);
+    if (shamarlyZoomScale != null) {
+      await _prefs.setDouble(
+        _shamarlyZoomScaleKey,
+        shamarlyZoomScale.clamp(1.0, 2.6),
+      );
+    }
   }
 
   Future<void> savePrayerPreferences({
@@ -243,7 +250,6 @@ class QuranStore extends ChangeNotifier {
     required bool autoDetect,
     required int hijriOffset,
     required Map<String, int> prayerOffsets,
-    bool? summerTimeEnabled,
     required bool adhanEnabled,
     required int reminderMinutes,
     required Map<String, bool> prayerEnabledMap,
@@ -341,14 +347,6 @@ class QuranStore extends ChangeNotifier {
       normalizedPrayerReminders['isha']!,
     );
     await _prefs.setString(_prayerAdhanProfileKey, adhanProfile);
-    if (summerTimeEnabled != null) {
-      await _prefs.setBool(_prayerSummerTimeEnabledKey, summerTimeEnabled);
-    }
-    notifyListeners();
-  }
-
-  Future<void> savePrayerSummerTimeEnabled(bool enabled) async {
-    await _prefs.setBool(_prayerSummerTimeEnabledKey, enabled);
     notifyListeners();
   }
 

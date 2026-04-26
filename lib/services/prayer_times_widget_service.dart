@@ -33,39 +33,61 @@ class PrayerTimesWidgetService {
       city: city,
       date: now,
       prayerOffsets: store.savedPrayerOffsets,
-      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
     );
     final next = _nextPrayer(
       now: now,
       todayTimes: todayTimes,
       city: city,
       prayerOffsets: store.savedPrayerOffsets,
-      summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
     );
 
+    final nextPrayerKey = _prayerKeyForName(next.$1);
+    final hijriDate = _formatHijri(now);
+    final nextPrayerTime = _formatTime(next.$2);
+    final nextRemaining = _formatRemaining(next.$2.difference(now));
+    final fajrTime = _formatTime(todayTimes.fajr.toLocal());
+    final sunriseTime = _formatTime(todayTimes.sunrise.toLocal());
+    final dhuhrTime = _formatTime(todayTimes.dhuhr.toLocal());
+    final asrTime = _formatTime(todayTimes.asr.toLocal());
+    final maghribTime = _formatTime(todayTimes.maghrib.toLocal());
+    final ishaTime = _formatTime(todayTimes.isha.toLocal());
+    final updatedAt = _formatUpdated(now);
+
     await prefs.setString('widget_prayer_city', city.name);
-    await prefs.setString('widget_hijri_date', _formatHijri(now));
-    await prefs.setString('widget_next_prayer_key', _prayerKeyForName(next.$1));
+    await prefs.setString('widget_hijri_date', hijriDate);
+    await prefs.setString('widget_next_prayer_key', nextPrayerKey);
     await prefs.setString('widget_next_prayer_name', next.$1);
-    await prefs.setString('widget_next_prayer_time', _formatTime(next.$2));
+    await prefs.setString('widget_next_prayer_time', nextPrayerTime);
     await prefs.setInt(
       'widget_next_prayer_epoch_ms',
       next.$2.millisecondsSinceEpoch,
     );
-    await prefs.setString(
-      'widget_next_remaining',
-      _formatRemaining(next.$2.difference(now)),
-    );
-    await prefs.setString('widget_fajr_time', _formatTime(todayTimes.fajr.toLocal()));
-    await prefs.setString('widget_sunrise_time', _formatTime(todayTimes.sunrise.toLocal()));
-    await prefs.setString('widget_dhuhr_time', _formatTime(todayTimes.dhuhr.toLocal()));
-    await prefs.setString('widget_asr_time', _formatTime(todayTimes.asr.toLocal()));
-    await prefs.setString('widget_maghrib_time', _formatTime(todayTimes.maghrib.toLocal()));
-    await prefs.setString('widget_isha_time', _formatTime(todayTimes.isha.toLocal()));
-    await prefs.setString('widget_updated_at', _formatUpdated(now));
+    await prefs.setString('widget_next_remaining', nextRemaining);
+    await prefs.setString('widget_fajr_time', fajrTime);
+    await prefs.setString('widget_sunrise_time', sunriseTime);
+    await prefs.setString('widget_dhuhr_time', dhuhrTime);
+    await prefs.setString('widget_asr_time', asrTime);
+    await prefs.setString('widget_maghrib_time', maghribTime);
+    await prefs.setString('widget_isha_time', ishaTime);
+    await prefs.setString('widget_updated_at', updatedAt);
 
     try {
-      await _channel.invokeMethod('refreshPrayerWidget');
+      await _channel.invokeMethod('refreshPrayerWidget', <String, Object?>{
+        'city': city.name,
+        'hijriDate': hijriDate,
+        'nextPrayerKey': nextPrayerKey,
+        'nextPrayerName': next.$1,
+        'nextPrayerTime': nextPrayerTime,
+        'nextPrayerEpochMs': next.$2.millisecondsSinceEpoch,
+        'nextRemaining': nextRemaining,
+        'fajrTime': fajrTime,
+        'sunriseTime': sunriseTime,
+        'dhuhrTime': dhuhrTime,
+        'asrTime': asrTime,
+        'maghribTime': maghribTime,
+        'ishaTime': ishaTime,
+        'updatedAt': updatedAt,
+      });
     } catch (_) {}
   }
 
@@ -73,17 +95,15 @@ class PrayerTimesWidgetService {
     required PrayerCity city,
     required DateTime date,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
   }) {
     final params = city.method.parameters;
-    final summerOffset = summerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: (prayerOffsets['fajr'] ?? 0) + summerOffset,
-      Prayer.sunrise: (prayerOffsets['sunrise'] ?? 0) + summerOffset,
-      Prayer.dhuhr: (prayerOffsets['dhuhr'] ?? 0) + summerOffset,
-      Prayer.asr: (prayerOffsets['asr'] ?? 0) + summerOffset,
-      Prayer.maghrib: (prayerOffsets['maghrib'] ?? 0) + summerOffset,
-      Prayer.isha: (prayerOffsets['isha'] ?? 0) + summerOffset,
+      Prayer.fajr: prayerOffsets['fajr'] ?? 0,
+      Prayer.sunrise: prayerOffsets['sunrise'] ?? 0,
+      Prayer.dhuhr: prayerOffsets['dhuhr'] ?? 0,
+      Prayer.asr: prayerOffsets['asr'] ?? 0,
+      Prayer.maghrib: prayerOffsets['maghrib'] ?? 0,
+      Prayer.isha: prayerOffsets['isha'] ?? 0,
     };
     return PrayerTimes(
       date: DateTime(date.year, date.month, date.day),
@@ -97,7 +117,6 @@ class PrayerTimesWidgetService {
     required PrayerTimes todayTimes,
     required PrayerCity city,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
   }) {
     final entries = <(String, DateTime)>[
       (_prayerNames['fajr']!, todayTimes.fajr.toLocal()),
@@ -115,7 +134,6 @@ class PrayerTimesWidgetService {
       city: city,
       date: now.add(const Duration(days: 1)),
       prayerOffsets: prayerOffsets,
-      summerTimeEnabled: summerTimeEnabled,
     );
     return (_prayerNames['fajr']!, tomorrow.fajr.toLocal());
   }

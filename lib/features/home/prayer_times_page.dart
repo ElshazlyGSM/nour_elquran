@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +44,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     'isha': '\u0627\u0644\u0639\u0634\u0627\u0621',
   };
 
-  static const _adhanProfiles = [
+  static const _androidAdhanProfiles = [
     ('default', 'نغمة النظام'),
     ('allah_akbar', 'تكبير فقط'),
     ('__full_adhans__', 'أذانات كاملة'),
@@ -54,11 +55,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     ('haram', 'أذان الحرم'),
     ('soft', 'مشاري'),
   ];
+  static const _iosAdhanProfiles = [('allah_akbar', 'تكبير فقط')];
 
   late PrayerCity _selectedCity;
   late bool _autoDetectLocation;
   late bool _adhanEnabled;
-  late bool _summerTimeEnabled;
   late int _hijriOffset;
   late Map<String, int> _prayerOffsets;
   late Map<String, bool> _prayerEnabledMap;
@@ -72,13 +73,20 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   bool _isReschedulingNotifications = false;
   bool _pendingRescheduleNotifications = false;
 
+  List<(String, String)> get _effectiveAdhanProfiles =>
+      Platform.isAndroid ? _androidAdhanProfiles : _iosAdhanProfiles;
+
+  String _normalizeAdhanProfile(String value) {
+    final available = _effectiveAdhanProfiles.map((item) => item.$1).toSet();
+    return available.contains(value) ? value : 'allah_akbar';
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedCity = _resolveSavedCity();
     _autoDetectLocation = widget.store?.savedPrayerAutoDetect ?? true;
     _adhanEnabled = widget.store?.savedPrayerAdhanEnabled ?? false;
-    _summerTimeEnabled = widget.store?.savedPrayerSummerTimeEnabled ?? false;
     _hijriOffset = widget.store?.savedPrayerHijriOffset ?? 0;
     _prayerOffsets = Map<String, int>.from(
       widget.store?.savedPrayerOffsets ??
@@ -113,7 +121,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             'isha': 0,
           },
     );
-    _adhanProfile = widget.store?.savedPrayerAdhanProfile ?? 'allah_akbar';
+    _adhanProfile = _normalizeAdhanProfile(
+      widget.store?.savedPrayerAdhanProfile ?? 'allah_akbar',
+    );
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -441,14 +451,13 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   PrayerTimes _buildPrayerTimes(DateTime date) {
     final params = _selectedCity.method.parameters;
-    final summerOffset = _summerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: (_prayerOffsets['fajr'] ?? 0) + summerOffset,
-      Prayer.sunrise: (_prayerOffsets['sunrise'] ?? 0) + summerOffset,
-      Prayer.dhuhr: (_prayerOffsets['dhuhr'] ?? 0) + summerOffset,
-      Prayer.asr: (_prayerOffsets['asr'] ?? 0) + summerOffset,
-      Prayer.maghrib: (_prayerOffsets['maghrib'] ?? 0) + summerOffset,
-      Prayer.isha: (_prayerOffsets['isha'] ?? 0) + summerOffset,
+      Prayer.fajr: _prayerOffsets['fajr'] ?? 0,
+      Prayer.sunrise: _prayerOffsets['sunrise'] ?? 0,
+      Prayer.dhuhr: _prayerOffsets['dhuhr'] ?? 0,
+      Prayer.asr: _prayerOffsets['asr'] ?? 0,
+      Prayer.maghrib: _prayerOffsets['maghrib'] ?? 0,
+      Prayer.isha: _prayerOffsets['isha'] ?? 0,
     };
     return PrayerTimes(
       date: DateTime(date.year, date.month, date.day),
@@ -582,13 +591,12 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             prayerNames: _prayerNames,
             prayerTimes: prayerTimes,
             initialAdhanEnabled: _adhanEnabled,
-            initialSummerTimeEnabled: _summerTimeEnabled,
             initialHijriOffset: _hijriOffset,
             initialPrayerOffsets: _prayerOffsets,
             initialPrayerEnabledMap: _prayerEnabledMap,
             initialPrayerReminderByPrayer: _prayerReminderByPrayer,
             initialAdhanProfile: _adhanProfile,
-            adhanProfiles: _adhanProfiles,
+            adhanProfiles: _effectiveAdhanProfiles,
             onChanged: (result) async {
               final normalizedPrayerOffsets = _normalizePrayerOffsets(
                 result.prayerOffsets,
@@ -601,14 +609,13 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               }
               setState(() {
                 _adhanEnabled = result.adhanEnabled;
-                _summerTimeEnabled = result.summerTimeEnabled;
                 _hijriOffset = result.hijriOffset;
                 _prayerOffsets = normalizedPrayerOffsets;
                 _prayerEnabledMap = Map<String, bool>.from(
                   result.prayerEnabledMap,
                 );
                 _prayerReminderByPrayer = normalizedPrayerReminders;
-                _adhanProfile = result.adhanProfile;
+                _adhanProfile = _normalizeAdhanProfile(result.adhanProfile);
               });
               await _persistPrayerPreferences();
             },
@@ -632,12 +639,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         autoDetect: _autoDetectLocation,
         hijriOffset: _hijriOffset,
         prayerOffsets: normalizedPrayerOffsets,
-        summerTimeEnabled: _summerTimeEnabled,
         adhanEnabled: _adhanEnabled,
         reminderMinutes: 0,
         prayerEnabledMap: _prayerEnabledMap,
         prayerReminderByPrayer: normalizedPrayerReminders,
-        adhanProfile: _adhanProfile,
+        adhanProfile: _normalizeAdhanProfile(_adhanProfile),
       );
       await PrayerTimesWidgetService.instance.updateFromStore(store);
     }
@@ -645,6 +651,20 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   }
 
   Future<void> _showWidgetSetupDialog() async {
+    if (Platform.isIOS) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'على iPhone أضفها يدويًا: ضغط مطول على الشاشة الرئيسية > + > ابحث عن "نور القرآن" > اختر ويدجت المواقيت.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final alreadyAdded = await BackgroundExecutionSettings.hasPrayerWidget();
     if (!mounted) {
       return;
@@ -956,7 +976,6 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     return PrayerNotificationService.instance.reschedulePrayerNotifications(
       city: _selectedCity,
       prayerOffsets: _prayerOffsets,
-      summerTimeEnabled: _summerTimeEnabled,
       adhanEnabled: _adhanEnabled,
       prayerEnabledMap: _prayerEnabledMap,
       prayerReminderByPrayer: _prayerReminderByPrayer,

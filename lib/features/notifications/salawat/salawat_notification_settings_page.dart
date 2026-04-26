@@ -137,6 +137,21 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
           vibrationEnabled: _vibrationEnabled,
         ),
       );
+      unawaited(() async {
+        final city = _resolvePrayerCity(widget.store.savedPrayerCityName);
+        await SalawatNotificationService.instance.reschedule(
+          enabled: true,
+          intervalMinutes: _intervalMinutes,
+          pauseAtPrayer: _pauseAtPrayer,
+          prayerPauseMinutes: _prayerPauseMinutes,
+          windowEnabled: _windowEnabled,
+          windowStartMinutes: _windowStartMinutes,
+          windowEndMinutes: _windowEndMinutes,
+          vibrationEnabled: _vibrationEnabled,
+          city: city,
+          prayerOffsets: widget.store.savedPrayerOffsets,
+        );
+      }());
     }
   }
 
@@ -561,8 +576,21 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
             vibrationEnabled: _vibrationEnabled,
             city: city,
             prayerOffsets: widget.store.savedPrayerOffsets,
-            summerTimeEnabled: widget.store.savedPrayerSummerTimeEnabled,
           );
+          final pendingCount = await SalawatNotificationService.instance
+              .pendingScheduledCount();
+          if (_enabled && pendingCount == 0 && mounted) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'لم يتم جدولة أي إشعار. راجع فترة التشغيل أو إيقاف التذكير وقت الصلاة.',
+                  ),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+          }
           if (showSuccess && mounted) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()

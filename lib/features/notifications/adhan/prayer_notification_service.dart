@@ -50,7 +50,11 @@ class PrayerNotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const darwinSettings = DarwinInitializationSettings();
+    const darwinSettings = DarwinInitializationSettings(
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+    );
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
@@ -155,7 +159,6 @@ class PrayerNotificationService {
   Future<void> reschedulePrayerNotifications({
     required PrayerCity city,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
     required bool adhanEnabled,
     required Map<String, bool> prayerEnabledMap,
     required Map<String, int> prayerReminderByPrayer,
@@ -172,7 +175,6 @@ class PrayerNotificationService {
         city: city,
         date: date,
         prayerOffsets: prayerOffsets,
-        summerTimeEnabled: summerTimeEnabled,
       );
 
       final entries = <_ScheduledPrayer>[
@@ -292,17 +294,15 @@ class PrayerNotificationService {
     required PrayerCity city,
     required DateTime date,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
   }) {
     final params = city.method.parameters;
-    final summerOffset = summerTimeEnabled ? 60 : 0;
     params.adjustments = {
-      Prayer.fajr: (prayerOffsets['fajr'] ?? 0) + summerOffset,
-      Prayer.sunrise: (prayerOffsets['sunrise'] ?? 0) + summerOffset,
-      Prayer.dhuhr: (prayerOffsets['dhuhr'] ?? 0) + summerOffset,
-      Prayer.asr: (prayerOffsets['asr'] ?? 0) + summerOffset,
-      Prayer.maghrib: (prayerOffsets['maghrib'] ?? 0) + summerOffset,
-      Prayer.isha: (prayerOffsets['isha'] ?? 0) + summerOffset,
+      Prayer.fajr: prayerOffsets['fajr'] ?? 0,
+      Prayer.sunrise: prayerOffsets['sunrise'] ?? 0,
+      Prayer.dhuhr: prayerOffsets['dhuhr'] ?? 0,
+      Prayer.asr: prayerOffsets['asr'] ?? 0,
+      Prayer.maghrib: prayerOffsets['maghrib'] ?? 0,
+      Prayer.isha: prayerOffsets['isha'] ?? 0,
     };
     return PrayerTimes(
       date: date,

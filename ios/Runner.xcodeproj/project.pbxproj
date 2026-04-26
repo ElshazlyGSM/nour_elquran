@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		A1B2C301D4E5F60123456701 /* PrayerTimesWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C301D4E5F60123456711 /* PrayerTimesWidgetBundle.swift */; };
+		A1B2C301D4E5F60123456702 /* PrayerTimesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C301D4E5F60123456712 /* PrayerTimesWidget.swift */; };
+		A1B2C301D4E5F60123456703 /* PrayerTimesWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C301D4E5F60123456715 /* PrayerTimesWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		703458451A8711D0489237F7 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1076CF5A7E7431998B857DA4 /* Pods_Runner.framework */; };
@@ -30,6 +33,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		A1B2C301D4E5F60123456731 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1B2C301D4E5F60123456703 /* PrayerTimesWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -47,6 +61,11 @@
 		1076CF5A7E7431998B857DA4 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		A1B2C301D4E5F60123456711 /* PrayerTimesWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerTimesWidgetBundle.swift; sourceTree = "<group>"; };
+		A1B2C301D4E5F60123456712 /* PrayerTimesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerTimesWidget.swift; sourceTree = "<group>"; };
+		A1B2C301D4E5F60123456713 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C301D4E5F60123456714 /* PrayerTimesWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrayerTimesWidgetExtension.entitlements; sourceTree = "<group>"; };
+		A1B2C301D4E5F60123456715 /* PrayerTimesWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrayerTimesWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
@@ -70,6 +89,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A1B2C301D4E5F60123456734 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -89,6 +115,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A1B2C301D4E5F60123456721 /* PrayerTimesWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C301D4E5F60123456711 /* PrayerTimesWidgetBundle.swift */,
+				A1B2C301D4E5F60123456712 /* PrayerTimesWidget.swift */,
+				A1B2C301D4E5F60123456713 /* Info.plist */,
+				A1B2C301D4E5F60123456714 /* PrayerTimesWidgetExtension.entitlements */,
+			);
+			path = PrayerTimesWidgetExtension;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -135,6 +172,7 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
+				A1B2C301D4E5F60123456721 /* PrayerTimesWidgetExtension */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				44A07AD671ECC38C21249900 /* Pods */,
@@ -147,6 +185,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				A1B2C301D4E5F60123456715 /* PrayerTimesWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -170,6 +209,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A1B2C301D4E5F60123456741 /* PrayerTimesWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C301D4E5F60123456754 /* Build configuration list for PBXNativeTarget "PrayerTimesWidgetExtension" */;
+			buildPhases = (
+				A1B2C301D4E5F60123456732 /* Sources */,
+				A1B2C301D4E5F60123456734 /* Frameworks */,
+				A1B2C301D4E5F60123456733 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PrayerTimesWidgetExtension;
+			productName = PrayerTimesWidgetExtension;
+			productReference = A1B2C301D4E5F60123456715 /* PrayerTimesWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -199,6 +255,7 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
+				A1B2C301D4E5F60123456731 /* Embed App Extensions */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				D6E8E8DF65302AD840EB411D /* [CP] Embed Pods Frameworks */,
@@ -222,6 +279,9 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
+					A1B2C301D4E5F60123456741 = {
+						CreatedOnToolsVersion = 15.0;
+					};
 					331C8080294A63A400263BE5 = {
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 97C146ED1CF9000F007C117D;
@@ -246,12 +306,20 @@
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
+				A1B2C301D4E5F60123456741 /* PrayerTimesWidgetExtension */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A1B2C301D4E5F60123456733 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807F294A63A400263BE5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -382,6 +450,15 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A1B2C301D4E5F60123456732 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C301D4E5F60123456701 /* PrayerTimesWidgetBundle.swift in Sources */,
+				A1B2C301D4E5F60123456702 /* PrayerTimesWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -430,6 +507,67 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		A1B2C301D4E5F60123456751 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 2NQ9538MWJ;
+				CODE_SIGN_ENTITLEMENTS = PrayerTimesWidgetExtension/PrayerTimesWidgetExtension.entitlements;
+				INFOPLIST_FILE = PrayerTimesWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elshazly.noorquran.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		A1B2C301D4E5F60123456752 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 2NQ9538MWJ;
+				CODE_SIGN_ENTITLEMENTS = PrayerTimesWidgetExtension/PrayerTimesWidgetExtension.entitlements;
+				INFOPLIST_FILE = PrayerTimesWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elshazly.noorquran.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		A1B2C301D4E5F60123456753 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 2NQ9538MWJ;
+				CODE_SIGN_ENTITLEMENTS = PrayerTimesWidgetExtension/PrayerTimesWidgetExtension.entitlements;
+				INFOPLIST_FILE = PrayerTimesWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elshazly.noorquran.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Profile;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -491,6 +629,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 2NQ9538MWJ;
 				ENABLE_BITCODE = NO;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -674,6 +813,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 2NQ9538MWJ;
 				ENABLE_BITCODE = NO;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -697,6 +837,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 2NQ9538MWJ;
 				ENABLE_BITCODE = NO;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -713,6 +854,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A1B2C301D4E5F60123456754 /* Build configuration list for PBXNativeTarget "PrayerTimesWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C301D4E5F60123456751 /* Debug */,
+				A1B2C301D4E5F60123456752 /* Release */,
+				A1B2C301D4E5F60123456753 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

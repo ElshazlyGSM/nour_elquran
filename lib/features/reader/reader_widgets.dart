@@ -3,12 +3,14 @@ part of 'reader_page.dart';
 class _LibraryMushafPages extends StatelessWidget {
   const _LibraryMushafPages({
     required this.startPage,
+    required this.isDarkMode,
     required this.onAyahSelected,
     required this.onPageChanged,
     required this.onPageTap,
   });
 
   final int startPage;
+  final bool isDarkMode;
   final void Function(int surahNumber, int verseNumber) onAyahSelected;
   final void Function(int pageNumber) onPageChanged;
   final VoidCallback onPageTap;
@@ -23,7 +25,7 @@ class _LibraryMushafPages extends StatelessWidget {
         pageIndex: startPage - 1,
         withPageView: true,
         isShowTabBar: false,
-        isDark: false,
+        isDark: isDarkMode,
         useDefaultAppBar: false,
         isShowAudioSlider: false,
         enableWordSelection: true,
@@ -32,10 +34,18 @@ class _LibraryMushafPages extends StatelessWidget {
         onAyahLongPress: (_, ayah) {
           onAyahSelected(ayah.surahNumber!, ayah.ayahNumber);
         },
-        backgroundColor: const Color(0xFFE8DFC8),
-        ayahSelectedBackgroundColor: const Color(0x40B49355),
-        ayahSelectedFontColor: const Color(0xFF4A3720),
-        textColor: const Color(0xFF4A3720),
+        backgroundColor: isDarkMode
+            ? const Color(0xFF0E171B)
+            : const Color(0xFFE8DFC8),
+        ayahSelectedBackgroundColor: isDarkMode
+            ? const Color(0x3343C697)
+            : const Color(0x40B49355),
+        ayahSelectedFontColor: isDarkMode
+            ? const Color(0xFFEAE7DB)
+            : const Color(0xFF4A3720),
+        textColor: isDarkMode
+            ? const Color(0xFFEAE7DB)
+            : const Color(0xFF4A3720),
       ),
     );
   }
@@ -329,12 +339,16 @@ class _ShamarlyPages extends StatefulWidget {
   const _ShamarlyPages({
     required this.startPage,
     required this.pagesDirectoryPath,
+    required this.initialZoomScale,
+    required this.onZoomScaleChanged,
     required this.onPageTap,
     required this.onPageChanged,
   });
 
   final int startPage;
   final String? pagesDirectoryPath;
+  final double initialZoomScale;
+  final ValueChanged<double> onZoomScaleChanged;
   final VoidCallback onPageTap;
   final void Function(int pageNumber) onPageChanged;
 
@@ -344,6 +358,11 @@ class _ShamarlyPages extends StatefulWidget {
 
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
   late final PageController _controller;
+  final Set<int> _activePointers = <int>{};
+  bool _isMultiTouchActive = false;
+  double _userZoomScale = 1.0;
+  double _scaleStart = 1.0;
+  double _zoomStart = 1.0;
 
   bool _isIPhoneLayout(BuildContext context) {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
@@ -355,6 +374,8 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
   @override
   void initState() {
     super.initState();
+    _userZoomScale = widget.initialZoomScale.clamp(1.0, 2.6);
+    _zoomStart = _userZoomScale;
     _controller = PageController(
       initialPage: (widget.startPage - 1).clamp(
         0,
@@ -366,6 +387,12 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
   @override
   void didUpdateWidget(covariant _ShamarlyPages oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final incomingZoom = widget.initialZoomScale.clamp(1.0, 2.6);
+    if ((incomingZoom - oldWidget.initialZoomScale).abs() > 0.001 &&
+        (incomingZoom - _userZoomScale).abs() > 0.001) {
+      _userZoomScale = incomingZoom;
+      _zoomStart = _userZoomScale;
+    }
     if (widget.startPage != oldWidget.startPage) {
       final target = (widget.startPage - 1).clamp(
         0,
@@ -408,23 +435,25 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
   ) {
     return SizedBox.expand(
       child: ClipRect(
-        child: InteractiveViewer(
-          minScale: 1.0,
-          maxScale: 4.0,
-          panEnabled: false,
-          scaleEnabled: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const baseWidth = 400.0;
-              const baseScale = 1.3;
-              final scale = (constraints.maxWidth / baseWidth) * baseScale;
-              //حجم مصحف الشمرلي وتكبيره لملاءمة الشاشة
-              final clampedScale = scale.clamp(1.35, 1.4);
-              final tunedScale = _isIPhoneLayout(context)
-                  ? (clampedScale - 0.05).clamp(1.3, 1.35)
-                  : clampedScale;
-              return Transform.scale(
-                scale: tunedScale,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const baseWidth = 400.0;
+            const baseScale = 1.18;
+            final scale = (constraints.maxWidth / baseWidth) * baseScale;
+            // حجم مصحف الشمرلي: نقلل التكبير قليلًا لتجنب قص الحروف من الجانبين.
+            final clampedScale = scale.clamp(1.18, 1.28);
+            final tunedScale = _isIPhoneLayout(context)
+                ? (clampedScale - 0.04).clamp(1.12, 1.22)
+                : clampedScale;
+            final horizontalInset = constraints.maxWidth < 390 ? 10.0 : 8.0;
+            final effectiveScale = (tunedScale * _userZoomScale).clamp(
+              1.0,
+              3.2,
+            );
+            return Transform.scale(
+              scale: effectiveScale,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalInset),
                 child: buildShamarlyPageImage(
                   context: context,
                   filePath: filePath,
@@ -436,9 +465,9 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -451,23 +480,84 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
     }
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: widget.onPageTap,
-        child: PageView.builder(
-          controller: _controller,
-          physics: const PageScrollPhysics(),
-          reverse: false,
-          clipBehavior: Clip.hardEdge,
-          allowImplicitScrolling: true,
-          itemCount: ShamarlyPagesDownloadConfig.totalPages,
-          onPageChanged: (index) => widget.onPageChanged(index + 1),
-          itemBuilder: (context, index) {
-            final pageNumber = index + 1;
-            final fileName = _pageFileName(pageNumber);
-            final filePath = path.join(widget.pagesDirectoryPath!, fileName);
-            return _buildShamarlyPageCell(context, filePath, pageNumber);
+      child: Listener(
+        onPointerDown: (event) {
+          _activePointers.add(event.pointer);
+          final isNowMultiTouch = _activePointers.length >= 2;
+          if (isNowMultiTouch != _isMultiTouchActive && mounted) {
+            setState(() {
+              _isMultiTouchActive = isNowMultiTouch;
+            });
+          }
+        },
+        onPointerUp: (event) {
+          _activePointers.remove(event.pointer);
+          final isNowMultiTouch = _activePointers.length >= 2;
+          if (isNowMultiTouch != _isMultiTouchActive && mounted) {
+            setState(() {
+              _isMultiTouchActive = isNowMultiTouch;
+            });
+          }
+        },
+        onPointerCancel: (event) {
+          _activePointers.remove(event.pointer);
+          final isNowMultiTouch = _activePointers.length >= 2;
+          if (isNowMultiTouch != _isMultiTouchActive && mounted) {
+            setState(() {
+              _isMultiTouchActive = isNowMultiTouch;
+            });
+          }
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: widget.onPageTap,
+          onScaleStart: (details) {
+            if (_activePointers.length < 2) {
+              return;
+            }
+            _scaleStart = 1.0;
+            _zoomStart = _userZoomScale;
           },
+          onScaleUpdate: (details) {
+            if (details.pointerCount < 2) {
+              return;
+            }
+            final base = _scaleStart == 0 ? 1.0 : _scaleStart;
+            final relative = details.scale / base;
+            final next = (_zoomStart * relative).clamp(1.0, 2.6);
+            if ((next - _userZoomScale).abs() < 0.004) {
+              return;
+            }
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _userZoomScale = next;
+            });
+            widget.onZoomScaleChanged(_userZoomScale);
+          },
+          onScaleEnd: (_) {
+            _scaleStart = 1.0;
+            _zoomStart = _userZoomScale;
+            widget.onZoomScaleChanged(_userZoomScale);
+          },
+          child: PageView.builder(
+            controller: _controller,
+            physics: _isMultiTouchActive
+                ? const NeverScrollableScrollPhysics()
+                : const PageScrollPhysics(),
+            reverse: false,
+            clipBehavior: Clip.hardEdge,
+            allowImplicitScrolling: true,
+            itemCount: ShamarlyPagesDownloadConfig.totalPages,
+            onPageChanged: (index) => widget.onPageChanged(index + 1),
+            itemBuilder: (context, index) {
+              final pageNumber = index + 1;
+              final fileName = _pageFileName(pageNumber);
+              final filePath = path.join(widget.pagesDirectoryPath!, fileName);
+              return _buildShamarlyPageCell(context, filePath, pageNumber);
+            },
+          ),
         ),
       ),
     );

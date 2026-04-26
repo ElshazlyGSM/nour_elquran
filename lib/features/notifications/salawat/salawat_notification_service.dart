@@ -64,7 +64,11 @@ class SalawatNotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const darwinSettings = DarwinInitializationSettings();
+    const darwinSettings = DarwinInitializationSettings(
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+    );
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
@@ -178,7 +182,6 @@ class SalawatNotificationService {
     required bool vibrationEnabled,
     PrayerCity? city,
     Map<String, int> prayerOffsets = const {},
-    bool summerTimeEnabled = false,
   }) async {
     await initialize();
     await _refreshExactAlarmCapability();
@@ -207,7 +210,6 @@ class SalawatNotificationService {
       windowEndMinutes: windowEndMinutes,
       city: city,
       prayerOffsets: prayerOffsets,
-      summerTimeEnabled: summerTimeEnabled,
     );
     final pending = await _notifications.pendingNotificationRequests();
     final pendingCount = pending
@@ -241,7 +243,6 @@ class SalawatNotificationService {
     required bool vibrationEnabled,
     PrayerCity? city,
     Map<String, int> prayerOffsets = const {},
-    bool summerTimeEnabled = false,
     int minimumPendingNotifications = 96,
   }) async {
     await initialize();
@@ -274,7 +275,6 @@ class SalawatNotificationService {
         vibrationEnabled: vibrationEnabled,
         city: city,
         prayerOffsets: prayerOffsets,
-        summerTimeEnabled: summerTimeEnabled,
       );
       return;
     }
@@ -295,7 +295,6 @@ class SalawatNotificationService {
         vibrationEnabled: vibrationEnabled,
         city: city,
         prayerOffsets: prayerOffsets,
-        summerTimeEnabled: summerTimeEnabled,
       );
       return;
     }
@@ -316,7 +315,6 @@ class SalawatNotificationService {
       windowEndMinutes: windowEndMinutes,
       city: city,
       prayerOffsets: prayerOffsets,
-      summerTimeEnabled: summerTimeEnabled,
       usedIds: pendingRequests.map((item) => item.id).toSet(),
       startAfterEpochMs: latestScheduledEpochMs,
       additionalTarget: additionalTarget,
@@ -427,7 +425,6 @@ class SalawatNotificationService {
     required int windowEndMinutes,
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
     // Start from the configured interval itself to avoid "early" reminders
@@ -449,7 +446,6 @@ class SalawatNotificationService {
         nextTime,
         city: city,
         prayerOffsets: prayerOffsets,
-        summerTimeEnabled: summerTimeEnabled,
         pauseAtPrayer: pauseAtPrayer,
         pauseDuration: pauseDuration,
       );
@@ -499,7 +495,6 @@ class SalawatNotificationService {
     required int windowEndMinutes,
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
     required Set<int> usedIds,
     required int startAfterEpochMs,
     required int additionalTarget,
@@ -538,7 +533,6 @@ class SalawatNotificationService {
           nextTime,
           city: city,
           prayerOffsets: prayerOffsets,
-          summerTimeEnabled: summerTimeEnabled,
           pauseAtPrayer: pauseAtPrayer,
           pauseDuration: pauseDuration,
         );
@@ -678,7 +672,6 @@ class SalawatNotificationService {
     DateTime time, {
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
-    required bool summerTimeEnabled,
     required bool pauseAtPrayer,
     required Duration pauseDuration,
   }) {
@@ -686,15 +679,14 @@ class SalawatNotificationService {
       return false;
     }
 
-    final summerOffset = summerTimeEnabled ? 60 : 0;
     final params = city.method.parameters;
     params.adjustments = {
-      Prayer.fajr: (prayerOffsets['fajr'] ?? 0) + summerOffset,
-      Prayer.sunrise: (prayerOffsets['sunrise'] ?? 0) + summerOffset,
-      Prayer.dhuhr: (prayerOffsets['dhuhr'] ?? 0) + summerOffset,
-      Prayer.asr: (prayerOffsets['asr'] ?? 0) + summerOffset,
-      Prayer.maghrib: (prayerOffsets['maghrib'] ?? 0) + summerOffset,
-      Prayer.isha: (prayerOffsets['isha'] ?? 0) + summerOffset,
+      Prayer.fajr: prayerOffsets['fajr'] ?? 0,
+      Prayer.sunrise: prayerOffsets['sunrise'] ?? 0,
+      Prayer.dhuhr: prayerOffsets['dhuhr'] ?? 0,
+      Prayer.asr: prayerOffsets['asr'] ?? 0,
+      Prayer.maghrib: prayerOffsets['maghrib'] ?? 0,
+      Prayer.isha: prayerOffsets['isha'] ?? 0,
     };
 
     final prayerTimes = PrayerTimes(
@@ -725,8 +717,8 @@ class SalawatNotificationService {
   }
 
   NotificationDetails _notificationDetails(
-  bool vibrationEnabled,
-) => NotificationDetails(
+    bool vibrationEnabled,
+  ) => NotificationDetails(
     android: AndroidNotificationDetails(
       'salawat_reminders_channel_clean_v4_${vibrationEnabled ? 'vib' : 'silent'}',
       'تذكير الصلاة على النبي',

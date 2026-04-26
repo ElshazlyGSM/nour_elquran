@@ -38,7 +38,6 @@ void notificationWatchdogDispatcher() {
         await PrayerNotificationService.instance.reschedulePrayerNotifications(
           city: city,
           prayerOffsets: store.savedPrayerOffsets,
-          summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
           adhanEnabled: store.savedPrayerAdhanEnabled,
           prayerEnabledMap: store.savedPrayerEnabledMap,
           prayerReminderByPrayer: store.savedPrayerReminderByPrayer,
@@ -64,7 +63,6 @@ void notificationWatchdogDispatcher() {
             vibrationEnabled: store.savedSalawatVibrationEnabled,
             city: city,
             prayerOffsets: store.savedPrayerOffsets,
-            summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
             minimumPendingNotifications: 96,
           );
           _logWatchdog('Salawat capacity check completed (periodic)');
@@ -84,7 +82,6 @@ void notificationWatchdogDispatcher() {
             vibrationEnabled: store.savedSalawatVibrationEnabled,
             city: city,
             prayerOffsets: store.savedPrayerOffsets,
-            summerTimeEnabled: store.savedPrayerSummerTimeEnabled,
           );
           _logWatchdog('Salawat full reschedule completed (repair)');
         } catch (error) {

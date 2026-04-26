@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'dart:ui';
@@ -13,6 +14,7 @@ import 'package:quran/quran.dart' as quran;
 import 'package:quran_library/quran_library.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/utils/arabic_numbers.dart';
@@ -340,6 +342,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   bool _isHandlingLocalCompletion = false;
   bool _pendingLocalCompletion = false;
   Timer? _audioBufferingHintTimer;
+  Timer? _audioPreparingTimeoutTimer;
   bool _audioBufferingHintShown = false;
   bool _isInitialStandardPositioning = false;
   bool _isSwitchingToPagedMushaf = false;
@@ -385,6 +388,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int? _playbackSurahNumber;
   int? _playbackStartVerse;
   int? _playbackResumeVerseAfterChunk;
+  Uri? _mediaArtworkUri;
+  double _shamarlyZoomScale = 1.0;
   List<int> _playlistVerseNumbers = const [];
   final Map<String, GlobalKey> _verseKeys = {};
   final Map<int, GlobalKey> _pageKeys = {};
@@ -417,7 +422,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   // Make pinch feel easier: small finger movement gives a slightly bigger
   // visual change without being jumpy.
   double _pinchScaleWithSensitivity(double rawScale) {
-    const sensitivity = 1.24;
+    const sensitivity = 1.10;
     return 1 + ((rawScale - 1) * sensitivity);
   }
 
@@ -442,6 +447,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   }
 
   void _activateManualPinchIfReady() {
+    if (_isShamarlyPagesMode) {
+      return;
+    }
     if (_activePointerPositions.length < 2) {
       return;
     }
@@ -486,6 +494,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (_activePointerPositions.length < 2) {
       return;
     }
+    if (_isShamarlyPagesMode) {
+      return;
+    }
     _activateManualPinchIfReady();
     final startDistance = _manualPinchStartDistance;
     if (startDistance == null || startDistance <= 0) {
@@ -493,6 +504,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     }
     final currentDistance = _currentTwoPointersDistance();
     if (currentDistance == null || currentDistance <= 0) {
+      return;
+    }
+    if ((currentDistance - startDistance).abs() < 8) {
       return;
     }
     final adjustedScale = _pinchScaleWithSensitivity(
@@ -507,7 +521,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       final nextFactor = (startFactor * adjustedScale).clamp(1.0, 2.0);
       try {
         final current = QuranCtrl.instance.state.scaleFactor.value;
-        if ((nextFactor - current).abs() < 0.004) {
+        if ((nextFactor - current).abs() < 0.008) {
           return;
         }
         QuranCtrl.instance.state.baseScaleFactor.value = nextFactor;
@@ -529,7 +543,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       return;
     }
     final nextSize = (startSize * adjustedScale).clamp(14.0, 42.0);
-    if ((nextSize - _fontSize).abs() < 0.035) {
+    if ((nextSize - _fontSize).abs() < 0.06) {
       return;
     }
     if (!mounted) {
@@ -1072,6 +1086,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _pagedStartPage = _startPage;
     _standardInitialPage = _startPage;
     _buildMedinaPageLookup();
+    unawaited(_prepareMediaArtworkUri());
     _restoreReaderPreferences();
     _lastContinuousFontSize = _fontSize;
     if (_appearance == _ReaderAppearance.medinaPages) {
@@ -1151,6 +1166,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       }
       if (state.processingState == ProcessingState.completed) {
         _audioBufferingHintTimer?.cancel();
+        _cancelAudioPreparingTimeout();
         _updateState(() {
           _isPlayingAudio = false;
           _isPreparingAudio = true;
@@ -1166,6 +1182,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         _isPlayingAudio = state.playing;
         if (state.playing) {
           _audioBufferingHintTimer?.cancel();
+          _cancelAudioPreparingTimeout();
           _audioBufferingHintShown = false;
           _isPreparingAudio = false;
           _suspendPlaylistIndexSelectionSync = false;
@@ -1173,10 +1190,17 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             state.processingState == ProcessingState.buffering ||
             (_isPreparingAudio &&
                 state.processingState == ProcessingState.ready)) {
-          // Keep showing loading until playback actually starts.
-          _isPreparingAudio = true;
-          if (state.processingState == ProcessingState.buffering &&
-              !_audioBufferingHintShown) {
+          if (_audioBufferingHintShown && !_audioPlayer.playing) {
+            _isPreparingAudio = false;
+            _isPlayingAudio = false;
+          } else {
+            // Keep showing loading until playback actually starts.
+            _isPreparingAudio = true;
+          }
+          if (!_audioBufferingHintShown &&
+              !_audioPlayer.playing &&
+              _isPreparingAudio) {
+            _startAudioPreparingTimeout();
             _audioBufferingHintTimer ??= Timer(const Duration(seconds: 6), () {
               _audioBufferingHintTimer = null;
               if (!mounted ||
@@ -1186,9 +1210,15 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 return;
               }
               _audioBufferingHintShown = true;
+              _updateState(() {
+                _isPreparingAudio = false;
+                _isPlayingAudio = false;
+                _audioError = 'انقطع الاتصال بالإنترنت أثناء التشغيل.';
+              });
+              unawaited(_audioPlayer.stop().catchError((_) {}));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('التشغيل توقف بسبب ضعف أو انقطاع الإنترنت.'),
+                  content: Text('انقطع الاتصال بالإنترنت أثناء التشغيل.'),
                 ),
               );
             });
@@ -1196,7 +1226,24 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         } else if (state.processingState == ProcessingState.idle) {
           _audioBufferingHintTimer?.cancel();
           _audioBufferingHintTimer = null;
+          _cancelAudioPreparingTimeout();
           _isPreparingAudio = false;
+          final currentIndex = _audioPlayer.currentIndex;
+          final hasPendingItems =
+              currentIndex != null &&
+              currentIndex >= 0 &&
+              currentIndex < (_playlistVerseNumbers.length - 1);
+          if (hasPendingItems &&
+              !_isAdvancingToNextSurah &&
+              !_isHandlingLocalCompletion &&
+              !_audioBufferingHintShown) {
+            _audioBufferingHintShown = true;
+            _audioError = 'تعذر تشغيل الصوت. تأكد من اتصال الإنترنت.';
+          }
+        } else {
+          _audioBufferingHintTimer?.cancel();
+          _audioBufferingHintTimer = null;
+          _cancelAudioPreparingTimeout();
         }
       });
     });
@@ -1209,6 +1256,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         }
         _audioBufferingHintTimer?.cancel();
         _audioBufferingHintTimer = null;
+        _cancelAudioPreparingTimeout();
         _audioBufferingHintShown = true;
         _updateState(() {
           _isPreparingAudio = false;
@@ -1362,6 +1410,49 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         });
   }
 
+  void _startAudioPreparingTimeout() {
+    _audioPreparingTimeoutTimer?.cancel();
+    _audioPreparingTimeoutTimer = Timer(const Duration(seconds: 12), () {
+      if (!mounted ||
+          _activeAudioEngine != _AudioEngine.local ||
+          _audioPlayer.playing ||
+          !_isPreparingAudio) {
+        return;
+      }
+      _audioBufferingHintShown = true;
+      _updateState(() {
+        _isPreparingAudio = false;
+        _isPlayingAudio = false;
+        _audioError = 'انقطع الاتصال بالإنترنت أثناء التشغيل.';
+      });
+      unawaited(_audioPlayer.stop().catchError((_) {}));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('انقطع الاتصال بالإنترنت أثناء التشغيل.')),
+      );
+    });
+  }
+
+  void _cancelAudioPreparingTimeout() {
+    _audioPreparingTimeoutTimer?.cancel();
+    _audioPreparingTimeoutTimer = null;
+  }
+
+  Future<void> _prepareMediaArtworkUri() async {
+    if (kIsWeb) {
+      return;
+    }
+    try {
+      final data = await rootBundle.load('assets/IMG_4554.png');
+      final dir = await getTemporaryDirectory();
+      final file = File(path.join(dir.path, 'now_playing_artwork.png'));
+      await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+      if (!mounted) {
+        return;
+      }
+      _mediaArtworkUri = file.uri;
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -1369,6 +1460,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     _controlBarHideTimer?.cancel();
     _visibleSurahSyncTimer?.cancel();
     _audioBufferingHintTimer?.cancel();
+    _cancelAudioPreparingTimeout();
     _libraryAudioStateSubscription?.cancel();
     _libraryAyahSubscription?.cancel();
     _librarySelectionSubscription?.cancel();
@@ -1658,6 +1750,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         Positioned.fill(
           child: _LibraryMushafPages(
             startPage: _pagedStartPage ?? _startPage,
+            isDarkMode: Theme.of(context).brightness == Brightness.dark,
             onPageTap: _showPagedControlBar,
             onPageChanged: (rawPageNumber) {
               if (_isSwitchingToPagedMushaf) {
@@ -1726,6 +1819,14 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             child: _ShamarlyPages(
               startPage: _shamarlyCurrentPage,
               pagesDirectoryPath: _shamarlyPagesDirectoryPath,
+              initialZoomScale: _shamarlyZoomScale,
+              onZoomScaleChanged: (zoomScale) {
+                if ((zoomScale - _shamarlyZoomScale).abs() < 0.001) {
+                  return;
+                }
+                _shamarlyZoomScale = zoomScale.clamp(1.0, 2.6);
+                unawaited(_persistReaderPreferences());
+              },
               onPageTap: _showPagedControlBar,
               onPageChanged: (pageNumber) {
                 final pageSurahNumber = _resolveShamarlyVisibleSurahNumber(

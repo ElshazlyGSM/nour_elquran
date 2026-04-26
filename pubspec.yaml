@@ -37,6 +37,8 @@ dependencies:
   alfurqan: ^0.0.4
   shared_preferences: ^2.5.4
   just_audio: ^0.10.5
+  just_audio_background: ^0.0.1-beta.17
+  audio_service: ^0.18.18
   http: ^1.6.0
   archive: ^4.0.9
   quran_library: ^3.2.0
@@ -86,6 +88,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/episodes/
+    - assets/IMG_4554.png
     - assets/a2trb.ogg
     - assets/audio/shoro2.ogg
     - assets/audio/azan-alah-akbr.ogg
@@ -119,7 +122,5 @@ flutter_launcher_icons:
   adaptive_icon_background: "#143A2A"
   adaptive_icon_foreground: assets/IMG_4554.png
   remove_alpha_ios: true
-
-
 
 

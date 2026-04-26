@@ -254,6 +254,7 @@ extension _ReaderStatePersistence on _ReaderPageState {
     _readingSpeed =
         (widget.store.savedReadingSpeed ?? _readingSpeedForTargetJuzMinutes(15))
             .clamp(0.05, 3.0);
+    _shamarlyZoomScale = widget.store.savedShamarlyZoomScale;
 
     unawaited(_refreshReciterDownloadStatus(_selectedReciter));
   }
@@ -293,6 +294,7 @@ extension _ReaderStatePersistence on _ReaderPageState {
       fontSize: fontSize,
       readingSpeed: _readingSpeed,
       appearance: _appearance.name,
+      shamarlyZoomScale: _shamarlyZoomScale,
     );
   }
 
