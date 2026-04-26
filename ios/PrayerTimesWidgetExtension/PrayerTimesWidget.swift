@@ -240,10 +240,13 @@ struct PrayerTimesWidgetEntryView: View {
         .font(.system(size: fontSize, weight: weight))
         .foregroundColor(color)
         .environment(\.locale, Locale(identifier: "ar"))
+        
+         
     } else {
       Text(toArabicDigits(entry.nextRemaining))
         .font(.system(size: fontSize, weight: weight))
         .foregroundColor(color)
+        
     }
   }
 
@@ -274,35 +277,40 @@ struct PrayerTimesWidgetEntryView: View {
 
   @ViewBuilder
   private var smallLayout: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack {
-        appBadge(size: 18)
-        Spacer()
-        Text("القادم")
-          .font(.system(size: 11.5, weight: .semibold))
+    VStack(alignment: .trailing, spacing: 8) {
+      HStack(spacing: 8) {
+        Text("الفرض القادم")
+          .font(.system(size: 12, weight: .bold))
           .foregroundColor(.white.opacity(0.75))
+        Spacer(minLength: 6)
+        appBadge(size: 20)
       }
 
       Text(entry.nextPrayerName)
-        .font(.system(size: 20, weight: .heavy))
+        .font(.system(size: 19, weight: .heavy))
         .foregroundColor(Color(red: 0.99, green: 0.86, blue: 0.53))
         .lineLimit(1)
         .minimumScaleFactor(0.8)
+        .frame(maxWidth: .infinity, alignment: .trailing)
 
       Text(entry.nextPrayerTime)
-        .font(.system(size: 15, weight: .bold))
+        .font(.system(size: 13.5, weight: .bold))
         .foregroundColor(.white)
         .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .trailing)
 
-      VStack(alignment: .leading, spacing: 3) {
-        Text("المتبقي")
-          .font(.system(size: 10.5, weight: .semibold))
-          .foregroundColor(.white.opacity(0.75))
-        remainingCountdownText(fontSize: 14, weight: .bold)
-      }
+      VStack(alignment: .trailing, spacing: 3) {
+      Text("الوقت المتبقي")
+        .font(.system(size: 12, weight: .bold))
+        .foregroundColor(.white.opacity(0.75))
+      HStack {                              // ← لف بـ HStack
+        Spacer()
+        remainingCountdownText(fontSize: 15, weight: .heavy)
+  }
+}
       .padding(.horizontal, 9)
       .padding(.vertical, 8)
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .trailing)
       .background(
         RoundedRectangle(cornerRadius: 12, style: .continuous)
           .fill(Color.white.opacity(0.10))
@@ -396,63 +404,83 @@ struct PrayerTimesWidgetEntryView: View {
 
   @ViewBuilder
   private var largeLayout: some View {
-    VStack(alignment: .leading, spacing: 9) {
+    VStack(alignment: .trailing, spacing: 9) {
       HStack(spacing: 7) {
-        appBadge(size: 20)
-        Text("نور القرآن")
-          .font(.system(size: 13.5, weight: .bold))
-          .foregroundColor(.white.opacity(0.92))
-        Spacer(minLength: 6)
         HStack(spacing: 5) {
           Image(systemName: "mappin.and.ellipse")
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
           Text(entry.city)
-            .font(.system(size: 12.5, weight: .bold))
+            .font(.system(size: 11.5, weight: .bold))
             .lineLimit(1)
             .minimumScaleFactor(0.75)
         }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(
+          Capsule(style: .continuous)
+            .fill(Color.white.opacity(0.12))
+        )
         .foregroundColor(.white.opacity(0.88))
+        Spacer(minLength: 8)
+        appBadge(size: 24)
+          .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
+        Spacer(minLength: 8)
+        VStack(alignment: .trailing, spacing: 0) {
+          Text("نور القرآن")
+            .font(.system(size: 16, weight: .black))
+            .foregroundColor(.white.opacity(0.95))
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+          Text(entry.hijriDate)
+            .font(.system(size: 13.5, weight: .bold))
+            .foregroundColor(.white.opacity(0.78))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
       }
-
-      Text(entry.hijriDate)
-        .font(.system(size: 11.5, weight: .medium))
-        .foregroundColor(.white.opacity(0.75))
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
 
       HStack(spacing: 10) {
         VStack(alignment: .leading, spacing: 3) {
-          Text("الفرض القادم")
-            .font(.system(size: 11, weight: .semibold))
+          Text("الوقت المتبقي")
+            .font(.system(size: 12, weight: .bold))
             .foregroundColor(.white.opacity(0.72))
-          Text(entry.nextPrayerName)
-            .font(.system(size: 22, weight: .heavy))
-            .foregroundColor(Color(red: 0.99, green: 0.86, blue: 0.53))
-            .lineLimit(1)
-            .minimumScaleFactor(0.82)
+          remainingCountdownText(fontSize: 15, weight: .heavy)
         }
         Spacer(minLength: 8)
-        VStack(alignment: .trailing, spacing: 4) {
-          Text(entry.nextPrayerTime)
-            .font(.system(size: 15, weight: .heavy))
-            .foregroundColor(.white)
-          remainingCountdownText(fontSize: 13, weight: .bold)
+        VStack(alignment: .trailing, spacing: 3) {
+          Text("الفرض القادم")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundColor(.white.opacity(0.75))
+          HStack(spacing: 6) {
+            Text(entry.nextPrayerTime)
+              .font(.system(size: 13.5, weight: .bold))
+              .foregroundColor(Color(red: 0.99, green: 0.82, blue: 0.35))
+              .lineLimit(1)
+              .minimumScaleFactor(0.85)
+            Text(entry.nextPrayerName)
+              .font(.system(size: 19, weight: .heavy))
+              .foregroundColor(Color(red: 0.99, green: 0.82, blue: 0.35))
+              .lineLimit(1)
+              .minimumScaleFactor(0.78)
+            
+          }
         }
       }
+      .frame(maxWidth: .infinity, alignment: .trailing)
       .padding(.horizontal, 10)
-      .padding(.vertical, 9)
+      .padding(.vertical, 8)
       .background(
         RoundedRectangle(cornerRadius: 13, style: .continuous)
-          .fill(Color.white.opacity(0.10))
+          .fill(Color(red: 0.09, green: 0.24, blue: 0.28).opacity(0.62))
           .overlay(
             RoundedRectangle(cornerRadius: 13, style: .continuous)
-              .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
+              .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
           )
       )
 
       VStack(spacing: 6) {
         ForEach(prayerRows, id: \.0) { row in
-          prayerRow(name: row.0, time: row.1, isNext: isNextPrayer(row.0))
+            prayerRow(name: row.0, time: row.1, isNext: isNextPrayer(row.0))
         }
       }
     }
