@@ -19,6 +19,11 @@ class PrayerNotificationService {
       PrayerNotificationService._();
   // Keep two+ weeks of upcoming alarms so missed app opens do not cause gaps.
   static const int _scheduleWindowDays = 30;
+  // iOS keeps a limited number of pending local notifications. We keep a
+  // safety margin so prayer reminders do not crowd out near-term alarms.
+  // Reserve a practical share for prayer alarms and reminders while leaving
+  // enough room for other local notifications on iOS (notably salawat).
+  static const int _maxIosPendingPrayerNotifications = 20;
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -169,6 +174,8 @@ class PrayerNotificationService {
     await _cancelPrayerNotificationsOnly();
 
     final now = DateTime.now();
+    var scheduledCount = 0;
+    final iosBudget = Platform.isIOS ? _maxIosPendingPrayerNotifications : null;
     for (var dayOffset = 0; dayOffset < _scheduleWindowDays; dayOffset++) {
       final date = DateTime(now.year, now.month, now.day + dayOffset);
       final prayerTimes = _buildPrayerTimes(
@@ -197,6 +204,9 @@ class PrayerNotificationService {
       ];
 
       for (final entry in entries) {
+        if (iosBudget != null && scheduledCount >= iosBudget) {
+          return;
+        }
         if (!(prayerEnabledMap[entry.key] ?? true)) {
           continue;
         }
@@ -218,6 +228,7 @@ class PrayerNotificationService {
               channelSuffixOverride: isSunrise ? 'sunrise' : null,
               channelNameOverride: isSunrise ? 'تنبيه الشروق' : null,
             );
+            scheduledCount++;
           } catch (_) {
             // Keep scheduling the rest even if one entry fails.
           }
@@ -225,6 +236,9 @@ class PrayerNotificationService {
 
         final reminderMinutes = prayerReminderByPrayer[entry.key] ?? 0;
         if (reminderMinutes > 0) {
+          if (iosBudget != null && scheduledCount >= iosBudget) {
+            return;
+          }
           final reminderTime = entry.time.subtract(
             Duration(minutes: reminderMinutes),
           );
@@ -241,6 +255,7 @@ class PrayerNotificationService {
                 channelSuffixOverride: isSunrise ? 'sunrise' : null,
                 channelNameOverride: isSunrise ? 'تنبيه الشروق' : null,
               );
+              scheduledCount++;
             } catch (_) {
               // Keep scheduling the rest even if one entry fails.
             }

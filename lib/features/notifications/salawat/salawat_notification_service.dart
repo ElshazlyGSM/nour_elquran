@@ -25,6 +25,9 @@ class SalawatNotificationService {
   // extending the rolling window so reminders do not stop quickly on
   // short intervals unless the app is reopened.
   static const _maxScheduledNotifications = 300;
+  // iOS has a strict pending-notification cap. Give salawat the larger share
+  // so short intervals (e.g. every 5 minutes) remain active longer.
+  static const _maxIosScheduledNotifications = 40;
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;
@@ -68,6 +71,8 @@ class SalawatNotificationService {
       defaultPresentAlert: true,
       defaultPresentBadge: true,
       defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
     const settings = InitializationSettings(
       android: androidSettings,
@@ -251,14 +256,22 @@ class SalawatNotificationService {
     final pendingCount = pendingRequests.length;
 
     if (!enabled) {
-      if (pendingCount > 0) {
-        await cancelAll();
-      }
+      _log('EnsureCapacity: disabled -> skip top-up');
       return;
     }
+    final platformLimit = _platformRollingLimit;
     final safeMinimum = minimumPendingNotifications.clamp(24, 240);
-    if (pendingCount >= safeMinimum) {
-      _log('EnsureCapacity: skip (pending=$pendingCount, min=$safeMinimum)');
+    final effectiveMinimum = safeMinimum > platformLimit
+        ? platformLimit
+        : safeMinimum;
+    if (pendingCount >= effectiveMinimum) {
+      _log(
+        'EnsureCapacity: skip (pending=$pendingCount, min=$effectiveMinimum)',
+      );
+      return;
+    }
+    if (pendingCount >= platformLimit) {
+      _log('EnsureCapacity: at platform limit ($pendingCount/$platformLimit)');
       return;
     }
 
@@ -300,9 +313,9 @@ class SalawatNotificationService {
     }
 
     final safeInterval = intervalMinutes.clamp(1, 720);
-    final additionalTarget = (_maxScheduledNotifications - pendingCount).clamp(
+    final additionalTarget = (platformLimit - pendingCount).clamp(
       1,
-      _maxScheduledNotifications,
+      platformLimit,
     );
     final scheduledCount = await _topUpRollingNotifications(
       intervalMinutes: safeInterval,
@@ -426,6 +439,7 @@ class SalawatNotificationService {
     required PrayerCity? city,
     required Map<String, int> prayerOffsets,
   }) async {
+    final platformLimit = _platformRollingLimit;
     final now = tz.TZDateTime.now(tz.local);
     // Start from the configured interval itself to avoid "early" reminders
     // when rescheduling is triggered by app resume/watchdog.
@@ -435,7 +449,7 @@ class SalawatNotificationService {
     var scheduledCount = 0;
     var skippedCount = 0;
 
-    while (nextId < _scheduledCeilingId) {
+    while (nextId < _scheduledCeilingId && scheduledCount < platformLimit) {
       final withinWindow = _isWithinWindow(
         nextTime,
         enabled: windowEnabled,
@@ -481,7 +495,7 @@ class SalawatNotificationService {
       }
       nextTime = nextTime.add(Duration(minutes: intervalMinutes));
     }
-    _log('Scheduled count=$scheduledCount (limit=$_maxScheduledNotifications)');
+    _log('Scheduled count=$scheduledCount (limit=$platformLimit)');
   }
 
   Future<int> _topUpRollingNotifications({
@@ -803,6 +817,9 @@ class SalawatNotificationService {
   String get _title => 'الصلاة والسلام على سيدنا النبي';
 
   String get _body => 'اللهم صل وسلم وبارك على سيدنا محمد وعلى آله وصحبه وسلم';
+
+  int get _platformRollingLimit =>
+      Platform.isIOS ? _maxIosScheduledNotifications : _maxScheduledNotifications;
 }
 
 enum _ScheduleAttemptResult { scheduled, skipped, stop }

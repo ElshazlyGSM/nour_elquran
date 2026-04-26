@@ -50,7 +50,9 @@ void notificationWatchdogDispatcher() {
 
       // Keep periodic watchdog lightweight: only top-up salawat when the
       // rolling queue is close to depletion. Full rebuild remains for repair.
-      if (task == _watchdogPeriodicTaskName) {
+      if (!store.savedSalawatReminderEnabled) {
+        _logWatchdog('Salawat disabled in store -> skip salawat watchdog work');
+      } else if (task == _watchdogPeriodicTaskName) {
         try {
           await SalawatNotificationService.instance.ensureRollingCapacity(
             enabled: store.savedSalawatReminderEnabled,

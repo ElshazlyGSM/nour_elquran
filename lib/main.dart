@@ -278,12 +278,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     await service.initialize();
     final pendingCount = await service.pendingScheduledCount();
     if (!store.savedSalawatReminderEnabled) {
-      if (pendingCount > 0) {
-        _logMain('Salawat disabled with pending=$pendingCount -> cancelAll');
-        await service.cancelAll();
-      } else {
-        _logMain('Salawat disabled and clean -> skip');
-      }
+      _logMain('Salawat disabled in saved state -> skip health checks');
       return;
     }
     _logMain(

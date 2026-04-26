@@ -614,7 +614,9 @@ class _QuranPageCard extends StatelessWidget {
     final showSideQuarterMarker =
         appearance != _ReaderAppearance.medinaPages &&
         appearance != _ReaderAppearance.shamarlyPages;
-    final leftInset = isIPhoneLayout && showSideQuarterMarker ? 8.0 : 3.0;
+    final leftInset = showSideQuarterMarker
+        ? (isIPhoneLayout ? 14.0 : 10.0)
+        : 3.0;
     final content = Material(
       color: Colors.transparent,
       child: Container(
@@ -1883,6 +1885,8 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
   static const double _markerWidth = 30.0;
   static const double _markerHeight = 52.0;
   static const double _markerFontSize = 11.0;
+  static const double _leftMarkerWidth = 10.0;
+  static const double _leftMarkerHeight = 26.0;
   List<_QuarterMarkerPosition> _positions = const [];
 
   @override
@@ -2071,6 +2075,27 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
     //علامه الحزب وحجمه ولونه
     return Stack(
       children: [
+        for (final position in _positions)
+          Positioned(
+            left: 2,
+            top: position.top + ((_markerHeight - _leftMarkerHeight) / 2),
+            child: Container(
+              width: _leftMarkerWidth,
+              height: _leftMarkerHeight,
+              decoration: BoxDecoration(
+                color: widget.appearance.quarterMarkerFillColor.withValues(
+                  alpha: 0.7,
+                ),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: widget.appearance.quarterMarkerBorderColor.withValues(
+                    alpha: 0.85,
+                  ),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
         for (final position in _positions)
           Positioned(
             right: 1,

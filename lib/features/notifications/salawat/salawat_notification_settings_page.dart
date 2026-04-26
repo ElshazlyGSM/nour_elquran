@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -34,6 +35,8 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
   int? _notificationVolume;
   int _notificationMaxVolume = 0;
   DateTime? _lastVolumePreviewAt;
+  bool get _supportsVibrationToggle => Platform.isAndroid;
+  bool get _supportsBatterySettingsShortcut => Platform.isAndroid;
 
   @override
   void initState() {
@@ -48,7 +51,9 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
     _windowEnabled = widget.store.savedSalawatWindowEnabled;
     _windowStartMinutes = widget.store.savedSalawatWindowStartMinutes;
     _windowEndMinutes = widget.store.savedSalawatWindowEndMinutes;
-    _vibrationEnabled = widget.store.savedSalawatVibrationEnabled;
+    _vibrationEnabled = _supportsVibrationToggle
+        ? widget.store.savedSalawatVibrationEnabled
+        : false;
     unawaited(_loadNotificationVolume());
   }
 
@@ -72,7 +77,8 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
         _windowEnabled != widget.store.savedSalawatWindowEnabled ||
         _windowStartMinutes != widget.store.savedSalawatWindowStartMinutes ||
         _windowEndMinutes != widget.store.savedSalawatWindowEndMinutes ||
-        _vibrationEnabled != widget.store.savedSalawatVibrationEnabled;
+        (_supportsVibrationToggle &&
+            _vibrationEnabled != widget.store.savedSalawatVibrationEnabled);
   }
 
   Future<void> _loadNotificationVolume() async {
@@ -151,6 +157,23 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
           city: city,
           prayerOffsets: widget.store.savedPrayerOffsets,
         );
+        final pendingCount = await SalawatNotificationService.instance
+            .pendingScheduledCount();
+        if (!mounted) {
+          return;
+        }
+        if (pendingCount == 0) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'لم يتم جدولة إشعارات بعد. راجع إعدادات الإشعارات من النظام.',
+                ),
+                duration: Duration(seconds: 4),
+              ),
+            );
+        }
       }());
     }
   }
@@ -404,34 +427,41 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
                           ),
                         ],
                         const SizedBox(height: 8),
-                        SwitchListTile.adaptive(
-                          value: _vibrationEnabled,
-                          contentPadding: EdgeInsets.zero,
-                          onChanged: _enabled
-                              ? (value) =>
-                                    _mutate(() => _vibrationEnabled = value)
-                              : null,
-                          title: Text(
-                            'تشغيل الاهتزاز مع الإشعار',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: _enabled ? textColor : disabledTextColor,
+                        if (_supportsVibrationToggle) ...[
+                          SwitchListTile.adaptive(
+                            value: _vibrationEnabled,
+                            contentPadding: EdgeInsets.zero,
+                            onChanged: _enabled
+                                ? (value) =>
+                                      _mutate(() => _vibrationEnabled = value)
+                                : null,
+                            title: Text(
+                              'تشغيل الاهتزاز مع الإشعار',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: _enabled ? textColor : disabledTextColor,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'ملحوظة: بعض الأجهزة قد تؤخر الإشعارات عند قفل الشاشة أو مع تقييد البطارية. سيأخذك الزر إلى إعدادات التطبيق، ومن هناك ادخل إلى البطارية أو التشغيل في الخلفية واسمح للتطبيق بالعمل دون تقييد.',
-                          style: TextStyle(fontSize: 12, color: mutedTextColor),
-                        ),
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            await BackgroundExecutionSettings.openBackgroundSettings();
-                          },
-                          icon: const Icon(Icons.battery_saver_rounded),
-                          label: const Text('فتح إعدادات التطبيق والبطارية'),
-                        ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_supportsBatterySettingsShortcut) ...[
+                          Text(
+                            'ملحوظة: بعض الأجهزة قد تؤخر الإشعارات عند قفل الشاشة أو مع تقييد البطارية. سيأخذك الزر إلى إعدادات التطبيق، ومن هناك ادخل إلى البطارية أو التشغيل في الخلفية واسمح للتطبيق بالعمل دون تقييد.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: mutedTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              await BackgroundExecutionSettings.openBackgroundSettings();
+                            },
+                            icon: const Icon(Icons.battery_saver_rounded),
+                            label: const Text('فتح إعدادات التطبيق والبطارية'),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Container(
                           width: double.infinity,
@@ -492,7 +522,8 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
 
     final parts = <String>[
       'كل ${_intervalLabel(_intervalMinutes)}',
-      _vibrationEnabled ? 'مع الاهتزاز' : 'بدون اهتزاز',
+      if (_supportsVibrationToggle)
+        (_vibrationEnabled ? 'مع الاهتزاز' : 'بدون اهتزاز'),
     ];
     if (_windowEnabled) {
       parts.add(
@@ -536,7 +567,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
           windowEnabled: _windowEnabled,
           windowStartMinutes: _windowStartMinutes,
           windowEndMinutes: _windowEndMinutes,
-          vibrationEnabled: _vibrationEnabled,
+          vibrationEnabled: _supportsVibrationToggle ? _vibrationEnabled : false,
           unlockEnabled: false,
         );
 
@@ -573,7 +604,7 @@ class _SalawatReminderPageState extends State<SalawatReminderPage> {
             windowEnabled: _windowEnabled,
             windowStartMinutes: _windowStartMinutes,
             windowEndMinutes: _windowEndMinutes,
-            vibrationEnabled: _vibrationEnabled,
+            vibrationEnabled: _supportsVibrationToggle ? _vibrationEnabled : false,
             city: city,
             prayerOffsets: widget.store.savedPrayerOffsets,
           );

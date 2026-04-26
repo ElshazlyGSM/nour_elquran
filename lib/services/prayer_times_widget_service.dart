@@ -151,6 +151,7 @@ class PrayerTimesWidgetService {
   }
 
   String _formatHijri(DateTime date) {
+    HijriCalendar.setLocal('ar');
     final hijri = HijriCalendar.fromDate(date);
     return '${toArabicNumber(hijri.hDay)} ${hijri.longMonthName} ${toArabicNumber(hijri.hYear)}';
   }
