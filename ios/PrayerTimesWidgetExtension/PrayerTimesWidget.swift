@@ -20,6 +20,22 @@ struct PrayerTimesEntry: TimelineEntry {
 }
 
 struct PrayerTimesProvider: TimelineProvider {
+  private struct PrayerSlot {
+    let key: String
+    let name: String
+    let timeText: String
+    let date: Date
+  }
+
+  private let orderedPrayerKeys = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
+  private let prayerNameByKey = [
+    "fajr": "الفجر",
+    "dhuhr": "الظهر",
+    "asr": "العصر",
+    "maghrib": "المغرب",
+    "isha": "العشاء",
+  ]
+
   func placeholder(in context: Context) -> PrayerTimesEntry {
     PrayerTimesEntry(
       date: Date(),
@@ -38,30 +54,58 @@ struct PrayerTimesProvider: TimelineProvider {
   }
 
   func getSnapshot(in context: Context, completion: @escaping (PrayerTimesEntry) -> Void) {
-    completion(loadEntry())
+    completion(loadEntry(referenceDate: Date()))
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerTimesEntry>) -> Void) {
-    let entry = loadEntry()
-    let next = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date().addingTimeInterval(300)
-    completion(Timeline(entries: [entry], policy: .after(next)))
+    let now = Date()
+    let defaults = UserDefaults(suiteName: appGroupId)
+    var dates: [Date] = [now]
+    let prayerTransitions = upcomingPrayerTransitions(defaults: defaults, from: now, horizonHours: 36)
+    dates.append(contentsOf: prayerTransitions.map { $0.addingTimeInterval(1) })
+
+    let sortedUniqueDates = Array(Set(dates)).sorted()
+    let entries = sortedUniqueDates.map { loadEntry(defaults: defaults, referenceDate: $0) }
+    let refreshAt = Calendar.current.date(byAdding: .hour, value: 6, to: now) ?? now.addingTimeInterval(21600)
+    completion(Timeline(entries: entries, policy: .after(refreshAt)))
   }
 
-  private func loadEntry() -> PrayerTimesEntry {
-    let defaults = UserDefaults(suiteName: appGroupId)
-    let nextPrayerDate: Date?
-    if let nextEpochMs = defaults?.object(forKey: "widget_next_prayer_epoch_ms") as? NSNumber {
-      nextPrayerDate = Date(timeIntervalSince1970: nextEpochMs.doubleValue / 1000.0)
+  private func loadEntry(
+    defaults: UserDefaults? = UserDefaults(suiteName: appGroupId),
+    referenceDate: Date
+  ) -> PrayerTimesEntry {
+    let computedNext = nextPrayerSlot(defaults: defaults, from: referenceDate)
+    let fallbackNextName = defaults?.string(forKey: "widget_next_prayer_name") ?? "الفجر"
+    let fallbackNextTime = defaults?.string(forKey: "widget_next_prayer_time") ?? "—"
+    let fallbackNextDate: Date? = {
+      if let nextEpochMs = defaults?.object(forKey: "widget_next_prayer_epoch_ms") as? NSNumber {
+        return Date(timeIntervalSince1970: nextEpochMs.doubleValue / 1000.0)
+      }
+      return nil
+    }()
+
+    let nextPrayerName = computedNext?.name ?? fallbackNextName
+    let nextPrayerTime = computedNext?.timeText ?? fallbackNextTime
+    let nextPrayerDate = computedNext?.date ?? fallbackNextDate
+
+    let nextRemaining: String
+    if let nextPrayerDate, nextPrayerDate > referenceDate {
+      let total = Int(nextPrayerDate.timeIntervalSince(referenceDate))
+      let hours = total / 3600
+      let minutes = (total % 3600) / 60
+      let seconds = total % 60
+      nextRemaining = toArabicDigits(String(format: "%02d:%02d:%02d", hours, minutes, seconds))
     } else {
-      nextPrayerDate = nil
+      nextRemaining = defaults?.string(forKey: "widget_next_remaining") ?? "٠٠:٠٠:٠٠"
     }
+
     return PrayerTimesEntry(
-      date: Date(),
+      date: referenceDate,
       city: defaults?.string(forKey: "widget_prayer_city") ?? "—",
       hijriDate: defaults?.string(forKey: "widget_hijri_date") ?? "",
-      nextPrayerName: defaults?.string(forKey: "widget_next_prayer_name") ?? "الفجر",
-      nextPrayerTime: defaults?.string(forKey: "widget_next_prayer_time") ?? "—",
-      nextRemaining: defaults?.string(forKey: "widget_next_remaining") ?? "٠٠:٠٠:٠٠",
+      nextPrayerName: nextPrayerName,
+      nextPrayerTime: nextPrayerTime,
+      nextRemaining: nextRemaining,
       nextPrayerDate: nextPrayerDate,
       fajrTime: defaults?.string(forKey: "widget_fajr_time") ?? "—",
       dhuhrTime: defaults?.string(forKey: "widget_dhuhr_time") ?? "—",
@@ -69,6 +113,112 @@ struct PrayerTimesProvider: TimelineProvider {
       maghribTime: defaults?.string(forKey: "widget_maghrib_time") ?? "—",
       ishaTime: defaults?.string(forKey: "widget_isha_time") ?? "—"
     )
+  }
+
+  private func upcomingPrayerTransitions(
+    defaults: UserDefaults?,
+    from referenceDate: Date,
+    horizonHours: Int
+  ) -> [Date] {
+    let calendar = Calendar.current
+    guard let endDate = calendar.date(byAdding: .hour, value: horizonHours, to: referenceDate) else {
+      return []
+    }
+    let slots = buildPrayerSlots(defaults: defaults, from: referenceDate)
+    return slots
+      .map(\.date)
+      .filter { $0 > referenceDate && $0 <= endDate }
+  }
+
+  private func nextPrayerSlot(defaults: UserDefaults?, from referenceDate: Date) -> PrayerSlot? {
+    let slots = buildPrayerSlots(defaults: defaults, from: referenceDate)
+    return slots.first(where: { $0.date > referenceDate })
+  }
+
+  private func buildPrayerSlots(defaults: UserDefaults?, from referenceDate: Date) -> [PrayerSlot] {
+    let calendar = Calendar.current
+    let timesByKey = [
+      "fajr": defaults?.string(forKey: "widget_fajr_time") ?? "—",
+      "dhuhr": defaults?.string(forKey: "widget_dhuhr_time") ?? "—",
+      "asr": defaults?.string(forKey: "widget_asr_time") ?? "—",
+      "maghrib": defaults?.string(forKey: "widget_maghrib_time") ?? "—",
+      "isha": defaults?.string(forKey: "widget_isha_time") ?? "—",
+    ]
+
+    var slots: [PrayerSlot] = []
+    for dayOffset in 0...1 {
+      guard let targetDay = calendar.date(byAdding: .day, value: dayOffset, to: referenceDate) else {
+        continue
+      }
+      for key in orderedPrayerKeys {
+        guard
+          let timeText = timesByKey[key],
+          let date = parsePrayerTime(timeText, calendar: calendar, date: targetDay)
+        else {
+          continue
+        }
+        slots.append(
+          PrayerSlot(
+            key: key,
+            name: prayerNameByKey[key] ?? key,
+            timeText: timeText,
+            date: date
+          )
+        )
+      }
+    }
+    return slots.sorted { $0.date < $1.date }
+  }
+
+  private func parsePrayerTime(_ text: String, calendar: Calendar, date: Date) -> Date? {
+    let normalized = text
+      .replacingOccurrences(of: "٠", with: "0")
+      .replacingOccurrences(of: "١", with: "1")
+      .replacingOccurrences(of: "٢", with: "2")
+      .replacingOccurrences(of: "٣", with: "3")
+      .replacingOccurrences(of: "٤", with: "4")
+      .replacingOccurrences(of: "٥", with: "5")
+      .replacingOccurrences(of: "٦", with: "6")
+      .replacingOccurrences(of: "٧", with: "7")
+      .replacingOccurrences(of: "٨", with: "8")
+      .replacingOccurrences(of: "٩", with: "9")
+      .replacingOccurrences(of: "ص", with: "AM")
+      .replacingOccurrences(of: "م", with: "PM")
+      .replacingOccurrences(of: " ", with: "")
+    let parts = normalized.split(separator: ":")
+    guard parts.count == 2 else { return nil }
+    let hourPart = String(parts[0])
+    let minuteAndPeriod = String(parts[1])
+    guard
+      let minute = Int(minuteAndPeriod.prefix(2)),
+      let rawHour = Int(hourPart)
+    else { return nil }
+    let isPM = minuteAndPeriod.uppercased().contains("PM")
+    let hour24: Int
+    if rawHour == 12 {
+      hour24 = isPM ? 12 : 0
+    } else {
+      hour24 = isPM ? rawHour + 12 : rawHour
+    }
+    var components = calendar.dateComponents([.year, .month, .day], from: date)
+    components.hour = hour24
+    components.minute = minute
+    components.second = 0
+    return calendar.date(from: components)
+  }
+
+  private func toArabicDigits(_ text: String) -> String {
+    text
+      .replacingOccurrences(of: "0", with: "٠")
+      .replacingOccurrences(of: "1", with: "١")
+      .replacingOccurrences(of: "2", with: "٢")
+      .replacingOccurrences(of: "3", with: "٣")
+      .replacingOccurrences(of: "4", with: "٤")
+      .replacingOccurrences(of: "5", with: "٥")
+      .replacingOccurrences(of: "6", with: "٦")
+      .replacingOccurrences(of: "7", with: "٧")
+      .replacingOccurrences(of: "8", with: "٨")
+      .replacingOccurrences(of: "9", with: "٩")
   }
 }
 

@@ -15,7 +15,7 @@ extension _ReaderAudio on _ReaderPageState {
       album: 'القرآن الكريم',
       title: title,
       artist: _selectedReciter.nameAr,
-      artUri: _mediaArtworkUri ?? Uri.parse('asset:///assets/IMG_4554.png'),
+      artUri: _mediaArtworkUri ?? Uri.parse('asset:///assets/lockscreen_art.png'),
     );
   }
 
@@ -360,8 +360,8 @@ extension _ReaderAudio on _ReaderPageState {
 
     try {
       await Future.wait<void>([
-        AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
         _audioPlayer.stop().catchError((_) {}),
+        AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
       ], eagerError: false);
       final allowedSurahs = _selectedReciter.availableSurahs;
       if (allowedSurahs != null &&
@@ -624,8 +624,8 @@ extension _ReaderAudio on _ReaderPageState {
       });
     }
     await Future.wait<void>([
-      AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
       _audioPlayer.stop().catchError((_) {}),
+      AudioCtrl.instance.state.audioPlayer.stop().catchError((_) {}),
     ], eagerError: false);
   }
 

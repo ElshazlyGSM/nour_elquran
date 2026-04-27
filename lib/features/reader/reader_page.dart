@@ -10,11 +10,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:quran_library/quran_library.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/utils/arabic_numbers.dart';
@@ -290,6 +290,12 @@ class ReaderPage extends StatefulWidget {
 }
 
 class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
+  static const double _minReaderFontSize = 14.0;
+  static const double _maxReaderFontSize = 64.0;
+  static const double _readerBaseFontSize = 28.0;
+  static const double _maxMedinaScaleFactor = 3.6;
+  static const double _maxShamarlyZoomScale = 4.0;
+
   final AudioPlayer _audioPlayer = AudioPlayer();
   final _quranSource = _readerQuranSource;
   final TafsirService _tafsirService = TafsirService();
@@ -337,6 +343,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   bool _isPlayingAudio = false;
   bool _isPreparingAudio = false;
   int _audioPlayRequestId = 0;
+  Uri? _mediaArtworkUri;
   bool _suspendPlaylistIndexSelectionSync = false;
   bool _isAdvancingToNextSurah = false;
   bool _isHandlingLocalCompletion = false;
@@ -388,7 +395,6 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int? _playbackSurahNumber;
   int? _playbackStartVerse;
   int? _playbackResumeVerseAfterChunk;
-  Uri? _mediaArtworkUri;
   double _shamarlyZoomScale = 1.0;
   List<int> _playlistVerseNumbers = const [];
   final Map<String, GlobalKey> _verseKeys = {};
@@ -412,8 +418,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   int? _standardInitialPage;
 
   double _snapFontSize(double size) {
-    final primaryRange =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 1.8 : 1.0;
+    final primaryRange = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+        ? 1.8
+        : 1.0;
     if ((size - 26.0).abs() <= primaryRange) {
       return 26.0;
     }
@@ -426,8 +433,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   // Make pinch feel easier: small finger movement gives a slightly bigger
   // visual change without being jumpy.
   double _pinchScaleWithSensitivity(double rawScale) {
-    final sensitivity =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 0.45 : 1.10;
+    final sensitivity = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+        ? 0.45
+        : 1.10;
     return 1 + ((rawScale - 1) * sensitivity);
   }
 
@@ -511,8 +519,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (currentDistance == null || currentDistance <= 0) {
       return;
     }
-    final deadZone =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? 18.0 : 8.0;
+    final deadZone = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+        ? 18.0
+        : 8.0;
     if ((currentDistance - startDistance).abs() < deadZone) {
       return;
     }
@@ -525,7 +534,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       if (startFactor == null) {
         return;
       }
-      final nextFactor = (startFactor * adjustedScale).clamp(1.0, 2.0);
+      final nextFactor = (startFactor * adjustedScale).clamp(
+        1.0,
+        _maxMedinaScaleFactor,
+      );
       try {
         final current = QuranCtrl.instance.state.scaleFactor.value;
         if ((nextFactor - current).abs() < 0.008) {
@@ -538,7 +550,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
           return;
         }
         setState(() {
-          _fontSize = ((nextFactor - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
+          _fontSize = ((nextFactor - 1.0) * 14.0 + _readerBaseFontSize).clamp(
+            _minReaderFontSize,
+            _maxReaderFontSize,
+          );
           _lastContinuousFontSize = _fontSize;
         });
       } catch (_) {}
@@ -549,7 +564,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (startSize == null) {
       return;
     }
-    final nextSize = (startSize * adjustedScale).clamp(14.0, 42.0);
+    final nextSize = (startSize * adjustedScale).clamp(
+      _minReaderFontSize,
+      _maxReaderFontSize,
+    );
     if ((nextSize - _fontSize).abs() < 0.06) {
       return;
     }
@@ -1426,6 +1444,21 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         });
   }
 
+  Future<void> _prepareMediaArtworkUri() async {
+    try {
+      final bytes = await rootBundle.load('assets/lockscreen_art.png');
+      final dir = await getTemporaryDirectory();
+      final file = File(path.join(dir.path, 'lockscreen_art.png'));
+      await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+      if (!mounted) {
+        return;
+      }
+      _mediaArtworkUri = Uri.file(file.path);
+    } catch (_) {
+      // Keep fallback artwork URI in media item.
+    }
+  }
+
   void _startAudioPreparingTimeout() {
     _audioPreparingTimeoutTimer?.cancel();
     _audioPreparingTimeoutTimer = Timer(const Duration(seconds: 12), () {
@@ -1451,22 +1484,6 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   void _cancelAudioPreparingTimeout() {
     _audioPreparingTimeoutTimer?.cancel();
     _audioPreparingTimeoutTimer = null;
-  }
-
-  Future<void> _prepareMediaArtworkUri() async {
-    if (kIsWeb) {
-      return;
-    }
-    try {
-      final data = await rootBundle.load('assets/IMG_4554.png');
-      final dir = await getTemporaryDirectory();
-      final file = File(path.join(dir.path, 'now_playing_artwork.png'));
-      await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
-      if (!mounted) {
-        return;
-      }
-      _mediaArtworkUri = file.uri;
-    } catch (_) {}
   }
 
   @override
@@ -1501,8 +1518,17 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
       unawaited(_persistReaderPreferences());
       unawaited(_disableWakeLockSafely());
     } else if (state == AppLifecycleState.resumed) {
+      _syncReaderAppearanceWithThemePreference();
       unawaited(_syncWakeLock());
     }
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    if (!mounted) {
+      return;
+    }
+    _syncReaderAppearanceWithThemePreference();
   }
 
   Future<void> _disableWakeLockSafely() async {
@@ -1599,7 +1625,14 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                       if (_audioError != null)
                         Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                          margin: EdgeInsets.fromLTRB(
+                            12,
+                            _isPagedMushafMode
+                                ? (MediaQuery.of(context).padding.top + 8)
+                                : 8,
+                            12,
+                            0,
+                          ),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF1EE),
@@ -1846,7 +1879,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 if ((zoomScale - _shamarlyZoomScale).abs() < 0.001) {
                   return;
                 }
-                _shamarlyZoomScale = zoomScale.clamp(1.0, 2.6);
+                _shamarlyZoomScale = zoomScale.clamp(
+                  1.0,
+                  _maxShamarlyZoomScale,
+                );
                 unawaited(_persistReaderPreferences());
               },
               onPageTap: _showPagedControlBar,

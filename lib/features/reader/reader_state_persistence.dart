@@ -1,6 +1,31 @@
 part of 'reader_page.dart';
 
 extension _ReaderStatePersistence on _ReaderPageState {
+  void _syncReaderAppearanceWithThemePreference() {
+    if (widget.store.savedThemeMode != 'system') {
+      return;
+    }
+    final darkModeEnabled = _resolveReaderDarkModeEnabled();
+    final nextAppearance = _appearanceForThemePreference(
+      _appearance,
+      darkModeEnabled,
+    );
+    if (nextAppearance == _appearance) {
+      return;
+    }
+    _updateState(() {
+      _appearance = nextAppearance;
+      if (_appearance == _ReaderAppearance.classic ||
+          _appearance == _ReaderAppearance.golden ||
+          _appearance == _ReaderAppearance.tajweed ||
+          _appearance == _ReaderAppearance.night ||
+          _appearance == _ReaderAppearance.nightTajweed) {
+        _lastContinuousAppearance = _appearance;
+      }
+    });
+    unawaited(_persistReaderPreferences());
+  }
+
   bool _resolveReaderDarkModeEnabled() {
     final mode = widget.store.savedThemeMode;
     if (mode == 'dark') {
@@ -247,8 +272,8 @@ extension _ReaderStatePersistence on _ReaderPageState {
         ? 24.0
         : _fontSize;
     _fontSize = (widget.store.savedFontSize ?? fallbackFontSize).clamp(
-      14.0,
-      42.0,
+      _ReaderPageState._minReaderFontSize,
+      _ReaderPageState._maxReaderFontSize,
     );
     _lastContinuousFontSize = _fontSize;
     _readingSpeed =
@@ -283,7 +308,12 @@ extension _ReaderStatePersistence on _ReaderPageState {
       fontSize = _lastContinuousFontSize;
       if (_isMedinaPagesMode && !_useMedinaOnDemandDownload && mounted) {
         final scaleFactor = QuranCtrl.instance.state.scaleFactor.value;
-        _fontSize = ((scaleFactor - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
+        _fontSize =
+            ((scaleFactor - 1.0) * 14.0 + _ReaderPageState._readerBaseFontSize)
+                .clamp(
+                  _ReaderPageState._minReaderFontSize,
+                  _ReaderPageState._maxReaderFontSize,
+                );
       }
     }
     return widget.store.saveReaderPreferences(

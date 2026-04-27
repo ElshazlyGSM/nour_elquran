@@ -532,7 +532,7 @@ class PrayerNotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        interruptionLevel: InterruptionLevel.timeSensitive,
+        interruptionLevel: InterruptionLevel.active,
       ),
     );
   }
@@ -577,7 +577,7 @@ class PrayerNotificationService {
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
-          interruptionLevel: InterruptionLevel.timeSensitive,
+          interruptionLevel: InterruptionLevel.active,
           sound: iosSound,
         ),
       );
@@ -632,7 +632,7 @@ class PrayerNotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        interruptionLevel: InterruptionLevel.timeSensitive,
+        interruptionLevel: InterruptionLevel.active,
         sound: iosSound,
       ),
     );

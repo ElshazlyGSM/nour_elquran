@@ -82,7 +82,7 @@ class QuranStore extends ChangeNotifier {
   double? get savedReadingSpeed => _prefs.getDouble(_readingSpeedKey);
   String? get savedAppearance => _prefs.getString(_appearanceKey);
   double get savedShamarlyZoomScale =>
-      (_prefs.getDouble(_shamarlyZoomScaleKey) ?? 1.0).clamp(1.0, 2.6);
+      (_prefs.getDouble(_shamarlyZoomScaleKey) ?? 1.0).clamp(1.0, 4.0);
   String? get savedPrayerCityName => _prefs.getString(_prayerCityKey);
   bool get savedPrayerAutoDetect =>
       _prefs.getBool(_prayerAutoDetectKey) ?? true;
@@ -240,7 +240,7 @@ class QuranStore extends ChangeNotifier {
     if (shamarlyZoomScale != null) {
       await _prefs.setDouble(
         _shamarlyZoomScaleKey,
-        shamarlyZoomScale.clamp(1.0, 2.6),
+        shamarlyZoomScale.clamp(1.0, 4.0),
       );
     }
   }

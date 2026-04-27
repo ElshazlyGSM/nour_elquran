@@ -118,14 +118,42 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<void> _bootstrap() async {
-    await QuranLibrary.init();
-    QuranLibrary.initWordAudio();
-    final store = await QuranStore.create();
-    await ensureCurrentQuranTextSourceInitialized();
-    await JuzNamesService.ensureLoaded();
-    try {
-      await NotificationWatchdogService.instance.ensureScheduled();
-    } catch (_) {}
+    await _runBootstrapStep(
+      name: 'QuranLibrary.init',
+      timeout: const Duration(seconds: 14),
+      action: () => QuranLibrary.init(),
+    );
+    await _runBootstrapStep(
+      name: 'QuranLibrary.initWordAudio',
+      timeout: const Duration(seconds: 3),
+      action: () async {
+        QuranLibrary.initWordAudio();
+      },
+    );
+
+    final store = await _runBootstrapStep<QuranStore>(
+      name: 'QuranStore.create',
+      timeout: const Duration(seconds: 10),
+      action: () => QuranStore.create(),
+      fallback: () => throw TimeoutException('QuranStore.create timeout'),
+    );
+
+    await _runBootstrapStep(
+      name: 'ensureCurrentQuranTextSourceInitialized',
+      timeout: const Duration(seconds: 10),
+      action: () => ensureCurrentQuranTextSourceInitialized(),
+    );
+    await _runBootstrapStep(
+      name: 'JuzNamesService.ensureLoaded',
+      timeout: const Duration(seconds: 8),
+      action: () => JuzNamesService.ensureLoaded(),
+    );
+    await _runBootstrapStep(
+      name: 'NotificationWatchdogService.ensureScheduled',
+      timeout: const Duration(seconds: 5),
+      action: () => NotificationWatchdogService.instance.ensureScheduled(),
+    );
+
     if (!mounted) {
       return;
     }
@@ -136,6 +164,29 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         await AppUpdateService.instance.checkForUpdatesFromNavigator();
       }),
     );
+  }
+
+  Future<T> _runBootstrapStep<T>({
+    required String name,
+    required Duration timeout,
+    required Future<T> Function() action,
+    T Function()? fallback,
+  }) async {
+    try {
+      return await action().timeout(timeout);
+    } catch (error, stackTrace) {
+      _logMain('Bootstrap step failed: $name -> $error');
+      developer.log(
+        'Bootstrap step failed: $name',
+        name: 'MainBootstrap',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (fallback != null) {
+        return fallback();
+      }
+      rethrow;
+    }
   }
 
   Future<void> _postBootstrapSetup(QuranStore store) async {

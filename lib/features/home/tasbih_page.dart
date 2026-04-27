@@ -392,54 +392,54 @@ class _TasbihPageState extends State<TasbihPage> {
     var sheetTargetCount = _targetCount;
     var sheetTapHaptics = _tapHaptics;
     var sheetGoalHaptics = _goalHaptics;
+    var didApplySettings = false;
 
     Future<void> closeKeyboard() async {
       FocusManager.instance.primaryFocus?.unfocus();
       await Future<void>.delayed(const Duration(milliseconds: 220));
     }
 
+    Future<void> applySettingsFromSheet() async {
+      if (didApplySettings || !mounted) {
+        return;
+      }
+      didApplySettings = true;
+      await closeKeyboard();
+      if (!mounted) {
+        return;
+      }
+      final customPhrase = phraseController.text.trim();
+      final updatedCustomPhrases = List<String>.from(_customPhrases);
+      if (customPhrase.isNotEmpty &&
+          !_defaultPhrases.contains(customPhrase) &&
+          !updatedCustomPhrases.contains(customPhrase)) {
+        updatedCustomPhrases.add(customPhrase);
+      }
+
+      setState(() {
+        _customPhrases = updatedCustomPhrases;
+        if (customPhrase.isNotEmpty) {
+          _selectedPhrase = customPhrase;
+        }
+        _targetCount = sheetTargetCount.clamp(1, 10000);
+        _tapHaptics = sheetTapHaptics;
+        _goalHaptics = sheetGoalHaptics;
+        _count = 0;
+      });
+
+      await _persistTasbihPreferences();
+      await widget.store?.saveTasbihCustomPhrases(_customPhrases);
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
+      isDismissible: true,
+      enableDrag: true,
       showDragHandle: true,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
-            Future<void> saveAndClose() async {
-              await closeKeyboard();
-              if (!mounted) {
-                return;
-              }
-
-              final customPhrase = phraseController.text.trim();
-              final updatedCustomPhrases = List<String>.from(_customPhrases);
-              if (customPhrase.isNotEmpty &&
-                  !_defaultPhrases.contains(customPhrase) &&
-                  !updatedCustomPhrases.contains(customPhrase)) {
-                updatedCustomPhrases.add(customPhrase);
-              }
-
-              setState(() {
-                _customPhrases = updatedCustomPhrases;
-                if (customPhrase.isNotEmpty) {
-                  _selectedPhrase = customPhrase;
-                }
-                _targetCount = sheetTargetCount.clamp(1, 10000);
-                _tapHaptics = sheetTapHaptics;
-                _goalHaptics = sheetGoalHaptics;
-                _count = 0;
-              });
-
-              await _persistTasbihPreferences();
-              await widget.store?.saveTasbihCustomPhrases(_customPhrases);
-
-              if (sheetContext.mounted) {
-                Navigator.of(sheetContext).pop();
-              }
-            }
-
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -593,14 +593,6 @@ class _TasbihPageState extends State<TasbihPage> {
                         contentPadding: EdgeInsets.zero,
                         title: const Text('هزة طويلة عند الوصول للهدف'),
                       ),
-                      const SizedBox(height: 10),
-                      FilledButton(
-                        onPressed: saveAndClose,
-                        style: FilledButton.styleFrom(
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('حفظ'),
-                      ),
                     ],
                   ),
                 ),
@@ -610,6 +602,8 @@ class _TasbihPageState extends State<TasbihPage> {
         );
       },
     );
+    await applySettingsFromSheet();
+    phraseController.dispose();
   }
 
   Future<int?> _showTargetInputDialog(

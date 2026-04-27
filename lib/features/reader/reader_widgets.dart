@@ -357,6 +357,7 @@ class _ShamarlyPages extends StatefulWidget {
 }
 
 class _ShamarlyPagesState extends State<_ShamarlyPages> {
+  static const double _maxShamarlyZoomScale = 4.0;
   late final PageController _controller;
   final Set<int> _activePointers = <int>{};
   bool _isMultiTouchActive = false;
@@ -374,7 +375,7 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
   @override
   void initState() {
     super.initState();
-    _userZoomScale = widget.initialZoomScale.clamp(1.0, 2.6);
+    _userZoomScale = widget.initialZoomScale.clamp(1.0, _maxShamarlyZoomScale);
     _zoomStart = _userZoomScale;
     _controller = PageController(
       initialPage: (widget.startPage - 1).clamp(
@@ -387,7 +388,10 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
   @override
   void didUpdateWidget(covariant _ShamarlyPages oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final incomingZoom = widget.initialZoomScale.clamp(1.0, 2.6);
+    final incomingZoom = widget.initialZoomScale.clamp(
+      1.0,
+      _maxShamarlyZoomScale,
+    );
     if ((incomingZoom - oldWidget.initialZoomScale).abs() > 0.001 &&
         (incomingZoom - _userZoomScale).abs() > 0.001) {
       _userZoomScale = incomingZoom;
@@ -448,7 +452,7 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
             final horizontalInset = constraints.maxWidth < 390 ? 10.0 : 8.0;
             final effectiveScale = (tunedScale * _userZoomScale).clamp(
               1.0,
-              3.2,
+              4.6,
             );
             return Transform.scale(
               scale: effectiveScale,
@@ -524,7 +528,10 @@ class _ShamarlyPagesState extends State<_ShamarlyPages> {
             }
             final base = _scaleStart == 0 ? 1.0 : _scaleStart;
             final relative = details.scale / base;
-            final next = (_zoomStart * relative).clamp(1.0, 2.6);
+            final next = (_zoomStart * relative).clamp(
+              1.0,
+              _maxShamarlyZoomScale,
+            );
             if ((next - _userZoomScale).abs() < 0.004) {
               return;
             }
@@ -613,7 +620,7 @@ class _QuranPageCard extends StatelessWidget {
     final showSideQuarterMarker =
         appearance != _ReaderAppearance.medinaPages &&
         appearance != _ReaderAppearance.shamarlyPages;
-        //هامش اليسار
+    //هامش اليسار
     final leftInset = showSideQuarterMarker ? 16.0 : 3.0;
     final content = Material(
       color: Colors.transparent,
@@ -654,8 +661,7 @@ class _QuranPageCard extends StatelessWidget {
                   fontSize: fontSize,
                   appearance: appearance,
                   verseKeyBuilder: verseKeyBuilder,
-                  quarterMarkerAnchorKeyBuilder:
-                      quarterMarkerAnchorKeyBuilder,
+                  quarterMarkerAnchorKeyBuilder: quarterMarkerAnchorKeyBuilder,
                   onVerseTap: onVerseTap,
                 ),
                 const SizedBox(height: 4),
@@ -698,8 +704,7 @@ class _QuranPageCard extends StatelessWidget {
                 appearance: appearance,
                 fontSize: fontSize,
                 verseKeyBuilder: verseKeyBuilder,
-                quarterMarkerAnchorKeyBuilder:
-                    quarterMarkerAnchorKeyBuilder,
+                quarterMarkerAnchorKeyBuilder: quarterMarkerAnchorKeyBuilder,
               ),
             ),
           ),
@@ -832,7 +837,7 @@ class _SurahMarker extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final showBasmala = surahNumber != 9;
+    final showBasmala = surahNumber != 1 && surahNumber != 9;
     //حجم خط اسم السورة
     final titleFontSize = (fontSize * 0.82);
     //حجم خط البسملة
@@ -975,7 +980,7 @@ class _VerseWrap extends StatelessWidget {
   Widget build(BuildContext context) {
     final spans = <InlineSpan>[];
     final highlightRanges = <_VerseHighlightRange>[];
-    final actualStart = surahNumber == 1 && startVerse == 1 ? 2 : startVerse;
+    final actualStart = startVerse;
 
     final useBalancedLines =
         appearance != _ReaderAppearance.medinaPages &&
@@ -1899,11 +1904,26 @@ class _SideQuarterMarkerLayer extends StatefulWidget {
 
 class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
   //تحريك مكان الحزب
-  static const double _markerOffset = 8.0;
-  static const double _markerWidth = 30.0;
-  static const double _markerHeight = 52.0;
-  static const double _markerFontSize = 11.0;
+  static const double _baseMarkerOffset = 8.0;
+  static const double _baseMarkerWidth = 32.0;
+  static const double _baseMarkerHeight = 54.0;
+  static const double _baseMarkerFontSize = 12.0;
+  static const double _baseReaderFontSize = _ReaderPageState._readerBaseFontSize;
   List<_QuarterMarkerPosition> _positions = const [];
+
+  double get _markerScale {
+    final effectiveFontSize = math.min(widget.fontSize, 30.0);
+    final ratio = effectiveFontSize / _baseReaderFontSize;
+    return ratio.clamp(0.82, 1.95);
+  }
+
+  double get _markerOffset => _baseMarkerOffset * _markerScale;
+  double get _markerWidth => _baseMarkerWidth * _markerScale;
+  double get _markerHeight => _baseMarkerHeight * _markerScale;
+  double get _markerFontSize => (_baseMarkerFontSize * _markerScale).clamp(
+    10.0,
+    24.0,
+  );
 
   @override
   void initState() {
@@ -1934,7 +1954,7 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
       final surahNumber = item['surah'] as int;
       final startVerse = item['start'] as int;
       final endVerse = item['end'] as int;
-      final actualStart = surahNumber == 1 && startVerse == 1 ? 2 : startVerse;
+      final actualStart = startVerse;
 
       for (
         var verseNumber = actualStart;
@@ -1949,7 +1969,8 @@ class _SideQuarterMarkerLayerState extends State<_SideQuarterMarkerLayer> {
           verseNumber,
         );
         final verseKey = widget.verseKeyBuilder(surahNumber, verseNumber);
-        final verseContext = anchorKey.currentContext ?? verseKey.currentContext;
+        final verseContext =
+            anchorKey.currentContext ?? verseKey.currentContext;
         final verseBox = verseContext?.findRenderObject() as RenderBox?;
         if (verseBox == null || !verseBox.hasSize) {
           continue;

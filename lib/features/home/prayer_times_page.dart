@@ -200,11 +200,12 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             },
             icon: const Icon(Icons.explore_rounded),
           ),
-          IconButton(
-            key: _widgetButtonKey,
-            onPressed: _showWidgetSetupDialog,
-            icon: const Icon(Icons.widgets_rounded),
-          ),
+          if (!Platform.isIOS)
+            IconButton(
+              key: _widgetButtonKey,
+              onPressed: _showWidgetSetupDialog,
+              icon: const Icon(Icons.widgets_rounded),
+            ),
           IconButton(
             onPressed: _showPrayerSettings,
             icon: const Icon(Icons.tune_rounded),
@@ -658,7 +659,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'على iPhone أضفها يدويًا: ضغط مطول على الشاشة الرئيسية > + > ابحث عن "نور القرآن" > اختر ويدجت المواقيت.',
+            'iPhone: ضغط مطوّل على الشاشة الرئيسية > تعديل > + > نور القرآن > مواقيت الصلاة.',
           ),
         ),
       );
@@ -721,7 +722,6 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       return;
     }
 
-    final targetRect = _widgetButtonRect();
     final previewTimes = _buildPrayerTimes(_now);
     final previewEntries = _buildEntries(
       previewTimes,
@@ -738,6 +738,57 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     final previewHijriText =
         '${toArabicNumber(previewHijri.hDay)} ${previewHijri.longMonthName} ${toArabicNumber(previewHijri.hYear)}';
     final previewSunrise = _formatTime(previewTimes.sunrise.toLocal());
+
+    if (Platform.isIOS) {
+      final acknowledged = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            scrollable: true,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 20,
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.widgets_rounded),
+                SizedBox(width: 8),
+                Text('إضافة ويدجت iPhone'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'من الشاشة الرئيسية على iPhone: ضغط مطوّل > تعديل الشاشة الرئيسية > + > ابحث عن "نور القرآن" > اختر ويدجت المواقيت.',
+                ),
+                const SizedBox(height: 10),
+                _buildWidgetPreviewCard(
+                  previewEntries: previewEntries,
+                  nextPrayer: nextPrayer,
+                  previewHijriText: previewHijriText,
+                  previewSunrise: previewSunrise,
+                ),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('تمام'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (acknowledged == true) {
+        await store.savePrayerWidgetCoachmarkSeen(true);
+      }
+      return;
+    }
+
+    final targetRect = _widgetButtonRect();
 
     final acknowledged = await showGeneralDialog<bool>(
       context: context,

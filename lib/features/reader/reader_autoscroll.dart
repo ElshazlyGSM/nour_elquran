@@ -5,7 +5,9 @@ extension _ReaderAutoScroll on _ReaderPageState {
     if (!_isMedinaPagesMode) {
       return;
     }
-    final scaleFactor = (1.0 + ((_fontSize - 28.0) / 14.0)).clamp(1.0, 2.0);
+    final scaleFactor =
+        (1.0 + ((_fontSize - _ReaderPageState._readerBaseFontSize) / 14.0))
+            .clamp(1.0, _ReaderPageState._maxMedinaScaleFactor);
     try {
       QuranCtrl.instance.state.baseScaleFactor.value = scaleFactor;
       QuranCtrl.instance.state.scaleFactor.value = scaleFactor;
@@ -142,9 +144,17 @@ extension _ReaderAutoScroll on _ReaderPageState {
       final currentScale = QuranCtrl.instance.state.scaleFactor.value;
       final nextScale = currentScale < 1.3
           ? 1.35
-          : (currentScale + 0.10).clamp(1.0, 2.0);
+          : (currentScale + 0.10).clamp(
+              1.0,
+              _ReaderPageState._maxMedinaScaleFactor,
+            );
       _updateState(() {
-        _fontSize = ((nextScale - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
+        _fontSize =
+            ((nextScale - 1.0) * 14.0 + _ReaderPageState._readerBaseFontSize)
+                .clamp(
+                  _ReaderPageState._minReaderFontSize,
+                  _ReaderPageState._maxReaderFontSize,
+                );
       });
       try {
         QuranCtrl.instance.state.baseScaleFactor.value = nextScale;
@@ -155,7 +165,10 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = (_fontSize + 1).clamp(14.0, 42.0);
+      _fontSize = (_fontSize + 1).clamp(
+        _ReaderPageState._minReaderFontSize,
+        _ReaderPageState._maxReaderFontSize,
+      );
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();
@@ -167,9 +180,17 @@ extension _ReaderAutoScroll on _ReaderPageState {
       final currentScale = QuranCtrl.instance.state.scaleFactor.value;
       final nextScale = currentScale <= 1.35
           ? 1.0
-          : (currentScale - 0.10).clamp(1.0, 2.0);
+          : (currentScale - 0.10).clamp(
+              1.0,
+              _ReaderPageState._maxMedinaScaleFactor,
+            );
       _updateState(() {
-        _fontSize = ((nextScale - 1.0) * 14.0 + 28.0).clamp(14.0, 42.0);
+        _fontSize =
+            ((nextScale - 1.0) * 14.0 + _ReaderPageState._readerBaseFontSize)
+                .clamp(
+                  _ReaderPageState._minReaderFontSize,
+                  _ReaderPageState._maxReaderFontSize,
+                );
       });
       try {
         QuranCtrl.instance.state.baseScaleFactor.value = nextScale;
@@ -180,7 +201,10 @@ extension _ReaderAutoScroll on _ReaderPageState {
       return;
     }
     _updateState(() {
-      _fontSize = (_fontSize - 1).clamp(14.0, 42.0);
+      _fontSize = (_fontSize - 1).clamp(
+        _ReaderPageState._minReaderFontSize,
+        _ReaderPageState._maxReaderFontSize,
+      );
       _lastContinuousFontSize = _fontSize;
     });
     _syncPagedMushafScaleFromFontSize();
