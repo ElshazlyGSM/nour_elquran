@@ -422,7 +422,7 @@ struct PrayerTimesWidgetEntryView: View {
         )
         .foregroundColor(.white.opacity(0.88))
         Spacer(minLength: 8)
-        appBadge(size: 24)
+        appBadge(size: 38)
           .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
         Spacer(minLength: 8)
         VStack(alignment: .trailing, spacing: 0) {
@@ -492,12 +492,12 @@ struct PrayerTimesWidgetEntryView: View {
       ForEach(compactPrayerRows, id: \.name) { row in
         VStack(spacing: 3) {
           Text(row.name)
-            .font(.system(size: 10.5, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundColor(row.isNext ? Color(red: 0.17, green: 0.10, blue: 0.02) : .white.opacity(0.85))
             .lineLimit(1)
             .minimumScaleFactor(0.8)
           Text(row.time)
-            .font(.system(size: 11.5, weight: .heavy))
+            .font(.system(size: 15, weight: .heavy))
             .foregroundColor(row.isNext ? Color(red: 0.17, green: 0.10, blue: 0.02) : .white)
             .lineLimit(1)
             .minimumScaleFactor(0.76)
@@ -531,13 +531,13 @@ struct PrayerTimesWidgetEntryView: View {
   @ViewBuilder
   private func prayerRow(name: String, time: String, isNext: Bool) -> some View {
     HStack {
-      Text(name)
-        .font(.system(size: 13, weight: .semibold))
-        .foregroundColor(isNext ? Color(red: 0.99, green: 0.86, blue: 0.53) : .white.opacity(0.86))
-      Spacer()
       Text(time)
-        .font(.system(size: 13.5, weight: .heavy))
+        .font(.system(size: 15, weight: .heavy))
         .foregroundColor(.white)
+      Spacer()
+      Text(name)
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundColor(isNext ? Color(red: 0.99, green: 0.86, blue: 0.53) : .white.opacity(0.86))
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 7)
