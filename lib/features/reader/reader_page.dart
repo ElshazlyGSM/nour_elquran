@@ -616,6 +616,18 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
 
   bool get _shouldShowAppBar => !_isPagedMushafMode || _showBottomBar;
 
+  ScrollPhysics get _standardReaderScrollPhysics {
+    if (_isPinchPriorityActive) {
+      return const NeverScrollableScrollPhysics();
+    }
+    if (!kIsWeb && Platform.isIOS) {
+      return const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      );
+    }
+    return const ClampingScrollPhysics();
+  }
+
   void _logMedina(String message) {
     if (kDebugMode) {
       debugPrint('[Medina] $message');
@@ -1599,7 +1611,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                         child: _ReaderTopJumpButton(
                           label: juzJumpLabel,
                           fontFamily: 'Ajzaa-ALQuran-font',
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w600,
                           textColor: _appearance.appBarColor,
                           onTap: () => _openQuranChooser(1),
@@ -1681,9 +1693,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                                       _standardItemPositionsListener,
                                   scrollOffsetController:
                                       _standardScrollOffsetController,
-                                  physics: _isPinchPriorityActive
-                                      ? const NeverScrollableScrollPhysics()
-                                      : const ClampingScrollPhysics(),
+                                  physics: _standardReaderScrollPhysics,
                                   itemBuilder: (context, index) {
                                     final pageNumber = index + 1;
                                     final pageKey = _pageKeyFor(pageNumber);

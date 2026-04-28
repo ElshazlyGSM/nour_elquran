@@ -362,7 +362,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n\nfor NATIVE_FW in \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/objective_c.framework\" \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/objective-c.framework\"; do\n  if [ ! -d \"$NATIVE_FW\" ]; then\n    continue\n  fi\n\n  BIN_NAME=\"$(basename \"$NATIVE_FW\" .framework)\"\n  BIN_PATH=\"$NATIVE_FW/$BIN_NAME\"\n\n  if [ -f \"$BIN_PATH\" ] && command -v lipo >/dev/null 2>&1; then\n    BIN_ARCHS=\"$(lipo -info \"$BIN_PATH\" 2>/dev/null | rev | cut -d ':' -f1 | xargs | rev)\"\n    for ARCH in $BIN_ARCHS; do\n      if ! echo \" $ARCHS \" | grep -q \" $ARCH \"; then\n        lipo -remove \"$ARCH\" -output \"$BIN_PATH\" \"$BIN_PATH\" || true\n      fi\n    done\n  fi\n\n  if [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${CODE_SIGNING_ALLOWED}\" != \"NO\" ]; then\n    /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --preserve-metadata=identifier,entitlements \"$NATIVE_FW\"\n  fi\ndone";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
 		77A4AF52961EB5F0E5C0EB16 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;

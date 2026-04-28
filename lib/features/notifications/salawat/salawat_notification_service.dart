@@ -27,7 +27,7 @@ class SalawatNotificationService {
   static const _maxScheduledNotifications = 300;
   // iOS has a strict pending-notification cap. Give salawat the larger share
   // so short intervals (e.g. every 5 minutes) remain active longer.
-  static const _maxIosScheduledNotifications = 5;
+  static const _maxIosScheduledNotifications = 40;
   static const _scheduledCeilingId =
       _scheduledBaseId + _maxScheduledNotifications;
   static const _prePrayerPauseMinutes = 5;

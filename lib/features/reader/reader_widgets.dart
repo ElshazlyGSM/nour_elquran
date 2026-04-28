@@ -985,8 +985,8 @@ class _VerseWrap extends StatelessWidget {
     final useBalancedLines =
         appearance != _ReaderAppearance.medinaPages &&
         appearance != _ReaderAppearance.shamarlyPages &&
-        fontSize >= 19.0 &&
-        fontSize <= 24.0;
+        fontSize >= 21.0 &&
+        fontSize <= 26.0;
     final effectiveWordSpacing = fontSize * -0.15;
 
     final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
