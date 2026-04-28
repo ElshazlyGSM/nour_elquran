@@ -362,7 +362,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n\n# Ensure dSYM exists for objective_c.framework to satisfy App Store upload checks.\nfor NATIVE_FW in \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/objective_c.framework\" \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/objective-c.framework\"; do\n  if [ ! -d \"$NATIVE_FW\" ]; then\n    continue\n  fi\n\n  BIN_NAME=\"$(basename \"$NATIVE_FW\" .framework)\"\n  BIN_PATH=\"$NATIVE_FW/$BIN_NAME\"\n  if [ ! -f \"$BIN_PATH\" ]; then\n    continue\n  fi\n\n  DSYM_PATH=\"$DWARF_DSYM_FOLDER_PATH/$BIN_NAME.framework.dSYM\"\n  if [ ! -d \"$DSYM_PATH\" ]; then\n    /usr/bin/dsymutil \"$BIN_PATH\" -o \"$DSYM_PATH\" || true\n  fi\ndone";
 		};
 		77A4AF52961EB5F0E5C0EB16 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
